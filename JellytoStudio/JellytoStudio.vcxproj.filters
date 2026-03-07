@@ -10,7 +10,19 @@
     <ClCompile Include="Main.cpp">
       <Filter>00. Main</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics.cpp" />
+    <ClCompile Include="VertexBuffer.cpp">
+      <Filter>03. Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics.cpp">
+      <Filter>02. Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexBuffer.cpp">
+      <Filter>03. Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>02. Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstantBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="00. Main">
@@ -37,6 +49,9 @@
     <Filter Include="99. Shaders">
       <UniqueIdentifier>{7e2e0f35-1038-4f8f-8fde-0c9496d259a8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="06. Utils\imGUI">
+      <UniqueIdentifier>{b20367a2-cce0-4f49-9e1c-2acdc7940e96}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h">
@@ -45,6 +60,26 @@
     <ClInclude Include="Framework.h">
       <Filter>00. Main</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics.h" />
+    <ClInclude Include="VertexBuffer.h">
+      <Filter>03. Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics.h">
+      <Filter>02. Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexBuffer.h">
+      <Filter>03. Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>02. Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Default.hlsl">
+      <Filter>99. Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

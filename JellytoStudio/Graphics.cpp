@@ -47,18 +47,21 @@ bool Graphics::Initialize(HWND hWnd, UINT width, UINT height)
 	return true;
 }
 
-void Graphics::Render()
-{
-	float clearColor[4] = { 0.1f, 0.0f, 0.2f, 1.0f };
-	_deviceContext->ClearRenderTargetView(_renderTargetView.Get(), clearColor);
-
-	_deviceContext->OMSetRenderTargets(1, _renderTargetView.GetAddressOf(), nullptr);
-	_deviceContext->RSSetViewports(1, &_viewport);
-
-	_swapChain->Present(0, 0); // VSync ²ô±â: 0, ÄÑ±â: 1
-}
-
 void Graphics::Shutdown()
 {
 
+}
+
+void Graphics::BeginRender()
+{
+    float clearColor[4] = { 0.1f, 0.0f, 0.2f, 1.0f };
+    _deviceContext->ClearRenderTargetView(_renderTargetView.Get(), clearColor);
+
+    _deviceContext->OMSetRenderTargets(1, _renderTargetView.GetAddressOf(), nullptr);
+    _deviceContext->RSSetViewports(1, &_viewport);
+}
+
+void Graphics::EndRender()
+{
+    _swapChain->Present(0, 0);
 }

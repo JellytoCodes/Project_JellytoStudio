@@ -2,19 +2,28 @@
 #include "Framework.h"
 #include "Application.h"
 
+vector<Vertex> vertices = {
+    { Vec3(-0.5f,  1.f, 0.0f), Color(1.0f, 0.0f, 0.0f, 1.0f) }, // 빨강
+    { Vec3( 1.f, -0.5f, 0.0f), Color(0.0f, 1.0f, 0.0f, 1.0f) }, // 초록
+    { Vec3(-0.5f, -0.5f, 0.0f), Color(0.0f, 0.0f, 1.0f, 1.0f) }
+};
+
+vector<uint32> indices = { 0, 1, 2 };
+
+struct TransformData
+{
+    Vec4 offset;
+};
+
 bool Application::Initialize(const ApplicationDesc& desc)
 {
 	_desc = desc;
 
-	// 1. 윈도우 클래스 등록
 	if (!MyRegisterClass())
 		return false;
 
-	// 2. 윈도우 창 생성
 	if (!InitInstance())
 		return false;
-
-	// 3. (나중에 여기에 DX11 장치 초기화 코드가 들어올 예정입니다)
 
 	return true;
 }
@@ -32,7 +41,6 @@ WPARAM Application::Run()
 		}
 		else
 		{
-			// 게임 메인 루프 가동
 			Update();
 			Render();
 		}
@@ -43,7 +51,7 @@ WPARAM Application::Run()
 
 void Application::Shutdown()
 {
-	// 나중에 생성한 DX11 객체들을 여기서 안전하게 Release 해줄 겁니다.
+	
 }
 
 ATOM Application::MyRegisterClass()
@@ -67,7 +75,6 @@ ATOM Application::MyRegisterClass()
 
 BOOL Application::InitInstance()
 {
-	// 작업 영역(Client Area) 크기를 맞추기 위한 계산
 	RECT windowRect = { 0, 0, static_cast<LONG>(_desc.width), static_cast<LONG>(_desc.height) };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, FALSE);
 
@@ -79,7 +86,7 @@ BOOL Application::InitInstance()
 		windowRect.right - windowRect.left,
 		windowRect.bottom - windowRect.top,
 		NULL, NULL, _desc.hInstance,
-		this // 중요: 'this' 포인터를 넘겨서 클래스와 윈도우를 연결
+		this
 	);
 
 	if (!_desc.hWnd) return FALSE;
@@ -88,7 +95,21 @@ BOOL Application::InitInstance()
 	::UpdateWindow(_desc.hWnd);
 
 	_graphics = std::make_unique<Graphics>();
-    return _graphics->Initialize(_desc.hWnd, _desc.width, _desc.height);
+	_graphics->Initialize(_desc.hWnd, _desc.width, _desc.height);
+
+	_shader = std::make_unique<Shader>();
+	_shader->Create(_graphics->GetDevice(), L"Default.hlsl");
+
+	_vertexBuffer = std::make_unique<VertexBuffer>();
+	_vertexBuffer->Create<Vertex>(_graphics->GetDevice(), vertices); // 위에서 정의한 전역 vertices
+
+	_indexBuffer = std::make_unique<IndexBuffer>();
+	_indexBuffer->Create(_graphics->GetDevice(), indices);
+
+	_constantBuffer = std::make_unique<ConstantBuffer<TransformData>>();
+	_constantBuffer->Create(_graphics->GetDevice());
+
+    return TRUE;
 }
 
 void Application::Update()
@@ -98,13 +119,34 @@ void Application::Update()
 
 void Application::Render()
 {
-	if (_graphics)
-		_graphics->Render();	
+	_graphics->BeginRender(); // 청소 시작
+
+    auto deviceContext = _graphics->GetDeviceContext(); // 작업반장 호출
+
+    // 1. 재료 장착
+    _vertexBuffer->PushData(deviceContext);
+    _indexBuffer->PushData(deviceContext);
+    deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // 2. 조리법 세팅
+    _shader->Bind(deviceContext);
+
+    // 3. (옵션) 데이터 전송
+    TransformData data = { Vec4(0.0f, 0.0f, 0.0f, 0.0f) };
+    _constantBuffer->CopyData(deviceContext, data);
+
+	auto bufferPtr = _constantBuffer->GetComPtr();
+	deviceContext->VSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
+	deviceContext->PSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
+
+    // 4. 발사!
+    deviceContext->DrawIndexed(_indexBuffer->GetCount(), 0, 0);
+
+    _graphics->EndRender(); // 전광판 교체
 }
 
 LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	// 창 생성 시 넘겨준 'this' 포인터를 보관/추출하는 로직
 	if (message == WM_NCCREATE)
 	{
 		LPCREATESTRUCT createStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);

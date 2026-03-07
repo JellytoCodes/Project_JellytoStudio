@@ -2,10 +2,14 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>D:\Dev\JellytoStudio\x64\Debug\JellytoStudio.exe</FullPath>
+      <FullPath>D:\Dev\JellytoStudio\Project_JellytoStudio\x64\Debug\JellytoStudio.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
-  <ContentFiles />
+  <ContentFiles>
+    <ContentFile>
+      <FullPath>D:\Dev\JellytoStudio\Project_JellytoStudio\x64\Debug\Default.cso</FullPath>
+    </ContentFile>
+  </ContentFiles>
   <SatelliteDlls />
   <NonRecipeFileRefs />
 </Project>

@@ -1,6 +1,12 @@
 #pragma once
 
+#include "ConstantBuffer.h"
 #include "Graphics.h"
+#include "IndexBuffer.h"
+#include "Shader.h"
+#include "VertexBuffer.h"
+
+struct TransformData;
 
 struct ApplicationDesc
 {
@@ -32,4 +38,9 @@ private:
 private:
 	ApplicationDesc _desc;
 	std::unique_ptr<Graphics> _graphics;
+
+	std::unique_ptr<Shader> _shader;
+    std::unique_ptr<VertexBuffer> _vertexBuffer;
+    std::unique_ptr<IndexBuffer> _indexBuffer;
+    std::unique_ptr<ConstantBuffer<TransformData>> _constantBuffer;
 };

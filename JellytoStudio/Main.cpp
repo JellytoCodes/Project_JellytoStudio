@@ -1,6 +1,5 @@
 ﻿
 #include "Framework.h"
-
 #include "Application.h"
 
 int APIENTRY wWinMain(
@@ -9,8 +8,8 @@ int APIENTRY wWinMain(
 	ApplicationDesc desc;
 	desc.appName = L"Jellyto Studio v1.0";
 	desc.hInstance = hInstance;
-	desc.width = 1280;
-	desc.height = 720;
+	desc.width = MAIN_WINDOW_WIDTH;
+	desc.height = MAIN_WINDOW_HEIGHT;
 
 	Application app;
 
