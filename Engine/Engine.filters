@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Application.cpp">
+      <Filter>01. App</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>00. Main</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexBuffer.cpp">
+      <Filter>03. Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics.cpp">
+      <Filter>02. Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="IndexBuffer.cpp">
+      <Filter>03. Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstantBuffer.cpp">
+      <Filter>03. Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>03. Pipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource.cpp">
+      <Filter>04. Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Component.cpp">
+      <Filter>05. Entity\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity.cpp">
+      <Filter>05. Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>05. Entity\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewport.cpp">
+      <Filter>02. Graphics\Types</Filter>
+    </ClCompile>
+    <ClCompile Include="MeshRenderer.cpp">
+      <Filter>05. Entity\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>04. Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>04. Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>07. Utils\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryHelper.cpp">
+      <Filter>07. Utils\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Framework.cpp">
+      <Filter>00. Main</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalTypes.cpp">
+      <Filter>08.Types</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexData.cpp">
+      <Filter>08.Types</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="00. Main">
+      <UniqueIdentifier>{76285fa8-462a-4334-a2c0-969c25186d2c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="01. App">
+      <UniqueIdentifier>{f3d292aa-03e9-4e3c-a9dc-5809aae00ece}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="02. Graphics">
+      <UniqueIdentifier>{58b30aba-4a10-46ec-9d29-764710a80886}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="03. Pipeline">
+      <UniqueIdentifier>{8000630c-1d15-416d-8d59-09b0347c1076}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="04. Resource">
+      <UniqueIdentifier>{ed25742b-c6a8-498f-ac41-718b7134ba0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="99. Shaders">
+      <UniqueIdentifier>{7e2e0f35-1038-4f8f-8fde-0c9496d259a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="02. Graphics\Types">
+      <UniqueIdentifier>{8e32fee5-079e-4008-ab9f-9331e9ad247a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="05. Entity">
+      <UniqueIdentifier>{f4ba7009-d672-4f39-96eb-c2dbfb2d534e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="05. Entity\Components">
+      <UniqueIdentifier>{aa943a13-e130-4931-a071-230a922226df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. Utils">
+      <UniqueIdentifier>{6760dc04-c99d-4bde-bf60-e99900f6eeca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. Utils\imGUI">
+      <UniqueIdentifier>{b20367a2-cce0-4f49-9e1c-2acdc7940e96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="07. Utils\Geometry">
+      <UniqueIdentifier>{0dce92f6-86ae-4b0b-bd9e-cd491c472f0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="06. Managers">
+      <UniqueIdentifier>{121ca3bd-660b-431f-9f4f-10a0599abe99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="08.Types">
+      <UniqueIdentifier>{860c90ed-7f0d-4886-9877-caa335fbb550}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Application.h">
+      <Filter>01. App</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBuffer.h">
+      <Filter>03. Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics.h">
+      <Filter>02. Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="IndexBuffer.h">
+      <Filter>03. Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBuffer.h">
+      <Filter>03. Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>03. Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>04. Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>05. Entity\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>05. Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>05. Entity\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewport.h">
+      <Filter>02. Graphics\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderer.h">
+      <Filter>05. Entity\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>04. Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>04. Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>07. Utils\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryHelper.h">
+      <Filter>07. Utils\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Framework.h">
+      <Filter>00. Main</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalTypes.h">
+      <Filter>08.Types</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexData.h">
+      <Filter>08.Types</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Default.hlsl">
+      <Filter>99. Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>
