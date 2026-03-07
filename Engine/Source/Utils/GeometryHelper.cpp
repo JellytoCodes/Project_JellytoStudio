@@ -21,6 +21,72 @@ void GeometryHelper::CreateQuad(const shared_ptr<Geometry<VertexColorData>>& geo
 	geometry->SetIndices(idx);
 }
 
+void GeometryHelper::CreateCube(const shared_ptr<Geometry<VertexColorData>>& geometry)
+{
+	float w2 = 0.5f;
+	float h2 = 0.5f;
+	float d2 = 0.5f;
+
+	vector<VertexColorData> vtx(24);
+
+	// 각 면의 색상 정의 (R, G, B, A)
+	Color red(1.f, 0.f, 0.f, 1.f);
+	Color orange(1.f, 0.5f, 0.f, 1.f);
+	Color yellow(1.f, 1.f, 0.f, 1.f);
+	Color green(0.f, 1.f, 0.f, 1.f);
+	Color blue(0.f, 0.f, 1.f, 1.f);
+	Color purple(0.5f, 0.f, 1.f, 1.f);
+
+	// 1. 앞면 (Red)
+	vtx[0] = { Vec3(-w2, -h2, -d2), red };
+	vtx[1] = { Vec3(-w2, +h2, -d2), red };
+	vtx[2] = { Vec3(+w2, +h2, -d2), red };
+	vtx[3] = { Vec3(+w2, -h2, -d2), red };
+
+	// 2. 뒷면 (Orange)
+	vtx[4] = { Vec3(-w2, -h2, +d2), orange };
+	vtx[5] = { Vec3(+w2, -h2, +d2), orange };
+	vtx[6] = { Vec3(+w2, +h2, +d2), orange };
+	vtx[7] = { Vec3(-w2, +h2, +d2), orange };
+
+	// 3. 윗면 (Yellow)
+	vtx[8] = { Vec3(-w2, +h2, -d2), yellow };
+	vtx[9] = { Vec3(-w2, +h2, +d2), yellow };
+	vtx[10] = { Vec3(+w2, +h2, +d2), yellow };
+	vtx[11] = { Vec3(+w2, +h2, -d2), yellow };
+
+	// 4. 아랫면 (Green)
+	vtx[12] = { Vec3(-w2, -h2, -d2), green };
+	vtx[13] = { Vec3(+w2, -h2, -d2), green };
+	vtx[14] = { Vec3(+w2, -h2, +d2), green };
+	vtx[15] = { Vec3(-w2, -h2, +d2), green };
+
+	// 5. 왼쪽면 (Blue)
+	vtx[16] = { Vec3(-w2, -h2, +d2), blue };
+	vtx[17] = { Vec3(-w2, +h2, +d2), blue };
+	vtx[18] = { Vec3(-w2, +h2, -d2), blue };
+	vtx[19] = { Vec3(-w2, -h2, -d2), blue };
+
+	// 6. 오른쪽면 (Purple)
+	vtx[20] = { Vec3(+w2, -h2, -d2), purple };
+	vtx[21] = { Vec3(+w2, +h2, -d2), purple };
+	vtx[22] = { Vec3(+w2, +h2, +d2), purple };
+	vtx[23] = { Vec3(+w2, -h2, +d2), purple };
+
+	geometry->SetVertices(vtx);
+
+	vector<uint32> idx = {
+		0, 1, 2, 0, 2, 3,       // 앞
+		4, 5, 6, 4, 6, 7,       // 뒤
+		8, 9, 10, 8, 10, 11,    // 위
+		12, 13, 14, 12, 14, 15, // 아래
+		16, 17, 18, 16, 18, 19, // 왼쪽
+		20, 21, 22, 20, 22, 23  // 오른쪽
+	};
+
+	geometry->SetIndices(idx);
+}
+
 void GeometryHelper::CreateQuad(const shared_ptr<Geometry<VertexTextureData>>& geometry)
 {
 	vector<VertexTextureData> vtx;

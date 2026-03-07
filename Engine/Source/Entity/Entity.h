@@ -14,7 +14,10 @@ public :
 	void LateUpdate();
 	void OnDestroy();
 
+	void Render();
+
 	shared_ptr<Transform> GetTransform();
+
 	void AddComponent(const std::shared_ptr<Component>& component);
 
 	void SetLayerIndex(const uint8 layer)	{ _layerIndex = layer; }

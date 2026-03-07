@@ -2,6 +2,10 @@
 #include "Framework.h"
 #include "Application.h"
 
+#include "Entity/Components/MeshRenderer.h"
+#include "Entity/Entity.h"
+#include "Scene/SceneManager.h"
+
 bool Application::Initialize(const ApplicationDesc& desc)
 {
 	_desc = desc;
@@ -11,6 +15,17 @@ bool Application::Initialize(const ApplicationDesc& desc)
 
 	if (!InitInstance())
 		return false;
+
+	auto scene = make_shared<Scene>();
+
+    auto box = make_shared<Entity>();
+    
+    box->AddComponent(make_shared<Transform>());
+    box->AddComponent(make_shared<MeshRenderer>());
+
+    scene->Add(box);
+
+    GET_SINGLE(SceneManager)->ChangeScene(scene);
 
 	return true;
 }
@@ -81,66 +96,23 @@ BOOL Application::InitInstance()
 	::ShowWindow(_desc.hWnd, SW_SHOWNORMAL);
 	::UpdateWindow(_desc.hWnd);
 
-	_graphics = std::make_unique<Graphics>();
-	_graphics->Initialize(_desc.hWnd);
-
-	_shader = std::make_unique<Shader>();
-	_shader->Create(_graphics->GetDevice(), L"../Engine/Shaders/Default.hlsl");
-
-	_vertexBuffer = std::make_unique<VertexBuffer>();
-	_vertexBuffer->Create<VertexColorData>(_graphics->GetDevice(), vertices);
-
-	_indexBuffer = std::make_unique<IndexBuffer>();
-	_indexBuffer->Create(_graphics->GetDevice(), indices);
-
-	_constantBuffer = std::make_unique<ConstantBuffer<TransformData>>();
-	_constantBuffer->Create(_graphics->GetDevice());
+	Graphics::Get()->Initialize(_desc.hWnd);
 
     return TRUE;
 }
 
 void Application::Update()
 {
-    static float angle = 0.f;
-    angle += 0.001f;
-
-    _matWorld = Matrix::CreateRotationY(angle) * Matrix::CreateRotationX(angle);	
+	GET_SINGLE(SceneManager)->Update();
 }
 
 void Application::Render()
 {
-	_graphics->RenderBegin();
+	Graphics::Get()->RenderBegin();
 
-    auto deviceContext = _graphics->GetDeviceContext();
+	GET_SINGLE(SceneManager)->Render();
 
-    _vertexBuffer->PushData(deviceContext);
-    _indexBuffer->PushData(deviceContext);
-    deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    _shader->Bind(deviceContext);
-
-	Vec3 eye(0.f, 0.f, -5.f);
-	Vec3 focus(0.f, 0.f, 0.f);
-	Vec3 up(0.f, 1.f, 0.f);
-	Matrix matView = Matrix::CreateLookAt(eye, focus, up);
-
-	float aspectRatio = 800.f / 600.f;
-	Matrix matProj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f, aspectRatio, 0.1f, 1000.f);
-
-	TransformData data;
-	data.world = _matWorld.Transpose();
-	data.view = matView.Transpose();
-	data.projection = matProj.Transpose();
-
-    _constantBuffer->CopyData(deviceContext, data);
-
-	auto bufferPtr = _constantBuffer->GetComPtr();
-	deviceContext->VSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
-	deviceContext->PSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
-
-    deviceContext->DrawIndexed(_indexBuffer->GetCount(), 0, 0);
-
-    _graphics->RenderEnd();
+    Graphics::Get()->RenderEnd();
 }
 
 LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

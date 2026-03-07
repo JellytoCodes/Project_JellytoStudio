@@ -6,6 +6,7 @@ class GeometryHelper
 {
 public :
 	static void CreateQuad(const shared_ptr<Geometry<VertexColorData>>& geometry, Color color);
+	static void CreateCube(const shared_ptr<Geometry<VertexColorData>>& geometry);
 
 	static void CreateQuad(const shared_ptr<Geometry<VertexTextureData>>& geometry);
 	static void CreateCube(const shared_ptr<Geometry<VertexTextureData>>& geometry);

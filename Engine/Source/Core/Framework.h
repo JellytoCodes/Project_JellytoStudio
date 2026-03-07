@@ -13,8 +13,13 @@
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
+#include <d3d11shader.h>
+#include <d3d11.h>
+#include <wrl.h>
 #include <directxmath.h>
 #include <SimpleMath.h>
+
+#include <d3dx11effect.h>
 
 #include <vector>
 #include <array>
@@ -55,3 +60,15 @@ using Ray			= SimpleMath::Ray;
 
 #include "Types/VertexData.h"
 #include "Types/GlobalTypes.h"
+
+#define DECLARE_SINGLE(classname)			\
+private:									\
+	classname() { }							\
+public:										\
+	static classname* GetInstance()			\
+	{										\
+		static classname s_instance;		\
+		return &s_instance;					\
+	}
+
+#define GET_SINGLE(classname)	classname::GetInstance()

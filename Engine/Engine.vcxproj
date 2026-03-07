@@ -159,6 +159,7 @@
     <ClCompile Include="Source\Types\VertexData.cpp" />
     <ClCompile Include="Source\Utils\Geometry.cpp" />
     <ClCompile Include="Source\Utils\GeometryHelper.cpp" />
+    <ClCompile Include="Source\Resource\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scene\SceneManager.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="Source\Types\VertexData.h" />
     <ClInclude Include="Source\Utils\Geometry.h" />
     <ClInclude Include="Source\Utils\GeometryHelper.h" />
+    <ClInclude Include="Source\Resource\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Default.hlsl">
@@ -195,6 +197,7 @@
     <Import Project="..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets" Condition="Exists('..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets')" />
     <Import Project="..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
     <Import Project="..\packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('..\packages\Assimp.3.0.0\build\native\Assimp.targets')" />
+    <Import Project="..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets" Condition="Exists('..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -203,5 +206,6 @@
     <Error Condition="!Exists('..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets'))" />
     <Error Condition="!Exists('..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
     <Error Condition="!Exists('..\packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
+    <Error Condition="!Exists('..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets'))" />
   </Target>
 </Project>

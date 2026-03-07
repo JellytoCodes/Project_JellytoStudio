@@ -57,6 +57,15 @@ void Entity::OnDestroy()
 	}
 }
 
+void Entity::Render()
+{
+	for (std::shared_ptr<Component>& component : _components)
+	{
+		if (component)
+			component->Render();
+	}
+}
+
 shared_ptr<Transform> Entity::GetTransform()
 {
 	return _transform;

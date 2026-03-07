@@ -14,23 +14,24 @@ public:
     Mesh();
     virtual ~Mesh();
 
-	void CreateQuad();
-	void CreateCube();
-	void CreateGrid(int32 sizeX, int32 sizeZ);
-	void CreateSphere();
+	void CreateQuad(const ComPtr<ID3D11Device>& device);
+	void CreateCube(const ComPtr<ID3D11Device>& device);
+	void CreateGrid(const ComPtr<ID3D11Device>& device, int32 sizeX, int32 sizeZ);
+	void CreateSphere(const ComPtr<ID3D11Device>& device);
+
+	void Bind(const ComPtr<ID3D11DeviceContext>& deviceContext);
 
 	//shared_ptr<Geometry<VertexTextureNormalTangentData>> GetGeometry() { return _geometry; }
 	shared_ptr<VertexBuffer> GetVertexBuffer() { return _vertexBuffer; }
 	shared_ptr<IndexBuffer> GetIndexBuffer() { return _indexBuffer; }
 
 private:
-	void CreateBuffers();
+	void CreateBuffers(const ComPtr<ID3D11Device>& device);
 
 private:
-	// Mesh
-	//shared_ptr<Geometry<VertexTextureNormalTangentData>> _geometry;
-	shared_ptr<VertexBuffer> _vertexBuffer;
-	shared_ptr<IndexBuffer> _indexBuffer;
-
+	
+	std::shared_ptr<Geometry<VertexColorData>> _geometry;
+	std::shared_ptr<VertexBuffer> _vertexBuffer;
+	std::shared_ptr<IndexBuffer> _indexBuffer;
 };
 
