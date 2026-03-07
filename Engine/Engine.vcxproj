@@ -135,6 +135,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Scene\SceneManager.cpp" />
+    <ClCompile Include="Source\Scene\Scene.cpp" />
+    <ClCompile Include="Source\Entity\Components\Camera.cpp" />
     <ClCompile Include="Source\App\Application.cpp" />
     <ClCompile Include="Source\Core\Framework.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -158,6 +161,9 @@
     <ClCompile Include="Source\Utils\GeometryHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Scene\SceneManager.h" />
+    <ClInclude Include="Source\Scene\Scene.h" />
+    <ClInclude Include="Source\Entity\Components\Camera.h" />
     <ClInclude Include="Source\App\Application.h" />
     <ClInclude Include="Source\Core\Framework.h" />
     <ClInclude Include="Source\Entity\Components\Component.h" />

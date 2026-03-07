@@ -2,7 +2,8 @@
 #include "Framework.h"
 #include "Entity/Components/Transform.h"
 
-Transform::Transform() : Super(ComponentType::Transform)
+Transform::Transform()
+	: Super(ComponentType::Transform)
 {
 
 }

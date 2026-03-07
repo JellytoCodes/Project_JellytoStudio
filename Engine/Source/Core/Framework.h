@@ -14,11 +14,12 @@
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <directxmath.h>
-#include "Utils/SimpleMath.h"
+#include <SimpleMath.h>
 
 #include <vector>
 #include <array>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <memory>
 

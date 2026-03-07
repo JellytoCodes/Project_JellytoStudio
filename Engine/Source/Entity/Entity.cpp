@@ -14,7 +14,7 @@ Entity::~Entity()
 
 void Entity::Awake()
 {
-	for (shared_ptr<Component>& component : _components)
+	for (std::shared_ptr<Component>& component : _components)
 	{
 		if (component)
 			component->Awake();
@@ -23,7 +23,7 @@ void Entity::Awake()
 
 void Entity::Start()
 {
-	for (shared_ptr<Component>& component : _components)
+	for (std::shared_ptr<Component>& component : _components)
 	{
 		if (component)
 			component->Start();
@@ -32,7 +32,7 @@ void Entity::Start()
 
 void Entity::Update()
 {
-	for (shared_ptr<Component>& component : _components)
+	for (std::shared_ptr<Component>& component : _components)
 	{
 		if (component)
 			component->Update();
@@ -41,7 +41,7 @@ void Entity::Update()
 
 void Entity::LateUpdate()
 {
-	for (shared_ptr<Component>& component : _components)
+	for (std::shared_ptr<Component>& component : _components)
 	{
 		if (component)
 			component->LateUpdate();
@@ -50,19 +50,19 @@ void Entity::LateUpdate()
 
 void Entity::OnDestroy()
 {
-	for (shared_ptr<Component>& component : _components)
+	for (std::shared_ptr<Component>& component : _components)
 	{
 		if (component)
 			component->OnDestroy();
 	}
 }
 
-shared_ptr<Transform> Entity::GetOrAddTransform()
+shared_ptr<Transform> Entity::GetTransform()
 {
 	return _transform;
 }
 
-void Entity::AddComponent(shared_ptr<Component> component)
+void Entity::AddComponent(const std::shared_ptr<Component>& component)
 {
 	component->SetEntity(shared_from_this());
 

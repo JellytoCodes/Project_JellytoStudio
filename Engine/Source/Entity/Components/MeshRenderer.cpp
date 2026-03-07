@@ -5,10 +5,12 @@
 MeshRenderer::MeshRenderer()
 	: Super(ComponentType::MeshRenderer)
 {
+
 }
 
 MeshRenderer::~MeshRenderer()
 {
+
 }
 
 void MeshRenderer::Awake()
