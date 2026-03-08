@@ -2,8 +2,11 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="Source\Main\Main.cpp" />
+    <ClCompile Include="Source\Scripts\CameraController.cpp" />
+    <ClCompile Include="Source\Main\MainApp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ClInclude Include="Source\Scripts\CameraController.h" />
+    <ClInclude Include="Source\Main\MainApp.h" />
   </ItemGroup>
 </Project>

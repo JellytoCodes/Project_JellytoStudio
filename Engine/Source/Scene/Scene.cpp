@@ -14,7 +14,7 @@ Scene::~Scene()
 
 void Scene::Awake()
 {
-	for (std::shared_ptr<Entity> object : _objects)
+	for (auto& object : _objects)
 	{
 		object->Awake();
 	}
@@ -22,7 +22,7 @@ void Scene::Awake()
 
 void Scene::Start()
 {
-	for (const std::shared_ptr<Entity>& object : _objects)
+	for (auto& object : _objects)
 	{
 		object->Start();
 	}
@@ -30,7 +30,10 @@ void Scene::Start()
 
 void Scene::Update()
 {
-	for (const std::shared_ptr<Entity>& object : _objects)
+	if (_mainCamera)
+		_mainCamera->Update();
+
+	for (auto& object : _objects)
 	{
 		object->Update();
 	}
@@ -38,7 +41,7 @@ void Scene::Update()
 
 void Scene::LateUpdate()
 {
-	for (const std::shared_ptr<Entity>& object : _objects)
+	for (auto& object : _objects)
 	{
 		object->LateUpdate();
 	}
@@ -46,7 +49,7 @@ void Scene::LateUpdate()
 
 void Scene::OnDestroy()
 {
-	for (const std::shared_ptr<Entity>& object : _objects)
+	for (auto& object : _objects)
 	{
 		object->OnDestroy();
 	}

@@ -106,11 +106,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\Source\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Client\Source\;$(SolutionDir)Libraries\Include\;$(SolutionDir)Libraries\Include\Engine\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Lib\;$(SolutionDir)Libraries\Lib\Assimp;$(SolutionDir)Libraries\Lib\Engine;$(SolutionDir)Libraries\Lib\DirectXTex;$(SolutionDir)Libraries\Lib\FX11;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -128,6 +129,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Main\MainApp.cpp" />
+    <ClCompile Include="Source\Scripts\CameraController.cpp" />
     <ClCompile Include="Source\Main\Main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -136,22 +139,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ClInclude Include="Source\Main\MainApp.h" />
+    <ClInclude Include="Source\Scripts\CameraController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets" Condition="Exists('..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets')" />
-    <Import Project="..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
-    <Import Project="..\packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('..\packages\Assimp.3.0.0\build\native\Assimp.targets')" />
-    <Import Project="..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets" Condition="Exists('..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets'))" />
-    <Error Condition="!Exists('..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
-    <Error Condition="!Exists('..\packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
-    <Error Condition="!Exists('..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets'))" />
-  </Target>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

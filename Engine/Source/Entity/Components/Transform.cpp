@@ -84,7 +84,7 @@ void Transform::UpdateTransform()
 	_rotation = ToEulerAngles(quat);
 
 	// Children
-	for (const shared_ptr<Transform>& child : _children)
+	for (const std::shared_ptr<Transform>& child : _children)
 		child->UpdateTransform();
 }
 

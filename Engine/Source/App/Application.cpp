@@ -2,30 +2,25 @@
 #include "Framework.h"
 #include "Application.h"
 
-#include "Entity/Components/MeshRenderer.h"
-#include "Entity/Entity.h"
+#include "Core/Interfaces/IExecute.h"
+#include "Core/Managers/InputManager.h"
+#include "Core/Managers/TimeManager.h"
 #include "Scene/SceneManager.h"
 
 bool Application::Initialize(const ApplicationDesc& desc)
 {
 	_desc = desc;
+	assert(_desc.app != nullptr);
 
-	if (!MyRegisterClass())
-		return false;
+	MyRegisterClass();
 
 	if (!InitInstance())
 		return false;
 
-	auto scene = make_shared<Scene>();
+	GET_SINGLE(TimeManager)->Init();
+    GET_SINGLE(InputManager)->Init(_desc.hWnd);
 
-    auto box = make_shared<Entity>();
-    
-    box->AddComponent(make_shared<Transform>());
-    box->AddComponent(make_shared<MeshRenderer>());
-
-    scene->Add(box);
-
-    GET_SINGLE(SceneManager)->ChangeScene(scene);
+	_desc.app->Init();
 
 	return true;
 }
@@ -54,6 +49,62 @@ WPARAM Application::Run()
 void Application::Shutdown()
 {
 	
+}
+
+void Application::Update()
+{
+	GET_SINGLE(TimeManager)->Update();
+    GET_SINGLE(InputManager)->Update();
+
+	UpdateWindowTitle();
+	_desc.app->Update();
+
+	GET_SINGLE(SceneManager)->Update();
+}
+
+void Application::Render()
+{
+	Graphics::Get()->RenderBegin();
+
+	GET_SINGLE(SceneManager)->Render();
+	_desc.app->Render();
+
+    Graphics::Get()->RenderEnd();
+}
+
+void Application::UpdateWindowTitle()
+{
+	float fps = GET_SINGLE(TimeManager)->GetFps();
+    float totalTime = GET_SINGLE(TimeManager)->GetTotalTime();
+
+    wchar_t text[100];
+    swprintf_s(text, L"%s (FPS: %.2f, TotalTime: %.2f s)", _desc.appName.c_str(), fps, totalTime);
+
+    ::SetWindowTextW(_desc.hWnd, text);
+}
+
+LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	if (message == WM_NCCREATE)
+	{
+		LPCREATESTRUCT createStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(createStruct->lpCreateParams));
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+
+	Application* app = reinterpret_cast<Application*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+	if (app)
+	{
+		switch (message)
+		{
+		case WM_DESTROY:
+			PostQuitMessage(0);
+			return 0;
+		}
+	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 ATOM Application::MyRegisterClass()
@@ -99,42 +150,4 @@ BOOL Application::InitInstance()
 	Graphics::Get()->Initialize(_desc.hWnd);
 
     return TRUE;
-}
-
-void Application::Update()
-{
-	GET_SINGLE(SceneManager)->Update();
-}
-
-void Application::Render()
-{
-	Graphics::Get()->RenderBegin();
-
-	GET_SINGLE(SceneManager)->Render();
-
-    Graphics::Get()->RenderEnd();
-}
-
-LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	if (message == WM_NCCREATE)
-	{
-		LPCREATESTRUCT createStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
-		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(createStruct->lpCreateParams));
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
-
-	Application* app = reinterpret_cast<Application*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-
-	if (app)
-	{
-		switch (message)
-		{
-		case WM_DESTROY:
-			PostQuitMessage(0);
-			return 0;
-		}
-	}
-
-	return DefWindowProc(hWnd, message, wParam, lParam);
 }

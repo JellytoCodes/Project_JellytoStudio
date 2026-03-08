@@ -2,7 +2,7 @@
 #include "Framework.h"
 #include "IndexBuffer.h"
 
-void IndexBuffer::Create(const ComPtr<ID3D11Device>& device, const vector<uint32>& indices)
+void IndexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<uint32>& indices)
 {
 	_stride = sizeof(uint32);
 	_count = static_cast<uint32>(indices.size());

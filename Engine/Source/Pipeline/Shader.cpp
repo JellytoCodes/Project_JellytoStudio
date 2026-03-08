@@ -72,17 +72,17 @@ void Shader::Bind(const ComPtr<ID3D11DeviceContext>& deviceContext)
     deviceContext->PSSetShader(_pixelShader.Get(), nullptr, 0);
 }
 
-ComPtr<ID3DX11EffectShaderResourceVariable> Shader::GetSRV(string name)
+ComPtr<ID3DX11EffectShaderResourceVariable> Shader::GetSRV(std::string name)
 {
 	return _shaderDesc.effect->GetVariableByName(name.c_str())->AsShaderResource();
 }
 
-ComPtr<ID3DX11EffectRenderTargetViewVariable> Shader::GetRTV(string name)
+ComPtr<ID3DX11EffectRenderTargetViewVariable> Shader::GetRTV(std::string name)
 {
 	return _shaderDesc.effect->GetVariableByName(name.c_str())->AsRenderTargetView();
 }
 
-ComPtr<ID3DX11EffectDepthStencilViewVariable> Shader::GetDSV(string name)
+ComPtr<ID3DX11EffectDepthStencilViewVariable> Shader::GetDSV(std::string name)
 {
 	return _shaderDesc.effect->GetVariableByName(name.c_str())->AsDepthStencilView();
 }

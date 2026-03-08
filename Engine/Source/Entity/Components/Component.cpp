@@ -45,7 +45,7 @@ void Component::Render()
 
 }
 
-shared_ptr<Transform> Component::GetTransform()
+std::shared_ptr<Transform> Component::GetTransform()
 {
 	return _transform;
 }

@@ -72,7 +72,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Libraries\Lib\Engine\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -110,12 +110,38 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Framework.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Source\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Source\;$(SolutionDir)Libraries\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Libraries\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>(if not exist "$(SolutionDir)Libraries\Include\Engine" mkdir "$(SolutionDir)Libraries\Include\Engine")
+(if not exist "$(SolutionDir)Libraries\Lib\Engine" mkdir "$(SolutionDir)Libraries\Lib\Engine")
+
+xcopy "$(ProjectDir)Source\*.h" "$(SolutionDir)Libraries\Include\Engine" /S /Y /I
+
+copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(TargetName).lib"
+
+exit 0</Command>
+    </PostBuildEvent>
+    <CustomBuildStep>
+      <Command>:: 1. Engine 헤더들을 중앙 Include 폴더로 복사 (폴더 구조 유지)
+:: /S: 하위 폴더 포함, /Y: 묻지 않고 덮어쓰기, /I: 대상이 없으면 폴더로 생성
+xcopy /S /Y /I "$(ProjectDir)Source\*.h" "$(SolutionDir)Libraries\Include\Engine\"
+
+:: 2. 빌드된 Engine.lib를 중앙 Lib 폴더로 복사
+if not exist "$(SolutionDir)Libraries\Lib\Engine" mkdir "$(SolutionDir)Libraries\Lib\Engine"
+copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(TargetName).lib"</Command>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -132,9 +158,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="Source\Core\Interfaces\IExecute.cpp" />
+    <ClCompile Include="Source\Entity\Components\MonoBehaviour.cpp" />
+    <ClCompile Include="Source\Core\Managers\InputManager.cpp" />
     <ClCompile Include="Source\Scene\SceneManager.cpp" />
     <ClCompile Include="Source\Scene\Scene.cpp" />
     <ClCompile Include="Source\Entity\Components\Camera.cpp" />
@@ -157,11 +183,21 @@
     <ClCompile Include="Source\Resource\Resource.cpp" />
     <ClCompile Include="Source\Types\GlobalTypes.cpp" />
     <ClCompile Include="Source\Types\VertexData.cpp" />
-    <ClCompile Include="Source\Utils\Geometry.cpp" />
-    <ClCompile Include="Source\Utils\GeometryHelper.cpp" />
+    <ClCompile Include="Source\Utils\FileUtils.cpp" />
+    <ClCompile Include="Source\Utils\Geometry\Geometry.cpp" />
+    <ClCompile Include="Source\Utils\Geometry\GeometryHelper.cpp" />
     <ClCompile Include="Source\Resource\Texture.cpp" />
+    <ClCompile Include="Source\Core\Managers\TimeManager.cpp" />
+    <ClCompile Include="Source\Utils\SimpleMath.cpp" />
+    <ClCompile Include="Source\Utils\tinyxml2.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Core\Interfaces\IExecute.h" />
+    <ClInclude Include="Source\Entity\Components\MonoBehaviour.h" />
+    <ClInclude Include="Source\Core\Managers\InputManager.h" />
     <ClInclude Include="Source\Scene\SceneManager.h" />
     <ClInclude Include="Source\Scene\Scene.h" />
     <ClInclude Include="Source\Entity\Components\Camera.h" />
@@ -182,9 +218,14 @@
     <ClInclude Include="Source\Resource\Resource.h" />
     <ClInclude Include="Source\Types\GlobalTypes.h" />
     <ClInclude Include="Source\Types\VertexData.h" />
-    <ClInclude Include="Source\Utils\Geometry.h" />
-    <ClInclude Include="Source\Utils\GeometryHelper.h" />
+    <ClInclude Include="Source\Utils\FileUtils.h" />
+    <ClInclude Include="Source\Utils\Geometry\Geometry.h" />
+    <ClInclude Include="Source\Utils\Geometry\GeometryHelper.h" />
     <ClInclude Include="Source\Resource\Texture.h" />
+    <ClInclude Include="Source\Core\Managers\TimeManager.h" />
+    <ClInclude Include="Source\Utils\SimpleMath.h" />
+    <ClInclude Include="Source\Utils\tinyxml2.h" />
+    <ClInclude Include="Source\Utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Default.hlsl">
@@ -192,20 +233,9 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Source\Utils\SimpleMath.inl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets" Condition="Exists('..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets')" />
-    <Import Project="..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
-    <Import Project="..\packages\Assimp.3.0.0\build\native\Assimp.targets" Condition="Exists('..\packages\Assimp.3.0.0\build\native\Assimp.targets')" />
-    <Import Project="..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets" Condition="Exists('..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2019.2025.10.28.2\build\native\directxtk_desktop_2019.targets'))" />
-    <Error Condition="!Exists('..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
-    <Error Condition="!Exists('..\packages\Assimp.3.0.0\build\native\Assimp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Assimp.3.0.0\build\native\Assimp.targets'))" />
-    <Error Condition="!Exists('..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\fx11_desktop_2019.2022.5.24.5\build\native\fx11_desktop_2019.targets'))" />
-  </Target>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

@@ -43,10 +43,7 @@ void MeshRenderer::Start()
 
 void MeshRenderer::Update()
 {
-	static float rotation = 0.f;
-	rotation += 0.001f; 
 
-	_matWorld = Matrix::CreateRotationY(rotation) * Matrix::CreateRotationX(rotation);	
 }
 
 void MeshRenderer::LateUpdate()
@@ -61,30 +58,22 @@ void MeshRenderer::OnDestroy()
 
 void MeshRenderer::Render()
 {
-	auto device = Graphics::Get()->GetDevice();
-    auto deviceContext = Graphics::Get()->GetDeviceContext();
+auto deviceContext = Graphics::Get()->GetDeviceContext();
 
-	_mesh->Bind(deviceContext);
+    _mesh->Bind(deviceContext);
     _shader->Bind(deviceContext);
 
-	Vec3 eye(0.f, 0.f, 3.f);
-	Vec3 focus(0.f, 0.f, 0.f);
-	Vec3 up(0.f, 1.f, 0.f);
-	Matrix matView = Matrix::CreateLookAt(eye, focus, up);
+    TransformData data;
+    data.world = _matWorld.Transpose();
 
-	float aspectRatio = 800.f / 600.f;
-	Matrix matProj = Matrix::CreatePerspectiveFieldOfView(XM_PI / 4.f, aspectRatio, 0.1f, 1000.f);
-
-	TransformData data;
-	data.world = _matWorld.Transpose();
-	data.view = matView.Transpose();
-	data.projection = matProj.Transpose();
+    data.view = Camera::S_MatView.Transpose();
+    data.projection = Camera::S_MatProjection.Transpose();
 
     _constantBuffer->CopyData(deviceContext, data);
 
-	auto bufferPtr = _constantBuffer->GetComPtr();
-	deviceContext->VSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
-	deviceContext->PSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
+    auto bufferPtr = _constantBuffer->GetComPtr();
+    deviceContext->VSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
+    deviceContext->PSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
 
-	deviceContext->DrawIndexed(_mesh->GetIndexBuffer()->GetCount(), 0, 0);
+    deviceContext->DrawIndexed(_mesh->GetIndexBuffer()->GetCount(), 0, 0);
 }

@@ -14,7 +14,7 @@ Material::~Material()
 
 }
 
-void Material::SetShader(shared_ptr<Shader> shader)
+void Material::SetShader(std::shared_ptr<Shader> shader)
 {
 	_shader					= shader;
 

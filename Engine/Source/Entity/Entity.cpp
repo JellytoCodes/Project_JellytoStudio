@@ -1,10 +1,11 @@
 
 #include "Framework.h"
 #include "Entity/Entity.h"
+#include "Entity/Components/MonoBehaviour.h"
 
 Entity::Entity()
 {
-	_transform = make_shared<Transform>();
+	_transform = std::make_shared<Transform>();
 }
 
 Entity::~Entity()
@@ -14,59 +15,95 @@ Entity::~Entity()
 
 void Entity::Awake()
 {
-	for (std::shared_ptr<Component>& component : _components)
+	for (auto& component : _components)
 	{
 		if (component)
 			component->Awake();
+	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->Awake();
 	}
 }
 
 void Entity::Start()
 {
-	for (std::shared_ptr<Component>& component : _components)
+	for (auto& component : _components)
 	{
 		if (component)
 			component->Start();
+	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->Start();
 	}
 }
 
 void Entity::Update()
 {
-	for (std::shared_ptr<Component>& component : _components)
+	for (auto& component : _components)
 	{
 		if (component)
 			component->Update();
+	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->Update();
 	}
 }
 
 void Entity::LateUpdate()
 {
-	for (std::shared_ptr<Component>& component : _components)
+	for (auto& component : _components)
 	{
 		if (component)
 			component->LateUpdate();
+	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->LateUpdate();
 	}
 }
 
 void Entity::OnDestroy()
 {
-	for (std::shared_ptr<Component>& component : _components)
+	for (auto& component : _components)
 	{
 		if (component)
 			component->OnDestroy();
+	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->OnDestroy();
 	}
 }
 
 void Entity::Render()
 {
-	for (std::shared_ptr<Component>& component : _components)
+	for (auto& component : _components)
 	{
 		if (component)
 			component->Render();
 	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->Render();
+	}
 }
 
-shared_ptr<Transform> Entity::GetTransform()
+std::shared_ptr<Transform> Entity::GetTransform()
 {
 	return _transform;
 }
@@ -74,8 +111,15 @@ shared_ptr<Transform> Entity::GetTransform()
 void Entity::AddComponent(const std::shared_ptr<Component>& component)
 {
 	component->SetEntity(shared_from_this());
-
 	int8 index = static_cast<int8>(component->GetType());
+
 	if (index < FIXED_COMPONENT_COUNT)
+	{
 		_components[index] = component;
+	}
+	else if (index == FIXED_COMPONENT_COUNT)
+	{
+		auto script = std::static_pointer_cast<MonoBehaviour>(component);
+		_scripts.push_back(script);
+	}
 }
