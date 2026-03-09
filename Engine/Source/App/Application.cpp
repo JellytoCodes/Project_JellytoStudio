@@ -66,8 +66,8 @@ void Application::Render()
 {
 	Graphics::Get()->RenderBegin();
 
-	GET_SINGLE(SceneManager)->Render();
 	_desc.app->Render();
+	GET_SINGLE(SceneManager)->Render();
 
     Graphics::Get()->RenderEnd();
 }

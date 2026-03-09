@@ -58,7 +58,7 @@ void MeshRenderer::OnDestroy()
 
 void MeshRenderer::Render()
 {
-auto deviceContext = Graphics::Get()->GetDeviceContext();
+	auto deviceContext = Graphics::Get()->GetDeviceContext();
 
     _mesh->Bind(deviceContext);
     _shader->Bind(deviceContext);

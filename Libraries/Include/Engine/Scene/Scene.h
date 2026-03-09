@@ -21,6 +21,7 @@ public :
 	virtual void Remove(const std::shared_ptr<Entity>& object);
 
 	void SetMainCamera(const std::shared_ptr<Camera>& mainCamera) { _mainCamera = mainCamera; }
+	std::shared_ptr<Camera> GetMainCamera() { return _mainCamera; }
 
 	std::unordered_set<std::shared_ptr<Entity>>& GetObjects() { return _objects; }
 

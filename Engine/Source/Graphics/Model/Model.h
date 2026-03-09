@@ -29,6 +29,15 @@ struct ModelMesh
 		indexBuffer->Create(Graphics::Get()->GetDevice(), geometry->GetIndices());
 	}
 
+	void Render()
+	{
+		vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
+		indexBuffer->PushData(Graphics::Get()->GetDeviceContext());
+
+		Graphics::Get()->GetDeviceContext()->DrawIndexed(geometry->GetIndexCount(), 0, 0);
+	}
+
+
 	std::wstring				name;
 
 	// Mesh

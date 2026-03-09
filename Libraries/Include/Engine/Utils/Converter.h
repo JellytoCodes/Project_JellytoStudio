@@ -28,8 +28,6 @@ private:
 
 	uint32									GetBoneIndex(const std::string& name);
 
-	// Importer는 aiScene을 소유하고 aiScene은 하위 객체들을 소유한다.
-	// 이에 따라 Importer가 하위 객체들의 생명주기를 관리하기 때문에 스마트 포인터를 사용하게 되면 이중 해제 오류가 발생한다.
 	std::shared_ptr<Assimp::Importer> _importer;
 	const aiScene* _scene;
 

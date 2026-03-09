@@ -18,6 +18,8 @@ using Matrix		= SimpleMath::Matrix;
 using Quaternion	= SimpleMath::Quaternion;
 using Ray			= SimpleMath::Ray;
 
+using InstanceID = std::pair<uint64, uint64>;
+
 struct TransformData
 {
     Matrix world;

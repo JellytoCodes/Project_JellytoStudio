@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Entity/Components/Component.h"
+#include "Pipeline/ConstantBuffer.h"
 
 class Model;
 class Shader;
@@ -15,6 +16,10 @@ public:
 	ModelRenderer(std::shared_ptr<Shader> shader);
 	virtual ~ModelRenderer();
 
+	void Awake() override;
+	void Start() override;
+	void Render() override;
+
 	void SetModel(std::shared_ptr<Model> model);
 	void SetPass(uint8 pass) { _pass = pass; }
 
@@ -22,6 +27,8 @@ public:
 	//InstanceID GetInstanceID();
 
 private:
+	std::shared_ptr<ConstantBuffer<TransformData>> _constantBuffer;
+
 	std::shared_ptr<Shader>	_shader;
 	uint8					_pass = 0;
 	std::shared_ptr<Model>	_model;

@@ -6,9 +6,9 @@
 void FBXConverter::Init()
 {
 	std::shared_ptr<Converter> converter = std::make_shared<Converter>();
-	converter->ReadAssetFile(L"Separate/Chicken_001.fbx");
-	converter->ExportMaterialData(L"Separate/Chicken_001");
-	converter->ExportModelData(L"Separate/Chicken_001");
+	converter->ReadAssetFile(L"Separate/Pinguin_001.fbx");
+	converter->ExportMaterialData(L"Separate/Pinguin_001");
+	converter->ExportModelData(L"Separate/Pinguin_001");
 }
 
 void FBXConverter::Update()
