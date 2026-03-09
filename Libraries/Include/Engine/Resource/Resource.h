@@ -30,9 +30,9 @@ protected:
 	virtual void Load(const std::wstring& path) { }
 	virtual void Save(const std::wstring& path) { }
 
-	ResourceType _type = ResourceType::None;
-	std::wstring _name;
-	std::wstring _path;
-	uint32 _id = 0;
+	ResourceType	_type = ResourceType::None;
+	std::wstring	_name;
+	std::wstring	_path;
+	uint32			_id = 0;
 };
 

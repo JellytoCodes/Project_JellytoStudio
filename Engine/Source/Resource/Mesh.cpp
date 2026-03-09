@@ -1,7 +1,6 @@
 
 #include "Framework.h"
 #include "Mesh.h"
-#include "Utils/Geometry/GeometryHelper.h"
 
 Mesh::Mesh()
 	: Super(ResourceType::Mesh)

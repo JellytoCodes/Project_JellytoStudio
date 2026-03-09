@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Utils/Geometry/Geometry.h"
 #include "Pipeline/IndexBuffer.h"
 #include "Pipeline/VertexBuffer.h"
 

@@ -13,12 +13,12 @@ enum class KEY_TYPE
 	S = 'S',
 	D = 'D',
 
-	R = 'R',
-
 	Q = 'Q',
 	E = 'E',
 	Z = 'Z',
 	C = 'C',
+
+	R = 'R',
 
 	KEY_1 = '1',
 	KEY_2 = '2',

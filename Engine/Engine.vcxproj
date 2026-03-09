@@ -158,6 +158,12 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Graphics\Model\ModelRenderer.cpp" />
+    <ClCompile Include="Source\Utils\Converter.cpp" />
+    <ClCompile Include="Source\Types\AsTypes.cpp" />
+    <ClCompile Include="Source\Resource\Managers\ResourceManager.cpp" />
+    <ClCompile Include="Source\Graphics\Model\Model.cpp" />
+    <ClCompile Include="Source\Graphics\Model\ModelAnimation.cpp" />
     <ClCompile Include="Source\Core\Interfaces\IExecute.cpp" />
     <ClCompile Include="Source\Entity\Components\MonoBehaviour.cpp" />
     <ClCompile Include="Source\Core\Managers\InputManager.cpp" />
@@ -195,6 +201,12 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Graphics\Model\ModelRenderer.h" />
+    <ClInclude Include="Source\Utils\Converter.h" />
+    <ClInclude Include="Source\Types\AsTypes.h" />
+    <ClInclude Include="Source\Resource\Managers\ResourceManager.h" />
+    <ClInclude Include="Source\Graphics\Model\Model.h" />
+    <ClInclude Include="Source\Graphics\Model\ModelAnimation.h" />
     <ClInclude Include="Source\Core\Interfaces\IExecute.h" />
     <ClInclude Include="Source\Entity\Components\MonoBehaviour.h" />
     <ClInclude Include="Source\Core\Managers\InputManager.h" />

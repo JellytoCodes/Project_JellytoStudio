@@ -16,6 +16,5 @@ public :
 
 private :
 	float _speed = 5.f;
-	float _rotationSpeed = .2f;
+	float _rotationSpeed = .1f;
 };
-

@@ -38,6 +38,9 @@
 #include <DirectXTex/DirectXTex.h>
 #include <DirectXTex/DirectXTex.inl>
 #include <FX11/d3dx11effect.h>
+
+#include "Utils/SimpleMath.h"
+
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
@@ -50,11 +53,20 @@ using namespace DirectX;
 #include <Assimp/postprocess.h>
 
 ///////////////////////////////////////////////////
+/// Types
+///////////////////////////////////////////////////
+
+#include "Types/GlobalTypes.h"
+#include "Types/VertexData.h"
+#include "Types/AsTypes.h"
+
+///////////////////////////////////////////////////
 /// Utils
 ///////////////////////////////////////////////////
 
-#include "Utils/SimpleMath.h"
 #include "Utils/tinyxml2.h"
+#include "Utils/Geometry/Geometry.h"
+#include "Utils/Geometry/GeometryHelper.h"
 
 ///////////////////////////////////////////////////
 /// Libraries
@@ -72,13 +84,6 @@ using namespace DirectX;
 #pragma comment(lib, "FX11/Effects11.lib")
 #pragma comment(lib, "Assimp/assimp-vc143-mt.lib")
 #endif
-
-///////////////////////////////////////////////////
-/// Types
-///////////////////////////////////////////////////
-
-#include "Types/GlobalTypes.h"
-#include "Types/VertexData.h"
 
 ///////////////////////////////////////////////////
 /// Define

@@ -18,6 +18,8 @@ enum class KEY_TYPE
 	Z = 'Z',
 	C = 'C',
 
+	R = 'R',
+
 	KEY_1 = '1',
 	KEY_2 = '2',
 	KEY_3 = '3',

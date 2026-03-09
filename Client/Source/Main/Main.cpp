@@ -1,4 +1,5 @@
 ﻿
+#include "FBXConverter.h"
 #include "MainApp.h"
 #include "Core/Framework.h"
 #include "App/Application.h"

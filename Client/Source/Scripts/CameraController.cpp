@@ -67,7 +67,6 @@ void CameraController::Update()
 	    transform->SetPosition(Vec3(0.f, 0.f, -5.f));
         transform->SetRotation(Vec3(0.f, 0.f, 0.f));
     }
-
 }
 
 void CameraController::LateUpdate()
