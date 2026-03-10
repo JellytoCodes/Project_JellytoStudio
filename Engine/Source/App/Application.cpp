@@ -39,7 +39,6 @@ WPARAM Application::Run()
 		else
 		{
 			Update();
-			Render();
 		}
 	}
 
@@ -53,23 +52,19 @@ void Application::Shutdown()
 
 void Application::Update()
 {
+	Graphics::Get()->RenderBegin();
+
 	GET_SINGLE(TimeManager)->Update();
     GET_SINGLE(InputManager)->Update();
 
 	UpdateWindowTitle();
 	_desc.app->Update();
-
-	GET_SINGLE(SceneManager)->Update();
-}
-
-void Application::Render()
-{
-	Graphics::Get()->RenderBegin();
-
 	_desc.app->Render();
 	GET_SINGLE(SceneManager)->Render();
 
-    Graphics::Get()->RenderEnd();
+	GET_SINGLE(SceneManager)->Update();
+
+	Graphics::Get()->RenderEnd();
 }
 
 void Application::UpdateWindowTitle()

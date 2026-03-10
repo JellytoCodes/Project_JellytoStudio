@@ -4,7 +4,6 @@
 
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
-#include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Camera.h"
@@ -14,14 +13,9 @@
 
 void MainApp::Init()
 {
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
+
 	auto scene = std::make_shared<Scene>();
-
-	auto box = std::make_shared<Entity>();
-
-	box->AddComponent(std::make_shared<Transform>());
-	box->AddComponent(std::make_shared<MeshRenderer>());
-
-	scene->Add(box);
 
 	auto cameraEntity = std::make_shared<Entity>();
 	cameraEntity->AddComponent(std::make_shared<Transform>());
@@ -34,8 +28,6 @@ void MainApp::Init()
 
 	scene->Add(cameraEntity);
 	scene->SetMainCamera(camera);
-
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
 
 	std::shared_ptr<Model> chickenModel = std::make_shared <Model>();
 	chickenModel->ReadModel(L"Separate/Pinguin_001");

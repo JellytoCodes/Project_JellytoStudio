@@ -46,5 +46,5 @@ std::shared_ptr<T> Entity::GetComponent()
 		if (target != nullptr) 
 			return target;
 	}
+	return nullptr;
 }
-
