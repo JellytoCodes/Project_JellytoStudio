@@ -34,6 +34,7 @@ private:
 	std::wstring _assetPath = L"../Resources/Assets/";
 	std::wstring _modelPath = L"../Resources/Models/";
 	std::wstring _texturePath = L"../Resources/Textures/";
+	std::wstring _RawDataPath = L"../Resources/RawData/";
 
 	std::vector<std::shared_ptr<asBone>>		_bones;
 	std::vector<std::shared_ptr<asMesh>>		_meshes;

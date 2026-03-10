@@ -38,3 +38,4 @@ private:
 
 	Matrix _matWorld = Matrix::Identity;
 };
+

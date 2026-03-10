@@ -158,7 +158,14 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Entity\Components\Light.cpp" />
+    <ClCompile Include="Source\Graphics\Managers\InstancingManager.cpp" />
+    <ClCompile Include="Source\Graphics\Model\ModelAnimator.cpp" />
     <ClCompile Include="Source\Graphics\Model\ModelRenderer.cpp" />
+    <ClCompile Include="Source\Pipeline\ShaderPass.cpp" />
+    <ClCompile Include="Source\Pipeline\ShaderTechnique.cpp" />
+    <ClCompile Include="Source\Types\InstancingBuffer.cpp" />
+    <ClCompile Include="Source\Types\ShaderDesc.cpp" />
     <ClCompile Include="Source\Utils\Converter.cpp" />
     <ClCompile Include="Source\Types\AsTypes.cpp" />
     <ClCompile Include="Source\Resource\Managers\ResourceManager.cpp" />
@@ -201,7 +208,14 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Entity\Components\Light.h" />
+    <ClInclude Include="Source\Graphics\Managers\InstancingManager.h" />
+    <ClInclude Include="Source\Graphics\Model\ModelAnimator.h" />
     <ClInclude Include="Source\Graphics\Model\ModelRenderer.h" />
+    <ClInclude Include="Source\Pipeline\ShaderPass.h" />
+    <ClInclude Include="Source\Pipeline\ShaderTechnique.h" />
+    <ClInclude Include="Source\Types\InstancingBuffer.h" />
+    <ClInclude Include="Source\Types\ShaderDesc.h" />
     <ClInclude Include="Source\Utils\Converter.h" />
     <ClInclude Include="Source\Types\AsTypes.h" />
     <ClInclude Include="Source\Resource\Managers\ResourceManager.h" />

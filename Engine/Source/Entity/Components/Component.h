@@ -8,10 +8,13 @@ enum class ComponentType : int8
 	MeshRenderer,
 	Camera,
 	ModelRenderer,
+	Light,
+	Animator,
 
 	///////////////
 	Script,
 	///////////////
+	
 	End
 };
 
@@ -38,7 +41,7 @@ public :
 	std::shared_ptr<Entity>			GetEntity();
 
 protected :
-	ComponentType _type;
+	ComponentType				_type;
 
 	std::weak_ptr<Entity>		_entity;
 	std::shared_ptr<Transform>	_transform;

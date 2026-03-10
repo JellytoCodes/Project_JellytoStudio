@@ -59,6 +59,8 @@ using namespace DirectX;
 #include "Types/GlobalTypes.h"
 #include "Types/VertexData.h"
 #include "Types/AsTypes.h"
+#include "Types/InstancingBuffer.h"
+#include "Types/ShaderDesc.h"
 
 ///////////////////////////////////////////////////
 /// Utils

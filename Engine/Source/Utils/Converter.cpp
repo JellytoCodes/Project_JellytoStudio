@@ -46,8 +46,10 @@ void Converter::ExportModelData(std::wstring savePath)
 
 	//Write CSV File
 	{
+		std::string path = Utils::ToString(_modelPath + savePath + L".csv");
+
 		FILE* file;
-		::fopen_s(&file, "../Vertices.csv", "w");
+		::fopen_s(&file, path.c_str(), "w");
 
 		for (std::shared_ptr<asBone>& bone : _bones)
 		{
@@ -73,7 +75,6 @@ void Converter::ExportModelData(std::wstring savePath)
 				::fprintf(file, "%f,%f,%f,%f\n", weights.x, weights.y, weights.z, weights.w);
 			}
 		}
-
 		::fclose(file);
 	}
 

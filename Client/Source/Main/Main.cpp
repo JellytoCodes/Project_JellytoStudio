@@ -9,7 +9,7 @@ int APIENTRY wWinMain(
 {
 	ApplicationDesc desc;
 
-	desc.appName		= L"Jellyto Studio v0.2";
+	desc.appName		= L"Jellyto Studio v0.1";
 	desc.hInstance		= hInstance;
 	desc.width			= MAIN_WINDOW_WIDTH;
 	desc.height			= MAIN_WINDOW_HEIGHT;

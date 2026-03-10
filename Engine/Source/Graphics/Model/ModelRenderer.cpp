@@ -8,7 +8,7 @@
 #include "Entity/Components/Camera.h"
 
 ModelRenderer::ModelRenderer(std::shared_ptr<Shader> shader)
-	: Super(ComponentType::ModelRenderer)
+	: Super(ComponentType::ModelRenderer), _shader(shader)
 {
 
 }
@@ -34,6 +34,9 @@ void ModelRenderer::Start()
 
 void ModelRenderer::Render()
 {
+    if (_constantBuffer == nullptr || _constantBuffer->GetComPtr() == nullptr)
+        return;
+
     if (_model == nullptr)
         return;
 
