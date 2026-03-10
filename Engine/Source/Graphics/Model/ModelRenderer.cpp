@@ -6,6 +6,8 @@
 #include "Entity/Components/Transform.h"
 #include "Scene/SceneManager.h"
 #include "Entity/Components/Camera.h"
+#include "Entity/Components/Light.h"
+#include "Pipeline/Shader.h"
 
 ModelRenderer::ModelRenderer(std::shared_ptr<Shader> shader)
 	: Super(ComponentType::ModelRenderer), _shader(shader)
@@ -29,38 +31,6 @@ void ModelRenderer::Start()
 
 	_constantBuffer = std::make_shared<ConstantBuffer<TransformData>>();
 	_constantBuffer->Create(device);
-
-}
-
-void ModelRenderer::Render()
-{
-    if (_constantBuffer == nullptr || _constantBuffer->GetComPtr() == nullptr)
-        return;
-
-    if (_model == nullptr)
-        return;
-
-    auto deviceContext = Graphics::Get()->GetDeviceContext();
-	
-	auto world = GetTransform()->GetWorldMatrix();
-    
-    TransformData data;
-    data.world = GetTransform()->GetWorldMatrix().Transpose();
-
-    auto camera = GET_SINGLE(SceneManager)->GetCurrentScene()->GetMainCamera();
-    data.view = camera->GetViewMatrix().Transpose();
-    data.projection = camera->GetProjectionMatrix().Transpose();
-
-    _constantBuffer->CopyData(deviceContext, data);
-
-    auto bufferPtr = _constantBuffer->GetComPtr();
-    deviceContext->VSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
-    deviceContext->PSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
-
-    for (auto& mesh : _model->GetMeshes())
-    {
-        mesh->Render();
-    }
 }
 
 void ModelRenderer::SetModel(std::shared_ptr<Model> model)
@@ -72,4 +42,49 @@ void ModelRenderer::SetModel(std::shared_ptr<Model> model)
 	{
 		material->SetShader(_shader);
 	}
+}
+
+void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
+{
+	if (_model == nullptr) return;
+
+	// GlobalData
+	_shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
+
+	// Light
+	if (std::shared_ptr<Light> lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
+		_shader->PushLightData(lightObj->GetLightDesc());
+
+	// Bones
+	BoneDesc boneDesc;
+	const uint32 boneCount = _model->GetBoneCount();
+
+	for (uint32 i = 0; i < boneCount; i++)
+	{
+		std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(i);
+		boneDesc.transforms[i] = bone->transform;
+	}
+	_shader->PushBoneData(boneDesc);
+
+	const auto& meshes = _model->GetMeshes();
+	for (auto& mesh : meshes)
+	{
+		if (mesh->material) mesh->material->Update();
+
+		// BoneIndex
+		_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
+
+		// IA
+		mesh->vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
+		mesh->indexBuffer->PushData(Graphics::Get()->GetDeviceContext());
+
+		buffer->PushData();
+
+		_shader->DrawIndexedInstanced(0, _pass, mesh->indexBuffer->GetCount(), buffer->GetCount());
+	}
+}
+
+InstanceID ModelRenderer::GetInstanceID()
+{
+    return std::make_pair((uint64)_model.get(), (uint64)_shader.get());
 }

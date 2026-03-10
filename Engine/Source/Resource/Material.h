@@ -41,6 +41,5 @@ private :
 	ComPtr<ID3DX11EffectShaderResourceVariable>		_diffuseEffectBuffer;
 	ComPtr<ID3DX11EffectShaderResourceVariable>		_normalEffectBuffer;
 	ComPtr<ID3DX11EffectShaderResourceVariable>		_specularEffectBuffer;
-
 };
 

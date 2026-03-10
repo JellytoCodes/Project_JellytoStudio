@@ -9,7 +9,7 @@
 #include "Pipeline/Shader.h"
 #include "Resource/Material.h"
 #include "Scene/SceneManager.h"
-
+#include "Entity/Components/Light.h"
 
 ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader) 
 	: Super(ComponentType::Animator), _shader(shader)
@@ -104,8 +104,8 @@ void ModelAnimator::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 	_shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
 	// Light
-	auto lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight();
-	if (lightObj)	_shader->PushLightData(lightObj->GetLight()->GetLightDesc());
+	if (std::shared_ptr<Light> lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
+		_shader->PushLightData(lightObj->GetLightDesc());
 
 	// SRV를 통해 정보 전달
 	_shader->GetSRV("TransformMap")->SetResource(_srv.Get());

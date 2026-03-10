@@ -18,13 +18,12 @@ public:
 
 	void Awake() override;
 	void Start() override;
-	void Render() override;
 
 	void SetModel(std::shared_ptr<Model> model);
 	void SetPass(uint8 pass) { _pass = pass; }
 
-	//void RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer);
-	//InstanceID GetInstanceID();
+	void RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer);
+	InstanceID GetInstanceID();
 
 private:
 	std::shared_ptr<ConstantBuffer<TransformData>> _constantBuffer;

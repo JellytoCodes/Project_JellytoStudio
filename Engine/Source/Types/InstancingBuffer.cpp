@@ -46,5 +46,5 @@ void InstancingBuffer::CreateBuffer(const uint32 maxCount)
 	_instanceBuffer = std::make_shared<VertexBuffer>();
 
 	std::vector<InstancingData> temp(maxCount);
-	_instanceBuffer->Create(temp, 1, true);
+	_instanceBuffer->Create(Graphics::Get()->GetDevice(), temp, 1, true);
 }

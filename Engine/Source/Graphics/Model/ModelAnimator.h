@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Entity/Components/Component.h"
 
+class Shader;
 class Model;
 
 struct AnimTransform

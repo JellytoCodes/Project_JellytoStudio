@@ -16,8 +16,6 @@ public :
 	void LateUpdate();
 	void OnDestroy();
 
-	void Render();
-
 	std::shared_ptr<Transform> GetTransform();
 
 	void AddComponent(const std::shared_ptr<Component>& component);

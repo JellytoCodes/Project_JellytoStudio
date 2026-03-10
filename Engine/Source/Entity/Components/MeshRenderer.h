@@ -21,7 +21,8 @@ public :
 	virtual void LateUpdate() override;
 	virtual void OnDestroy() override;
 
-	virtual void Render() override;
+	void RenderInstancing(const std::shared_ptr<InstancingBuffer>& buffer);
+	InstanceID GetInstanceID();
 
 	void SetMesh(const std::shared_ptr<Mesh>& mesh)					{ _mesh = mesh; }
 	void SetMaterial(const std::shared_ptr<Material>& material)		{ _material = material; }
@@ -33,9 +34,4 @@ private:
 	std::shared_ptr<Material> _material;
 
 	uint8 _pass = 0;
-
-	std::shared_ptr<ConstantBuffer<TransformData>> _constantBuffer;
-
-	Matrix _matWorld = Matrix::Identity;
 };
-

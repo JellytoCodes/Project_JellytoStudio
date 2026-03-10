@@ -1,5 +1,6 @@
 #pragma once
 
+class Light;
 class Camera;
 class Entity;
 
@@ -20,13 +21,15 @@ public :
 	virtual void Add(const std::shared_ptr<Entity>& object);
 	virtual void Remove(const std::shared_ptr<Entity>& object);
 
-	void SetMainCamera(const std::shared_ptr<Camera>& mainCamera) { _mainCamera = mainCamera; }
-	std::shared_ptr<Camera> GetMainCamera() { return _mainCamera; }
+	void											SetMainCamera(const std::shared_ptr<Camera>& mainCamera)	{ _mainCamera = mainCamera; }
+	std::shared_ptr<Camera>							GetMainCamera()												{ return _mainCamera; }
 
-	std::unordered_set<std::shared_ptr<Entity>>& GetObjects() { return _objects; }
+	std::shared_ptr<Light>							GetLight()													{ return _mainLight;  }
+
+	std::unordered_set<std::shared_ptr<Entity>>&	GetEntities()												{ return _objects; }
 
 private :
-	std::unordered_set<std::shared_ptr<Entity>> _objects;
-
-	std::shared_ptr<Camera> _mainCamera;
+	std::unordered_set<std::shared_ptr<Entity>>		_objects;
+	std::shared_ptr<Camera>							_mainCamera;
+	std::shared_ptr<Light>							_mainLight;
 };

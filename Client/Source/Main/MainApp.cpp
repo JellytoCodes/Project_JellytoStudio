@@ -34,33 +34,24 @@ void MainApp::Init()
 
 	scene->Add(cameraEntity);
 	scene->SetMainCamera(camera);
-	
-	{
-		std::shared_ptr<Shader> shader = std::make_shared<Shader>();
-		shader->Create(Graphics::Get()->GetDevice(), L"../Engine/Shaders/ModelShader.hlsl");
 
-		for (int y = 0 ; y <= 5 ; y++)
-		{
-			for (int x = 1; x <= 5; x++)
-			{
-				std::shared_ptr<Model> chickenModel = std::make_shared <Model>();
-				chickenModel->ReadModel(L"Separate/Pinguin_001");
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
 
-				std::shared_ptr<ModelRenderer> chickenRenderer = std::make_shared<ModelRenderer>(shader);
-				chickenRenderer->SetModel(chickenModel);
-				chickenRenderer->SetPass(1);
+	std::shared_ptr<Model> chickenModel = std::make_shared <Model>();
+	chickenModel->ReadModel(L"Separate/Pinguin_001");
 
-				auto chicken = std::make_shared<Entity>();
+	std::shared_ptr<ModelRenderer> chickenRenderer = std::make_shared<ModelRenderer>(shader);
+	chickenRenderer->SetModel(chickenModel);
+	chickenRenderer->SetPass(0);
 
-				chicken->AddComponent(std::make_shared<Transform>());
-				chicken->AddComponent(chickenRenderer);
+	auto chicken = std::make_shared<Entity>();
 
-				chicken->GetTransform()->SetPosition(Vec3(x * 1.f, 0.f, y * 1.2f));
+	chicken->AddComponent(std::make_shared<Transform>());
+	chicken->AddComponent(chickenRenderer);
 
-				scene->Add(chicken);
-			}
-		}
-	}
+	chicken->GetTransform()->SetPosition(Vec3(1.f, 0.f, 1.2f));
+
+	scene->Add(chicken);
 
 	GET_SINGLE(SceneManager)->ChangeScene(scene);
 }

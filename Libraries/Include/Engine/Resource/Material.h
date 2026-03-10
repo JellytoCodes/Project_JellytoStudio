@@ -2,14 +2,6 @@
 
 #include "Resource.h"
 
-struct MaterialDesc
-{
-	Color ambient = Color(0.f, 0.f, 0.f, 1.f);
-	Color diffuse = Color(1.f, 1.f, 1.f, 1.f);
-	Color specular = Color(0.f, 0.f, 0.f, 1.f);
-	Color emissive = Color(0.f, 0.f, 0.f, 1.f);
-};
-
 class Texture;
 class Shader;
 
@@ -49,6 +41,5 @@ private :
 	ComPtr<ID3DX11EffectShaderResourceVariable>		_diffuseEffectBuffer;
 	ComPtr<ID3DX11EffectShaderResourceVariable>		_normalEffectBuffer;
 	ComPtr<ID3DX11EffectShaderResourceVariable>		_specularEffectBuffer;
-
 };
 

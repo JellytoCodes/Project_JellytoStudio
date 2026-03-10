@@ -40,11 +40,6 @@ void Component::OnDestroy()
 
 }
 
-void Component::Render()
-{
-
-}
-
 std::shared_ptr<Transform> Component::GetTransform()
 {
 	return _transform;

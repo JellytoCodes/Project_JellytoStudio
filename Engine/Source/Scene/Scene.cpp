@@ -57,13 +57,10 @@ void Scene::OnDestroy()
 
 void Scene::Render()
 {
-	if (_mainCamera) 
-        _mainCamera->RenderForward(); 
-
-    for (auto& entity : _objects)
-    {
-        entity->Render();
-    }
+	if (_mainCamera == nullptr) return;
+		
+	_mainCamera->SortGameObject();
+    _mainCamera->RenderForward();
 }
 
 void Scene::Add(const std::shared_ptr<Entity>& object)

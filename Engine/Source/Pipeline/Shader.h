@@ -13,9 +13,9 @@ struct ShaderDesc
 class Shader
 {
 public:
-	friend struct Pass;
+	friend struct ShaderPass;
 
-	Shader(std::wstring file);
+	Shader(const std::wstring& file);
 	~Shader();
 
 	std::wstring GetFile() { return _file; }
@@ -37,12 +37,12 @@ public:
 	ComPtr<ID3DX11EffectRenderTargetViewVariable>		GetRTV(const std::string& name);
 	ComPtr<ID3DX11EffectDepthStencilViewVariable>		GetDSV(const std::string& name);
 	ComPtr<ID3DX11EffectUnorderedAccessViewVariable>	GetUAV(const std::string& name);
-	ComPtr<ID3DX11EffectConstantBuffer>					GetConstantBuffer(std::string name);
-	ComPtr<ID3DX11EffectShaderVariable>					GetShader(std::string name);
-	ComPtr<ID3DX11EffectBlendVariable>					GetBlend(std::string name);
-	ComPtr<ID3DX11EffectDepthStencilVariable>			GetDepthStencil(std::string name);
-	ComPtr<ID3DX11EffectRasterizerVariable>				GetRasterizer(std::string name);
-	ComPtr<ID3DX11EffectSamplerVariable>				GetSampler(std::string name);
+	ComPtr<ID3DX11EffectConstantBuffer>					GetConstantBuffer(const std::string& name);
+	ComPtr<ID3DX11EffectShaderVariable>					GetShader(const std::string& name);
+	ComPtr<ID3DX11EffectBlendVariable>					GetBlend(const std::string& name);
+	ComPtr<ID3DX11EffectDepthStencilVariable>			GetDepthStencil(const std::string& name);
+	ComPtr<ID3DX11EffectRasterizerVariable>				GetRasterizer(const std::string& name);
+	ComPtr<ID3DX11EffectSamplerVariable>				GetSampler(const std::string& name);
 
 	void PushGlobalData(const Matrix& view, const Matrix& projection);
 	void PushTransformData(const TransformDesc& desc);
@@ -94,7 +94,7 @@ private:
 class ShaderManager
 {
 public:
-	static ShaderDesc GetEffect(std::wstring fileName);
+	static ShaderDesc GetEffect(const std::wstring& fileName);
 
 private:
 	static std::unordered_map<std::wstring, ShaderDesc> shaders;

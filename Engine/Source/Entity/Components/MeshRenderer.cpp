@@ -3,11 +3,13 @@
 #include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Transform.h"
+#include "Entity/Components/Light.h"
 #include "Resource/Material.h"
 #include "Resource/Mesh.h"
 #include "Graphics/Graphics.h"
 
 #include "Pipeline/Shader.h"
+#include "Scene/SceneManager.h"
 
 MeshRenderer::MeshRenderer()
 	: Super(ComponentType::MeshRenderer)
@@ -31,14 +33,6 @@ void MeshRenderer::Start()
 
 	_mesh = std::make_shared<Mesh>();
 	_mesh->CreateCube(device);
-
-	_shader = std::make_shared<Shader>();
-	_shader->Create(device, L"../Engine/Shaders/Default.hlsl");
-
-	_constantBuffer = std::make_shared<ConstantBuffer<TransformData>>();
-	_constantBuffer->Create(device);
-
-	_matWorld = Matrix::Identity;
 }
 
 void MeshRenderer::Update()
@@ -56,24 +50,33 @@ void MeshRenderer::OnDestroy()
 	
 }
 
-void MeshRenderer::Render()
+void MeshRenderer::RenderInstancing(const std::shared_ptr<InstancingBuffer>& buffer)
 {
-	auto deviceContext = Graphics::Get()->GetDeviceContext();
+	if (_mesh == nullptr | _material == nullptr) return;
 
-    _mesh->Bind(deviceContext);
-    _shader->Bind(deviceContext);
+	std::shared_ptr<Shader> shader = _material->GetShader();
+	if (shader == nullptr) return;
 
-    TransformData data;
-    data.world = _matWorld.Transpose();
+	// GlobalData
+	shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
-    data.view = Camera::S_MatView.Transpose();
-    data.projection = Camera::S_MatProjection.Transpose();
+	// Light
+	if (std::shared_ptr<Light> lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
+		_shader->PushLightData(lightObj->GetLightDesc());
 
-    _constantBuffer->CopyData(deviceContext, data);
+	// Light
+	_material->Update();
 
-    auto bufferPtr = _constantBuffer->GetComPtr();
-    deviceContext->VSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
-    deviceContext->PSSetConstantBuffers(0, 1, bufferPtr.GetAddressOf());
+	// IA
+	_mesh->GetVertexBuffer()->PushData(Graphics::Get()->GetDeviceContext());
+	_mesh->GetIndexBuffer()->PushData(Graphics::Get()->GetDeviceContext());
 
-    deviceContext->DrawIndexed(_mesh->GetIndexBuffer()->GetCount(), 0, 0);
+	buffer->PushData();
+
+	shader->DrawIndexedInstanced(0, _pass, _mesh->GetIndexBuffer()->GetCount(), buffer->GetCount());
+}
+
+InstanceID MeshRenderer::GetInstanceID()
+{
+	return std::make_pair((uint64)_mesh.get(), (uint64)_material.get());
 }

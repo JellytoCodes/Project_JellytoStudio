@@ -2,18 +2,20 @@
 #include "InstancingManager.h"
 
 #include "Entity/Entity.h"
-#include "ModelRenderer.h"
-#include "ModelAnimator.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Graphics/Model/ModelRenderer.h"
+#include "Graphics/Model/ModelAnimator.h"
+#include "Pipeline/Shader.h"
 
 void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 {
+	if (Entities.empty()) return;
+
 	ClearData();
 
 	RenderMeshRenderer(Entities);
 	RenderModelRenderer(Entities);
-	RenderAnimRenderer(Entities);
+	//RenderAnimRenderer(Entities);
 }
 
 void InstancingManager::ClearData()
@@ -93,20 +95,19 @@ void InstancingManager::RenderModelRenderer(std::vector<std::shared_ptr<Entity>>
 
 void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>& Entities)
 {
-	std::map < InstanceID, std::vector<std::shared_ptr<Entity>> > cache;
+	std::map <InstanceID, std::vector<std::shared_ptr<Entity>> > cache;
 
 	for (std::shared_ptr<Entity>& entity : Entities)
 	{
-		if (entity->GetComponent<>() == nullptr) continue;
+		if (entity->GetComponent<ModelAnimator>() == nullptr) continue;
 
-		const InstanceID instanceID = entity->GetAnimator()->GetInstanceID();
+		const InstanceID instanceID = entity->GetComponent<ModelAnimator>()->GetInstanceID();
 		cache[instanceID].push_back(entity);
 	}
 
 	for (auto& pair : cache)
 	{
-		std::shared_ptr<
-		> tweenDesc = std::make_shared<InstancedTweenDesc>();
+		std::shared_ptr<InstancedTweenDesc> tweenDesc = std::make_shared<InstancedTweenDesc>();
 
 		const std::vector<std::shared_ptr<Entity>>& vec = pair.second;
 		{
@@ -121,21 +122,21 @@ void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>&
 				AddData(id, data);
 
 				// INSTANCING
-				gameObject->GetAnimator()->UpdateTweenData();
-				tweenDesc->tweens[i] = gameObject->GetAnimator()->GetTweenDesc();
+				gameObject->GetComponent<ModelAnimator>()->UpdateTweenData();
+				tweenDesc->tweens[i] = gameObject->GetComponent<ModelAnimator>()->GetTweenDesc();
 			}
 
-			vec[0]->GetAnimator()->GetShader()->PushTweenData(*tweenDesc.get());
+			vec[0]->GetComponent<ModelAnimator>()->GetShader()->PushTweenData(*tweenDesc.get());
 
 			std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-			vec[0]->GetAnimator()->RenderInstancing(buffer);
+			vec[0]->GetComponent<ModelAnimator>()->RenderInstancing(buffer);
 		}
 	}
 }
 
 void InstancingManager::AddData(InstanceID instanceID, InstancingData& data)
 {
-	if (_buffers.find(instanceID) == _buffers.end()) _buffers[instanceID] = make_shared<InstancingBuffer>();
+	if (_buffers.find(instanceID) == _buffers.end()) _buffers[instanceID] = std::make_shared<InstancingBuffer>();
 
 	_buffers[instanceID]->AddData(data);
 }

@@ -88,21 +88,6 @@ void Entity::OnDestroy()
 	}
 }
 
-void Entity::Render()
-{
-	for (auto& component : _components)
-	{
-		if (component)
-			component->Render();
-	}
-
-	for (auto& script : _scripts)
-	{
-		if (script)
-			script->Render();
-	}
-}
-
 std::shared_ptr<Transform> Entity::GetTransform()
 {
 	return _transform;

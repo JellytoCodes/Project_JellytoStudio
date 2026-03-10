@@ -9,6 +9,7 @@ enum class ComponentType : int8
 	Camera,
 	ModelRenderer,
 	Light,
+	Animator,
 
 	///////////////
 	Script,
@@ -33,7 +34,7 @@ public :
 	virtual void					Update();
 	virtual void					LateUpdate();
 	virtual void					OnDestroy();
-	virtual void					Render();
+
 	ComponentType					GetType() const		{ return _type; }
 
 	std::shared_ptr<Transform>		GetTransform();
