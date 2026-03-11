@@ -14,9 +14,7 @@
 ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader) 
 	: Super(ComponentType::Animator), _shader(shader)
 {
-	// TEST
-	//_tweenDesc.next.animIndex = rand() % 3;
-	//_tweenDesc.tweenSumTime += rand() % 100;
+	_tweenDesc.next.animIndex = 0;
 }
 
 ModelAnimator::~ModelAnimator()
@@ -37,7 +35,7 @@ void ModelAnimator::SetModel(std::shared_ptr<Model> model)
 
 void ModelAnimator::Update()
 {
-
+	UpdateTweenData();
 }
 
 void ModelAnimator::UpdateTweenData()
@@ -153,7 +151,8 @@ void ModelAnimator::CreateTexture()
 
 	_animTransforms.resize(_model->GetAnimationCount());
 
-	for (uint32 i = 0; i < _model->GetAnimationCount(); i++) CreateAnimationTransform(i);
+	for (uint32 i = 0; i < _model->GetAnimationCount(); i++) 
+		CreateAnimationTransform(i);
 
 	// Creature Texture
 	{

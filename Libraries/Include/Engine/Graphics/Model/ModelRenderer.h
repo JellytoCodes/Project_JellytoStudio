@@ -26,9 +26,9 @@ public:
 	InstanceID GetInstanceID();
 
 private:
-	std::shared_ptr<ConstantBuffer<TransformData>> _constantBuffer;
+	std::shared_ptr<ConstantBuffer<TransformData>>	_constantBuffer;
 
-	std::shared_ptr<Shader>	_shader;
-	uint8					_pass = 0;
-	std::shared_ptr<Model>	_model;
+	std::shared_ptr<Shader>							_shader;
+	uint8											_pass = 0;
+	std::shared_ptr<Model>							_model;
 };

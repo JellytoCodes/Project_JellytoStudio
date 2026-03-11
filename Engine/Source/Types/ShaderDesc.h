@@ -86,17 +86,3 @@ struct InstancedTweenDesc
 {
 	TweenDesc tweens[MAX_MODEL_INSTANCE];
 };
-
-struct SnowBillboardDesc
-{
-	Color color = Color(1.f, 1.f, 1.f, 1.f);
-
-	Vec3 velocity = Vec3(0.f, -5.f, 0.f);
-	float drawDistance = 0;
-
-	Vec3 origin = Vec3(0.f, 0.f, 0.f);
-	float turbulence = 5;
-
-	Vec3 extent = Vec3(0.f, 0.f, 0.f);
-	float time;
-};

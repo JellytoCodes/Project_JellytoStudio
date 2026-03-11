@@ -1,60 +1,105 @@
 #include "Global.hlsli"
 #include "Light.hlsli"
 
-#define MAX_MODEL_TRANSFORM 250
-
-cbuffer BoneBuffer : register(b2) // 레지스터 번호 명시 권장
+struct TweenFrame
 {
-    matrix BoneTransforms[MAX_MODEL_TRANSFORM];
+    int animIndex;
+    int currFrame;
+    int nextFrame;
+    float ratio;
+    float speed;
+    float sumTime;
+    float padding[2];
 };
 
-// 인스턴싱을 위해 구조체를 수정해야 합니다!
+struct TweenDesc
+{
+    float tweenDuration;
+    float tweenRatio;
+    float tweenSumTime;
+    float padding;
+    TweenFrame curr;
+    TweenFrame next;
+};
+
+StructuredBuffer<TweenDesc> Tweens : register(t2);
+
+Texture2DArray TransformMap : register(t1);
+
 struct VS_INST_INPUT
 {
     float4 position : POSITION;
     float2 uv : TEXCOORD;
     float3 normal : NORMAL;
     float3 tangent : TANGENT;
-    // ★ 인스턴싱 행렬 (Slot 1에서 들어옴)
+    float4 indices : BLENDINDICES;
+    float4 weights : BLENDWEIGHTS;
     matrix instWorld : INSTWORLD;
+
+    uint instanceID : SV_InstanceID;
 };
+
+matrix GetMatrix(int animIndex, int currFrame, int nextFrame, float ratio, int boneIndex)
+{
+    // Texture Load 좌표: int4(X, Y, TextureArrayIndex, MipLevel)
+    float4 c0 = TransformMap.Load(int4(boneIndex * 4 + 0, currFrame, animIndex, 0));
+    float4 c1 = TransformMap.Load(int4(boneIndex * 4 + 1, currFrame, animIndex, 0));
+    float4 c2 = TransformMap.Load(int4(boneIndex * 4 + 2, currFrame, animIndex, 0));
+    float4 c3 = TransformMap.Load(int4(boneIndex * 4 + 3, currFrame, animIndex, 0));
+    matrix currMat = matrix(c0, c1, c2, c3);
+
+    float4 n0 = TransformMap.Load(int4(boneIndex * 4 + 0, nextFrame, animIndex, 0));
+    float4 n1 = TransformMap.Load(int4(boneIndex * 4 + 1, nextFrame, animIndex, 0));
+    float4 n2 = TransformMap.Load(int4(boneIndex * 4 + 2, nextFrame, animIndex, 0));
+    float4 n3 = TransformMap.Load(int4(boneIndex * 4 + 3, nextFrame, animIndex, 0));
+    matrix nextMat = matrix(n0, n1, n2, n3);
+
+    return currMat * (1.0f - ratio) + nextMat * ratio;
+}
 
 MeshOutput VS(VS_INST_INPUT input)
 {
     MeshOutput output;
-    
-    // 1. [임시 땜빵] 스키닝 생략하고 월드 변환만 수행
-    // 만약 BoneTransforms가 0이면 여기서 모델이 깨지므로 일단 월드만 곱합니다.
-    float4 pos = input.position;
-    
-    // 2. 인스턴싱 행렬 적용 (W 대신 instWorld 사용!)
-    output.position = mul(pos, input.instWorld);
+
+    // ★ StructuredBuffer에서 내 번호에 맞는 데이터 꺼내기
+    TweenDesc desc = Tweens[input.instanceID];
+
+    matrix m = 0;
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {
+        if (input.weights[i] <= 0.0f)
+            continue;
+
+        matrix mat = GetMatrix(desc.curr.animIndex, desc.curr.currFrame, desc.curr.nextFrame, desc.curr.ratio, (int) input.indices[i]);
+        
+        if (desc.next.animIndex >= 0)
+        {
+            matrix nextAnimMat = GetMatrix(desc.next.animIndex, desc.next.currFrame, desc.next.nextFrame, desc.next.ratio, (int) input.indices[i]);
+            mat = mat * (1.0f - desc.tweenRatio) + nextAnimMat * desc.tweenRatio;
+        }
+
+        m += mul(input.weights[i], mat);
+    }
+
+    float4 skinnedPos = mul(input.position, m);
+    output.position = mul(skinnedPos, input.instWorld);
     output.worldPosition = output.position.xyz;
-    
-    // 3. 뷰/투영 변환
     output.position = mul(output.position, VP);
-    
+
     output.uv = input.uv;
-    
-    // 4. 노말도 인스턴싱 행렬로 변환
-    output.normal = mul(input.normal, (float3x3) input.instWorld);
-    output.tangent = mul(input.tangent, (float3x3) input.instWorld);
+    output.normal = normalize(mul(mul(input.normal, (float3x3) m), (float3x3) input.instWorld));
+    output.tangent = normalize(mul(mul(input.tangent, (float3x3) m), (float3x3) input.instWorld));
 
     return output;
 }
 
 float4 PS(MeshOutput input) : SV_TARGET
 {
-	// 1. 텍스처 샘플링
-    float4 color = DiffuseMap.Sample(LinearSampler, input.uv);
-    
-    // [검증] 만약 텍스처가 안 나오면 투명도(Alpha) 문제일 수 있으니 1.0으로 강제 고정해봅니다.
-    // return float4(color.rgb, 1.0f); 
-    
-    return color;
+    return DiffuseMap.Sample(LinearSampler, input.uv);
 }
 
 technique11 T0
 {
-	PASS_VP(P0, VS, PS)
+    PASS_VP(P0, VS, PS)
 }

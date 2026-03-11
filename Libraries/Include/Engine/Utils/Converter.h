@@ -10,6 +10,7 @@ public:
 	void									ExportModelData(std::wstring savePath);
 	void									ExportMaterialData(std::wstring savePath);
 	void									ExportAnimationData(std::wstring savePath, uint32 index = 0);
+	void									ExportCSV(std::wstring savePath);
 
 private:
 	void									ReadModelData(aiNode* node, int32 index, int32 parent);
@@ -34,7 +35,6 @@ private:
 	std::wstring _assetPath = L"../Resources/Assets/";
 	std::wstring _modelPath = L"../Resources/Models/";
 	std::wstring _texturePath = L"../Resources/Textures/";
-	std::wstring _RawDataPath = L"../Resources/RawData/";
 
 	std::vector<std::shared_ptr<asBone>>		_bones;
 	std::vector<std::shared_ptr<asMesh>>		_meshes;

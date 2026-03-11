@@ -15,7 +15,7 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 
 	RenderMeshRenderer(Entities);
 	RenderModelRenderer(Entities);
-	//RenderAnimRenderer(Entities);
+	RenderAnimRenderer(Entities);
 }
 
 void InstancingManager::ClearData()

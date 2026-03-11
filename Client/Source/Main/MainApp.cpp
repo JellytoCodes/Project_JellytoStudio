@@ -2,6 +2,7 @@
 #include "Core/Framework.h"
 #include "MainApp.h"
 
+#include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Entity/Components/Transform.h"
@@ -13,41 +14,52 @@
 
 void MainApp::Init()
 {
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
+    std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
+    std::shared_ptr<Shader> shader2 = std::make_shared<Shader>(L"../Engine/Shaders/RenderShader.hlsl");
+    auto scene = std::make_shared<Scene>();
 
-	auto scene = std::make_shared<Scene>();
+    auto cameraEntity = std::make_shared<Entity>();
+    cameraEntity->AddComponent(std::make_shared<Transform>());
+    cameraEntity->AddComponent(std::make_shared<Camera>());
+    cameraEntity->AddComponent(std::make_shared<CameraController>());
+    cameraEntity->GetTransform()->SetPosition(Vec3(0, 5, -15.f));
 
-	auto cameraEntity = std::make_shared<Entity>();
-	cameraEntity->AddComponent(std::make_shared<Transform>());
+    scene->Add(cameraEntity);
+    scene->SetMainCamera(cameraEntity->GetComponent<Camera>());
 
-	auto camera = std::make_shared<Camera>();
-	cameraEntity->AddComponent(camera);
-	cameraEntity->AddComponent(std::make_shared<CameraController>());
+    std::shared_ptr<Model> m1 = std::make_shared<Model>();
+    m1->ReadModel(L"Character/Ch03");
+    m1->ReadMaterial(L"Character/Ch03");
+    m1->ReadAnimation(L"Character/Twist_Dance");
 
-	cameraEntity->GetTransform()->SetPosition(Vec3(0, 0, -10.f));
+    auto animator = std::make_shared<ModelAnimator>(shader);
+    animator->SetModel(m1);
 
-	scene->Add(cameraEntity);
-	scene->SetMainCamera(camera);
+    {
+        auto e1 = std::make_shared<Entity>();
+        e1->AddComponent(std::make_shared<Transform>());
+        e1->AddComponent(animator);
+        e1->GetTransform()->SetScale(Vec3(0.05f));
 
-	std::shared_ptr<Model> chickenModel = std::make_shared <Model>();
-	chickenModel->ReadModel(L"Character/Ch03");
-	chickenModel->ReadMaterial(L"Character/Ch03");
+        scene->Add(e1);
+    }
 
-	std::shared_ptr<ModelRenderer> chickenRenderer = std::make_shared<ModelRenderer>(shader);
-	chickenRenderer->SetModel(chickenModel);
-	chickenRenderer->SetPass(0);
+    /*{
+        auto renderer = std::make_shared<ModelRenderer>(shader2);
+		renderer->SetModel(m1);
+		renderer->SetPass(0);
 
-	auto chicken = std::make_shared<Entity>();
+        auto e2 = std::make_shared<Entity>();
+        e2->AddComponent(std::make_shared<Transform>());
+        e2->AddComponent(renderer);
+        e2->GetTransform()->SetScale(Vec3(0.05f));
+        e2->GetTransform()->SetPosition(Vec3(2.f, 0.f, 2.f));
 
-	chicken->AddComponent(std::make_shared<Transform>());
-	chicken->AddComponent(chickenRenderer);
+        scene->Add(e2);
+    }*/
+    
 
-	chicken->GetTransform()->SetScale(Vec3(0.2f, 0.2f, 0.2f));
-	chicken->GetTransform()->SetPosition(Vec3(1.f, 0.f, 1.2f));
-
-	scene->Add(chicken);
-
-	GET_SINGLE(SceneManager)->ChangeScene(scene);
+    GET_SINGLE(SceneManager)->ChangeScene(scene);
 }
 
 void MainApp::Update()

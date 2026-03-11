@@ -40,5 +40,5 @@ private:
 	// Misc
 	Viewport _vp;
 
-	FLOAT _clearColor[4] = {0.f, 0.f, 0.f, 1.f};
+	FLOAT _clearColor[4] = {1.f, 1.f, 1.f, 1.f};
 };

@@ -36,13 +36,13 @@ private:
 	void CreateTexture();
 	void CreateAnimationTransform(uint32 index);
 
-	std::vector<AnimTransform>	_animTransforms;
-	ComPtr<ID3D11Texture2D> _texture;
-	ComPtr<ID3D11ShaderResourceView> _srv;
+	std::vector<AnimTransform>			_animTransforms;
+	ComPtr<ID3D11Texture2D>				_texture;
+	ComPtr<ID3D11ShaderResourceView>	_srv;
 
-	std::shared_ptr<Shader>		_shader;
-	uint8					_pass = 0;
-	std::shared_ptr<Model>		_model;
+	std::shared_ptr<Shader>				_shader;
+	uint8								_pass = 0;
+	std::shared_ptr<Model>				_model;
 
-	TweenDesc		_tweenDesc;
+	TweenDesc							_tweenDesc;
 };
