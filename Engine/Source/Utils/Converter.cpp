@@ -44,41 +44,6 @@ void Converter::ExportModelData(std::wstring savePath)
 	ReadModelData(_scene->mRootNode, -1, -1);
 	ReadSkinData();
 
-	//Write CSV File
-	{
-		std::string path = Utils::ToString(_modelPath + savePath + L".csv");
-
-		FILE* file;
-		::fopen_s(&file, path.c_str(), "w");
-
-		for (std::shared_ptr<asBone>& bone : _bones)
-		{
-			std::string name = bone->name;
-			::fprintf(file, "%d,%s\n", bone->index, bone->name.c_str());
-		}
-
-		::fprintf(file, "\n");
-
-		for (std::shared_ptr<asMesh>& mesh : _meshes)
-		{
-			std::string name = mesh->name;
-			::printf("%s\n", name.c_str());
-
-			for (UINT i = 0; i < mesh->vertices.size(); i++)
-			{
-				Vec3 p = mesh->vertices[i].position;
-				Vec4 indices = mesh->vertices[i].blendIndices;
-				Vec4 weights = mesh->vertices[i].blendWeights;
-
-				::fprintf(file, "%f,%f,%f,", p.x, p.y, p.z);
-				::fprintf(file, "%f,%f,%f,%f,", indices.x, indices.y, indices.z, indices.w);
-				::fprintf(file, "%f,%f,%f,%f\n", weights.x, weights.y, weights.z, weights.w);
-			}
-		}
-		::fclose(file);
-	}
-
-
 	WriteModelFile(finalPath);
 }
 
@@ -95,6 +60,45 @@ void Converter::ExportAnimationData(std::wstring savePath, uint32 index /*= 0*/)
 	assert(index < _scene->mNumAnimations);
 	std::shared_ptr<asAnimation> animation = ReadAnimationData(_scene->mAnimations[index]);
 	WriteAnimationData(animation, finalPath);
+}
+
+void Converter::ExportCSV(std::wstring savePath)
+{
+	std::wstring finalPath = _modelPath + savePath + L".csv";
+	std::filesystem::path p(finalPath);
+	std::filesystem::create_directories(p.parent_path()); // 경로상의 모든 폴더 생성
+
+	std::string path = Utils::ToString(finalPath);
+	FILE* file = nullptr;
+	if (::fopen_s(&file, path.c_str(), "w") != 0 || file == nullptr)
+	{
+		::printf("Failed to open CSV file for writing: %s\n", path.c_str());
+		return;
+	}
+
+	::fprintf(file, "[Bone Index], [Bone Name]\n");
+	for (const auto& bone : _bones)
+	{
+		::fprintf(file, "%d,%s\n", bone->index, bone->name.c_str());
+	}
+
+	::fprintf(file, "\n");
+
+	for (const auto& mesh : _meshes)
+	{
+		::fprintf(file, "Mesh Name: %s\n", mesh->name.c_str());
+		::fprintf(file, "Pos.x, Pos.y, Pos.z, i1, i2, i3, i4, w1, w2, w3, w4\n");
+
+		for (const auto& v : mesh->vertices)
+		{
+			::fprintf(file, "%f,%f,%f,", v.position.x, v.position.y, v.position.z);
+			::fprintf(file, "%f,%f,%f,%f,", v.blendIndices.x, v.blendIndices.y, v.blendIndices.z, v.blendIndices.w);
+			::fprintf(file, "%f,%f,%f,%f\n", v.blendWeights.x, v.blendWeights.y, v.blendWeights.z, v.blendWeights.w);
+		}
+		::fprintf(file, "\n");
+	}
+
+	::fclose(file);
 }
 
 void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)
@@ -557,7 +561,6 @@ void Converter::WriteAnimationData(std::shared_ptr<asAnimation> animation, std::
 {
 	auto path = std::filesystem::path(finalPath);
 
-	// 폴더가 없으면 만든다.
 	std::filesystem::create_directory(path.parent_path());
 
 	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();

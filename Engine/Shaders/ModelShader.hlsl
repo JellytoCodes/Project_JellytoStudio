@@ -1,102 +1,60 @@
-cbuffer GlobalBuffer : register(b0)
+#include "Global.hlsli"
+#include "Light.hlsli"
+
+#define MAX_MODEL_TRANSFORM 250
+
+cbuffer BoneBuffer : register(b2) // 레지스터 번호 명시 권장
 {
-    matrix V;
-    matrix P;
-    matrix VP;
-    matrix VInv;
+    matrix BoneTransforms[MAX_MODEL_TRANSFORM];
 };
 
-cbuffer LightBuffer : register(b1)
+// 인스턴싱을 위해 구조체를 수정해야 합니다!
+struct VS_INST_INPUT
 {
-    float4 lightAmbient;
-    float4 lightDiffuse;
-    float4 lightSpecular;
-    float4 lightEmissive;
-    float3 lightDir;
-    float lightPadding;
-};
-
-cbuffer BoneBuffer : register(b2)
-{
-    matrix bones[250];
-};
-
-struct VS_INPUT
-{
-    float3 pos : POSITION;
+    float4 position : POSITION;
     float2 uv : TEXCOORD;
     float3 normal : NORMAL;
     float3 tangent : TANGENT;
-    float4 indices : BLENDINDICES;
-    float4 weights : BLENDWEIGHTS;
+    // ★ 인스턴싱 행렬 (Slot 1에서 들어옴)
+    matrix instWorld : INSTWORLD;
+};
+
+MeshOutput VS(VS_INST_INPUT input)
+{
+    MeshOutput output;
     
-    matrix instWorld : INSTWORLD; 
-};
-
-struct VS_OUTPUT
-{
-    float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD;
-    float3 normal : NORMAL;
-};
-
-Texture2D diffuseMap : register(t0);
-SamplerState sampler0 : register(s0);
-
-// Vertex Shader
-VS_OUTPUT VS(VS_INPUT input)
-{
-    VS_OUTPUT output;
-
-    /*
-    matrix skinMatrix = (matrix)0;
-    skinMatrix += mul(input.weights.x, bones[(uint)input.indices.x]);
-    skinMatrix += mul(input.weights.y, bones[(uint)input.indices.y]);
-    skinMatrix += mul(input.weights.z, bones[(uint)input.indices.z]);
-    skinMatrix += mul(input.weights.w, bones[(uint)input.indices.w]);
-
-    float4 position = mul(float4(input.pos, 1.0f), skinMatrix);
-    position = mul(position, input.instWorld);
-    position = mul(position, V);
-    position = mul(position, P);
-
-    output.pos = position;
+    // 1. [임시 땜빵] 스키닝 생략하고 월드 변환만 수행
+    // 만약 BoneTransforms가 0이면 여기서 모델이 깨지므로 일단 월드만 곱합니다.
+    float4 pos = input.position;
+    
+    // 2. 인스턴싱 행렬 적용 (W 대신 instWorld 사용!)
+    output.position = mul(pos, input.instWorld);
+    output.worldPosition = output.position.xyz;
+    
+    // 3. 뷰/투영 변환
+    output.position = mul(output.position, VP);
+    
     output.uv = input.uv;
-
-    output.normal = mul(input.normal, (float3x3)skinMatrix);
-    output.normal = normalize(mul(output.normal, (float3x3)input.instWorld));
-
-    return output;
-	*/
-
-    float4 position = float4(input.pos, 1.0f);
-
-    position = mul(position, input.instWorld); 
-    position = mul(position, V);
-    position = mul(position, P);
-
-    output.pos = position;
-    output.uv = input.uv;
-    output.normal = input.normal;
+    
+    // 4. 노말도 인스턴싱 행렬로 변환
+    output.normal = mul(input.normal, (float3x3) input.instWorld);
+    output.tangent = mul(input.tangent, (float3x3) input.instWorld);
 
     return output;
 }
 
-float4 PS(VS_OUTPUT input) : SV_Target
+float4 PS(MeshOutput input) : SV_TARGET
 {
-	float4 color = diffuseMap.Sample(sampler0, input.uv);
-
-    float3 tempLightDir = normalize(float3(1, -1, 1));
-    float diffuse = saturate(dot(input.normal, -tempLightDir));
+	// 1. 텍스처 샘플링
+    float4 color = DiffuseMap.Sample(LinearSampler, input.uv);
     
-    return color * (diffuse + 0.3f);
+    // [검증] 만약 텍스처가 안 나오면 투명도(Alpha) 문제일 수 있으니 1.0으로 강제 고정해봅니다.
+    // return float4(color.rgb, 1.0f); 
+    
+    return color;
 }
 
 technique11 T0
 {
-	pass P0
-    {
-        SetVertexShader(CompileShader(vs_5_0, VS()));
-        SetPixelShader(CompileShader(ps_5_0, PS()));
-    }
-};
+	PASS_VP(P0, VS, PS)
+}

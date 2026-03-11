@@ -27,7 +27,7 @@ public :
 
 	void Update();
 
-	// shared_ptr<Material> Clone();
+	std::shared_ptr<Material> Clone();
 
 private :
 	friend class MeshRenderer;

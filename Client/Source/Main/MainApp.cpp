@@ -30,7 +30,8 @@ void MainApp::Init()
 	scene->SetMainCamera(camera);
 
 	std::shared_ptr<Model> chickenModel = std::make_shared <Model>();
-	chickenModel->ReadModel(L"Separate/Pinguin_001");
+	chickenModel->ReadModel(L"Character/Ch03");
+	chickenModel->ReadMaterial(L"Character/Ch03");
 
 	std::shared_ptr<ModelRenderer> chickenRenderer = std::make_shared<ModelRenderer>(shader);
 	chickenRenderer->SetModel(chickenModel);
@@ -41,6 +42,7 @@ void MainApp::Init()
 	chicken->AddComponent(std::make_shared<Transform>());
 	chicken->AddComponent(chickenRenderer);
 
+	chicken->GetTransform()->SetScale(Vec3(0.2f, 0.2f, 0.2f));
 	chicken->GetTransform()->SetPosition(Vec3(1.f, 0.f, 1.2f));
 
 	scene->Add(chicken);

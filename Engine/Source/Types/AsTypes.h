@@ -26,16 +26,16 @@ struct asMesh
 
 struct asMaterial
 {
-	std::string		name;
+	std::string					name;
 
-	Color			ambient;
-	Color			diffuse;
-	Color			specular;
-	Color			emissive;
+	Color						ambient;
+	Color						diffuse;
+	Color						specular;
+	Color						emissive;
 
-	std::string		diffuseFile;
-	std::string		specularFile;
-	std::string		normalFile;
+	std::string					diffuseFile;
+	std::string					specularFile;
+	std::string					normalFile;
 };
 
 // Animation
@@ -48,10 +48,18 @@ struct asBlendWeight
 
 		switch (index)
 		{
-		case 0: indices.x = i; weights.x = w; break;
-		case 1: indices.y = i; weights.y = w; break;
-		case 2: indices.z = i; weights.z = w; break;
-		case 3: indices.w = i; weights.w = w; break;
+		case 0: 
+			indices.x = i; weights.x = w; 
+			break;
+		case 1: 
+			indices.y = i; weights.y = w; 
+			break;
+		case 2: 
+			indices.z = i; weights.z = w; 
+			break;
+		case 3: 
+			indices.w = i; weights.w = w; 
+			break;
 		}
 	}
 
@@ -113,16 +121,16 @@ struct asKeyframeData
 
 struct asKeyframe
 {
-	std::string							boneName;
-	std::vector<asKeyframeData>			transforms;
+	std::string										boneName;
+	std::vector<asKeyframeData>						transforms;
 };
 
 struct asAnimation
 {
-	std::string							name;
-	uint32								frameCount;
-	float								frameRate;
-	float								duration;
+	std::string										name;
+	uint32											frameCount;
+	float											frameRate;
+	float											duration;
 	std::vector<std::shared_ptr<asKeyframe>>		keyframes;
 };
 

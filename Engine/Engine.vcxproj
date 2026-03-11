@@ -268,6 +268,8 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\Global.hlsli" />
+    <None Include="Shaders\Light.hlsli" />
     <None Include="Source\Utils\SimpleMath.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

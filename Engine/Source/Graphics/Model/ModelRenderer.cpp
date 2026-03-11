@@ -69,7 +69,8 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 	const auto& meshes = _model->GetMeshes();
 	for (auto& mesh : meshes)
 	{
-		if (mesh->material) mesh->material->Update();
+		if (mesh->material) 
+			mesh->material->Update();
 
 		// BoneIndex
 		_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);

@@ -136,7 +136,8 @@ void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>&
 
 void InstancingManager::AddData(InstanceID instanceID, InstancingData& data)
 {
-	if (_buffers.find(instanceID) == _buffers.end()) _buffers[instanceID] = std::make_shared<InstancingBuffer>();
+	if (_buffers.find(instanceID) == _buffers.end()) 
+		_buffers[instanceID] = std::make_shared<InstancingBuffer>();
 
 	_buffers[instanceID]->AddData(data);
 }

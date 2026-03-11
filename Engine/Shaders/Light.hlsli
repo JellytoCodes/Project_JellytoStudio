@@ -1,0 +1,129 @@
+#ifndef _LIGHT_FX_
+#define _LIGHT_FX_
+
+#include "Global.hlsli"
+
+////////////
+// Struct //
+////////////
+
+struct LightDesc
+{
+    float4 ambient;
+    float4 diffuse;
+    float4 specular;
+    float4 emissive;
+    float3 direction;
+    float padding;
+};
+
+struct MaterialDesc
+{
+    float4 ambient;
+    float4 diffuse;
+    float4 specular;
+    float4 emissive;
+};
+
+/////////////////////
+// Constant Buffer //
+/////////////////////
+
+cbuffer LightBuffer
+{
+    LightDesc GlobalLight;
+};
+
+cbuffer MaterialBuffer
+{
+    MaterialDesc Material;
+};
+
+/////////
+// SRV //
+/////////
+
+Texture2D DiffuseMap;
+Texture2D SpecularMap;
+Texture2D NormalMap;
+
+//////////////
+// Function //
+//////////////
+
+float4 ComputeLight(float3 normal, float2 uv, float3 worldPosition)
+{
+    float4 ambientColor = 0;
+    float4 diffuseColor = 0;
+    float4 specularColor = 0;
+    float4 emissiveColor = 0;
+	
+	// Ambient
+	{
+        float4 color = GlobalLight.ambient * Material.ambient;
+        ambientColor = DiffuseMap.Sample(LinearSampler, uv) * color;
+    }
+	
+	// Diffuse
+	{
+        float4 color = DiffuseMap.Sample(LinearSampler, uv);
+        float value = dot(-GlobalLight.direction, normalize(normal));
+		
+        diffuseColor = color * value * GlobalLight.diffuse * Material.diffuse;
+    }
+	
+	// Specular
+	{
+        float3 R = reflect(GlobalLight.direction, normal);
+
+        float3 cameraPosition = CameraPosition();
+        float3 E = normalize(cameraPosition - worldPosition);
+
+        float value = saturate(dot(R, E));
+        float specular = pow(value, 10);
+		
+        specularColor = GlobalLight.specular * Material.specular * specular;
+    }
+	
+	// Emissive	
+	{
+        float3 cameraPosition = CameraPosition();
+        float3 E = normalize(cameraPosition - worldPosition);
+		
+        float value = saturate(dot(E, normal));
+        float emissive = 1.f - value;
+		
+        emissive = 1.f - value;
+        emissive = pow(emissive, 2);
+		
+        emissiveColor = GlobalLight.emissive * Material.emissive * emissive;
+    }
+	
+    return ambientColor + diffuseColor + specularColor + emissiveColor;
+}
+
+// inout은 c/c++로 치면 *(포인터), &(레퍼런스)와 같은 동작을 한다고 생각하면 된다.
+void ComputNormalMapping(inout float3 normal, float3 tangent, float2 uv)
+{
+	// [0, 255] 범위에서 [0, 1]로 변환
+    float4 map = NormalMap.Sample(LinearSampler, uv);
+	
+	// NormalMap을 불러왔을 때 아무 정보가 없는 (0, 0, 0) 상태일 때 종료하기 위함
+    if (any(map.rgb) == false)
+        return;
+
+    float3 N = normalize(normal); // z
+    float3 T = normalize(tangent); // x
+    float3 B = normalize(cross(N, T)); // y
+	
+    float3x3 TBN = float3x3(T, B, N);
+
+	// [0, 1] 범위에서 [-1, 1] 범위로 변환
+    float3 tangentSpaceNormal = (map.rgb * 2.f - 1.f);
+	
+    float3 worldNormal = mul(tangentSpaceNormal, TBN);
+
+    normal = worldNormal;
+}
+
+#endif
