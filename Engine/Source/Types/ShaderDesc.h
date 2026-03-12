@@ -50,6 +50,7 @@ struct KeyframeDesc
 	uint32	currFrame = 0;
 	uint32	nextFrame = 0;
 	float	ratio = 0;
+
 	float	sumTime = 0;
 	float	speed = 1.f;
 	Vec2	padding;

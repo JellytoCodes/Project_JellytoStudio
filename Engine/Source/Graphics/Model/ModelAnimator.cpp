@@ -3,6 +3,7 @@
 #include "ModelAnimator.h"
 #include "ModelAnimation.h"
 #include "Model.h"
+#include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Camera.h"
@@ -35,7 +36,7 @@ void ModelAnimator::SetModel(std::shared_ptr<Model> model)
 
 void ModelAnimator::Update()
 {
-	UpdateTweenData();
+
 }
 
 void ModelAnimator::UpdateTweenData()

@@ -38,7 +38,7 @@ public:
 	float GetWidth() const							{ return _width; }
 	float GetHeight() const							{ return _height; }
 
-	void SortGameObject();
+	void SortEntities();
 	void RenderForward();
 
 	void SetCullingMaskLayerOnOff(uint8 layer, bool on)

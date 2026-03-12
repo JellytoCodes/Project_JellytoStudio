@@ -44,6 +44,40 @@ void Converter::ExportModelData(std::wstring savePath)
 	ReadModelData(_scene->mRootNode, -1, -1);
 	ReadSkinData();
 
+	//Write CSV File
+	/*{
+		FILE* file;
+		::fopen_s(&file, "../Vertices.csv", "w");
+
+		for (std::shared_ptr<asBone>& bone : _bones)
+		{
+			std::string name = bone->name;
+			::fprintf(file, "%d,%s\n", bone->index, bone->name.c_str());
+		}
+
+		::fprintf(file, "\n");
+
+		for (std::shared_ptr<asMesh>& mesh : _meshes)
+		{
+			std::string name = mesh->name;
+			::printf("%s\n", name.c_str());
+
+			for (UINT i = 0; i < mesh->vertices.size(); i++)
+			{
+				Vec3 p = mesh->vertices[i].position;
+				Vec4 indices = mesh->vertices[i].blendIndices;
+				Vec4 weights = mesh->vertices[i].blendWeights;
+
+				::fprintf(file, "%f,%f,%f,", p.x, p.y, p.z);
+				::fprintf(file, "%f,%f,%f,%f,", indices.x, indices.y, indices.z, indices.w);
+				::fprintf(file, "%f,%f,%f,%f\n", weights.x, weights.y, weights.z, weights.w);
+			}
+		}
+
+		::fclose(file);
+	}*/
+
+
 	WriteModelFile(finalPath);
 }
 
@@ -60,45 +94,6 @@ void Converter::ExportAnimationData(std::wstring savePath, uint32 index /*= 0*/)
 	assert(index < _scene->mNumAnimations);
 	std::shared_ptr<asAnimation> animation = ReadAnimationData(_scene->mAnimations[index]);
 	WriteAnimationData(animation, finalPath);
-}
-
-void Converter::ExportCSV(std::wstring savePath)
-{
-	std::wstring finalPath = _modelPath + savePath + L".csv";
-	std::filesystem::path p(finalPath);
-	std::filesystem::create_directories(p.parent_path()); // 경로상의 모든 폴더 생성
-
-	std::string path = Utils::ToString(finalPath);
-	FILE* file = nullptr;
-	if (::fopen_s(&file, path.c_str(), "w") != 0 || file == nullptr)
-	{
-		::printf("Failed to open CSV file for writing: %s\n", path.c_str());
-		return;
-	}
-
-	::fprintf(file, "[Bone Index], [Bone Name]\n");
-	for (const auto& bone : _bones)
-	{
-		::fprintf(file, "%d,%s\n", bone->index, bone->name.c_str());
-	}
-
-	::fprintf(file, "\n");
-
-	for (const auto& mesh : _meshes)
-	{
-		::fprintf(file, "Mesh Name: %s\n", mesh->name.c_str());
-		::fprintf(file, "Pos.x, Pos.y, Pos.z, i1, i2, i3, i4, w1, w2, w3, w4\n");
-
-		for (const auto& v : mesh->vertices)
-		{
-			::fprintf(file, "%f,%f,%f,", v.position.x, v.position.y, v.position.z);
-			::fprintf(file, "%f,%f,%f,%f,", v.blendIndices.x, v.blendIndices.y, v.blendIndices.z, v.blendIndices.w);
-			::fprintf(file, "%f,%f,%f,%f\n", v.blendWeights.x, v.blendWeights.y, v.blendWeights.z, v.blendWeights.w);
-		}
-		::fprintf(file, "\n");
-	}
-
-	::fclose(file);
 }
 
 void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)
@@ -462,38 +457,63 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<asAnimation> animation, aiNodeAnim* srcNode)
 {
 	std::shared_ptr<asAnimationNode> node = std::make_shared<asAnimationNode>();
-	node->name = srcNode->mNodeName.C_Str();
+	node->name = srcNode->mNodeName;
 
-	for (uint32 t = 0; t < animation->frameCount; t++)
+	uint32 keyCount = max(max(srcNode->mNumPositionKeys, srcNode->mNumScalingKeys), srcNode->mNumRotationKeys);
+
+	for (uint32 k = 0; k < keyCount; k++)
 	{
 		asKeyframeData frameData;
-		frameData.time = (float)t;
 
-		// --- Position ---
-		if (srcNode->mNumPositionKeys > 0)
+		bool found = false;
+		uint32 t = node->keyframe.size();
+
+		// Position
+		if (::fabsf((float)srcNode->mPositionKeys[k].mTime - (float)t) <= 0.0001f)
 		{
-			uint32 k = (t < srcNode->mNumPositionKeys) ? t : srcNode->mNumPositionKeys - 1;
-			aiVector3D pos = srcNode->mPositionKeys[k].mValue;
-			frameData.translation = Vec3(pos.x, pos.y, pos.z);
+			aiVectorKey key = srcNode->mPositionKeys[k];
+			frameData.time = (float)key.mTime;
+			::memcpy_s(&frameData.translation, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
+
+			found = true;
 		}
 
-		// --- Rotation ---
-		if (srcNode->mNumRotationKeys > 0)
+		// Rotation
+		if (::fabsf((float)srcNode->mRotationKeys[k].mTime - (float)t) <= 0.0001f)
 		{
-			uint32 k = (t < srcNode->mNumRotationKeys) ? t : srcNode->mNumRotationKeys - 1;
-			aiQuaternion rot = srcNode->mRotationKeys[k].mValue;
-			frameData.rotation = Vec4(rot.x, rot.y, rot.z, rot.w);
+			aiQuatKey key = srcNode->mRotationKeys[k];
+			frameData.time = (float)key.mTime;
+
+			frameData.rotation.x = key.mValue.x;
+			frameData.rotation.y = key.mValue.y;
+			frameData.rotation.z = key.mValue.z;
+			frameData.rotation.w = key.mValue.w;
+
+			found = true;
 		}
 
-		// --- Scale ---
-		if (srcNode->mNumScalingKeys > 0)
+		// Scale
+		if (::fabsf((float)srcNode->mScalingKeys[k].mTime - (float)t) <= 0.0001f)
 		{
-			uint32 k = (t < srcNode->mNumScalingKeys) ? t : srcNode->mNumScalingKeys - 1;
-			aiVector3D scale = srcNode->mScalingKeys[k].mValue;
-			frameData.scale = Vec3(scale.x, scale.y, scale.z);
+			aiVectorKey key = srcNode->mScalingKeys[k];
+			frameData.time = (float)key.mTime;
+			::memcpy_s(&frameData.scale, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
+
+			found = true;
 		}
 
-		node->keyframe.push_back(frameData);
+		if (found == true)
+			node->keyframe.push_back(frameData);
+	}
+
+	// Keyframe 늘려주기
+	if (node->keyframe.size() < animation->frameCount)
+	{
+		uint32 count = animation->frameCount - node->keyframe.size();
+		asKeyframeData keyFrame = node->keyframe.back();
+
+		for (uint32 n = 0; n < count; n++)
+			node->keyframe.push_back(keyFrame);
 	}
 
 	return node;
@@ -536,6 +556,7 @@ void Converter::WriteAnimationData(std::shared_ptr<asAnimation> animation, std::
 {
 	auto path = std::filesystem::path(finalPath);
 
+	// 폴더가 없으면 만든다.
 	std::filesystem::create_directory(path.parent_path());
 
 	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();

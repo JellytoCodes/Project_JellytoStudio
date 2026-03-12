@@ -10,9 +10,9 @@ public:
 	void ClearData();
 
 private:
-	void RenderMeshRenderer(std::vector<std::shared_ptr<Entity>>& Entities);
-	void RenderModelRenderer(std::vector<std::shared_ptr<Entity>>& Entities);
-	void RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>& Entities);
+	void RenderMeshRenderer(std::vector<std::shared_ptr<Entity>>& entities);
+	void RenderModelRenderer(std::vector<std::shared_ptr<Entity>>& entities);
+	void RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>& entities);
 
 	void AddData(InstanceID instanceID, InstancingData& data);
 

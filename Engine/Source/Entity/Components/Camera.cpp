@@ -64,7 +64,7 @@ void Camera::UpdateMatrix()
 		_matProjection = ::XMMatrixOrthographicLH(_width, _height, _near, _far);
 }
 
-void Camera::SortGameObject()
+void Camera::SortEntities()
 {
 	std::shared_ptr<Scene> scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 	std::unordered_set<std::shared_ptr<Entity>>& entities = scene->GetEntities();
@@ -90,4 +90,5 @@ void Camera::RenderForward()
 	S_MatProjection = _matProjection;
 
 	GET_SINGLE(InstancingManager)->Render(_vecForward);
+
 }

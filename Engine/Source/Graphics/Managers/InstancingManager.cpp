@@ -27,11 +27,11 @@ void InstancingManager::ClearData()
 	}
 }
 
-void InstancingManager::RenderMeshRenderer(std::vector<std::shared_ptr<Entity>>& Entities)
+void InstancingManager::RenderMeshRenderer(std::vector<std::shared_ptr<Entity>>& entities)
 {
 	std::map<InstanceID, std::vector<std::shared_ptr<Entity>>> cache;
 
-	for (std::shared_ptr<Entity>& entity : Entities)
+	for (std::shared_ptr<Entity>& entity : entities)
 	{
 		if (entity->GetComponent<MeshRenderer>() == nullptr) continue;
 
@@ -60,11 +60,11 @@ void InstancingManager::RenderMeshRenderer(std::vector<std::shared_ptr<Entity>>&
 	}
 }
 
-void InstancingManager::RenderModelRenderer(std::vector<std::shared_ptr<Entity>>& Entities)
+void InstancingManager::RenderModelRenderer(std::vector<std::shared_ptr<Entity>>& entities)
 {
 	std::map < InstanceID, std::vector<std::shared_ptr<Entity>> > cache;
 
-	for (std::shared_ptr<Entity>& entity : Entities)
+	for (std::shared_ptr<Entity>& entity : entities)
 	{
 		if (entity->GetComponent<ModelRenderer>() == nullptr) continue;
 
@@ -93,11 +93,11 @@ void InstancingManager::RenderModelRenderer(std::vector<std::shared_ptr<Entity>>
 	}
 }
 
-void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>& Entities)
+void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>& entities)
 {
 	std::map <InstanceID, std::vector<std::shared_ptr<Entity>> > cache;
 
-	for (std::shared_ptr<Entity>& entity : Entities)
+	for (std::shared_ptr<Entity>& entity : entities)
 	{
 		if (entity->GetComponent<ModelAnimator>() == nullptr) continue;
 
@@ -115,15 +115,15 @@ void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>&
 
 			for (int32 i = 0; i < vec.size(); i++)
 			{
-				const std::shared_ptr<Entity>& gameObject = vec[i];
+				const std::shared_ptr<Entity>& entity = vec[i];
 				InstancingData data;
-				data.world = gameObject->GetTransform()->GetWorldMatrix();
+				data.world = entity->GetTransform()->GetWorldMatrix();
 
 				AddData(id, data);
 
 				// INSTANCING
-				gameObject->GetComponent<ModelAnimator>()->UpdateTweenData();
-				tweenDesc->tweens[i] = gameObject->GetComponent<ModelAnimator>()->GetTweenDesc();
+				entity->GetComponent<ModelAnimator>()->UpdateTweenData();
+				tweenDesc->tweens[i] = entity->GetComponent<ModelAnimator>()->GetTweenDesc();
 			}
 
 			vec[0]->GetComponent<ModelAnimator>()->GetShader()->PushTweenData(*tweenDesc.get());

@@ -59,7 +59,7 @@ void Scene::Render()
 {
 	if (_mainCamera == nullptr) return;
 		
-	_mainCamera->SortGameObject();
+	_mainCamera->SortEntities();
     _mainCamera->RenderForward();
 }
 

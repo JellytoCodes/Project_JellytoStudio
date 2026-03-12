@@ -16,7 +16,6 @@ void FBXConverter::Init()
 		converter->ReadAssetFile(L"Character/Twist_Dance.fbx");
 		converter->ExportAnimationData(L"Character/Twist_Dance");
 	}
-
 }
 
 void FBXConverter::Update()

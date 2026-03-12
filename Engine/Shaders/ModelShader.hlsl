@@ -1,105 +1,161 @@
 #include "Global.hlsli"
 #include "Light.hlsli"
 
-struct TweenFrame
+#define MAX_MODEL_TRANSFORMS 250
+#define MAX_MODEL_KEYFRAMES 500
+#define MAX_MODEL_INSTANCE 500
+
+struct KeyframeDesc
 {
     int animIndex;
-    int currFrame;
-    int nextFrame;
+    uint currFrame;
+    uint nextFrame;
     float ratio;
+    float sumTIme;
     float speed;
-    float sumTime;
-    float padding[2];
+    float2 padding;
 };
 
-struct TweenDesc
+struct TweenFrameDesc
 {
     float tweenDuration;
     float tweenRatio;
     float tweenSumTime;
     float padding;
-    TweenFrame curr;
-    TweenFrame next;
+	
+    KeyframeDesc curr;
+    KeyframeDesc next;
 };
 
-StructuredBuffer<TweenDesc> Tweens : register(t2);
+cbuffer TweenBuffer
+{
+    TweenFrameDesc TweenFrames[MAX_MODEL_INSTANCE];
+};
 
-Texture2DArray TransformMap : register(t1);
+cbuffer BoneBuffer
+{
+    matrix BoneTransforms[MAX_MODEL_TRANSFORMS];
+};
 
-struct VS_INST_INPUT
+uint BoneIndex;
+Texture2DArray TransformMap;
+
+struct VS_IN
 {
     float4 position : POSITION;
     float2 uv : TEXCOORD;
     float3 normal : NORMAL;
     float3 tangent : TANGENT;
-    float4 indices : BLENDINDICES;
-    float4 weights : BLENDWEIGHTS;
-    matrix instWorld : INSTWORLD;
-
-    uint instanceID : SV_InstanceID;
+    float4 blendIndices : BLEND_INDICES;
+    float4 blendWeights : BLEND_WEIGHTS;
+	// INSTANCING
+    uint instanceID : SV_INSTANCEID;
+    matrix world : INST;
 };
 
-matrix GetMatrix(int animIndex, int currFrame, int nextFrame, float ratio, int boneIndex)
+struct VS_OUT
 {
-    // Texture Load 좌표: int4(X, Y, TextureArrayIndex, MipLevel)
-    float4 c0 = TransformMap.Load(int4(boneIndex * 4 + 0, currFrame, animIndex, 0));
-    float4 c1 = TransformMap.Load(int4(boneIndex * 4 + 1, currFrame, animIndex, 0));
-    float4 c2 = TransformMap.Load(int4(boneIndex * 4 + 2, currFrame, animIndex, 0));
-    float4 c3 = TransformMap.Load(int4(boneIndex * 4 + 3, currFrame, animIndex, 0));
-    matrix currMat = matrix(c0, c1, c2, c3);
+    float4 position : SV_POSITION;
+    float3 worldPosition : POSITION1;
+    float2 uv : TEXCOORD;
+    float3 normal : NORMAL;
+};
 
-    float4 n0 = TransformMap.Load(int4(boneIndex * 4 + 0, nextFrame, animIndex, 0));
-    float4 n1 = TransformMap.Load(int4(boneIndex * 4 + 1, nextFrame, animIndex, 0));
-    float4 n2 = TransformMap.Load(int4(boneIndex * 4 + 2, nextFrame, animIndex, 0));
-    float4 n3 = TransformMap.Load(int4(boneIndex * 4 + 3, nextFrame, animIndex, 0));
-    matrix nextMat = matrix(n0, n1, n2, n3);
-
-    return currMat * (1.0f - ratio) + nextMat * ratio;
-}
-
-MeshOutput VS(VS_INST_INPUT input)
+matrix GetAnimationMatrix(VS_IN input)
 {
-    MeshOutput output;
+    float indices[4] = { input.blendIndices.x, input.blendIndices.y, input.blendIndices.z, input.blendIndices.w };
+    float weights[4] = { input.blendWeights.x, input.blendWeights.y, input.blendWeights.z, input.blendWeights.w };
 
-    // ★ StructuredBuffer에서 내 번호에 맞는 데이터 꺼내기
-    TweenDesc desc = Tweens[input.instanceID];
+    int animIndex[2];
+    int currFrame[2];
+    int nextFrame[2];
+    float ratio[2];
 
-    matrix m = 0;
-    [unroll]
+    animIndex[0] = TweenFrames[input.instanceID].curr.animIndex;
+    currFrame[0] = TweenFrames[input.instanceID].curr.currFrame;
+    nextFrame[0] = TweenFrames[input.instanceID].curr.nextFrame;
+    ratio[0] = TweenFrames[input.instanceID].curr.ratio;
+								 
+    animIndex[1] = TweenFrames[input.instanceID].next.animIndex;
+    currFrame[1] = TweenFrames[input.instanceID].next.currFrame;
+    nextFrame[1] = TweenFrames[input.instanceID].next.nextFrame;
+    ratio[1] = TweenFrames[input.instanceID].next.ratio;
+	
+	
+    float4 c0, c1, c2, c3;
+    float4 n0, n1, n2, n3;
+	
+    matrix curr = 0;
+    matrix next = 0;
+    matrix transform = 0;
+	
     for (int i = 0; i < 4; i++)
     {
-        if (input.weights[i] <= 0.0f)
-            continue;
-
-        matrix mat = GetMatrix(desc.curr.animIndex, desc.curr.currFrame, desc.curr.nextFrame, desc.curr.ratio, (int) input.indices[i]);
-        
-        if (desc.next.animIndex >= 0)
+        c0 = TransformMap.Load(int4(indices[i] * 4 + 0, currFrame[0], animIndex[0], 0));
+        c1 = TransformMap.Load(int4(indices[i] * 4 + 1, currFrame[0], animIndex[0], 0));
+        c2 = TransformMap.Load(int4(indices[i] * 4 + 2, currFrame[0], animIndex[0], 0));
+        c3 = TransformMap.Load(int4(indices[i] * 4 + 3, currFrame[0], animIndex[0], 0));
+        curr = matrix(c0, c1, c2, c3);
+																 			  
+        n0 = TransformMap.Load(int4(indices[i] * 4 + 0, nextFrame[0], animIndex[0], 0));
+        n1 = TransformMap.Load(int4(indices[i] * 4 + 1, nextFrame[0], animIndex[0], 0));
+        n2 = TransformMap.Load(int4(indices[i] * 4 + 2, nextFrame[0], animIndex[0], 0));
+        n3 = TransformMap.Load(int4(indices[i] * 4 + 3, nextFrame[0], animIndex[0], 0));
+        next = matrix(n0, n1, n2, n3);
+		
+        matrix result = lerp(curr, next, ratio[0]);
+		
+		// 다음 애니메이션이 있는지 확인
+        if (animIndex[1] >= 0)
         {
-            matrix nextAnimMat = GetMatrix(desc.next.animIndex, desc.next.currFrame, desc.next.nextFrame, desc.next.ratio, (int) input.indices[i]);
-            mat = mat * (1.0f - desc.tweenRatio) + nextAnimMat * desc.tweenRatio;
+            c0 = TransformMap.Load(int4(indices[i] * 4 + 0, currFrame[1], animIndex[1], 0));
+            c1 = TransformMap.Load(int4(indices[i] * 4 + 1, currFrame[1], animIndex[1], 0));
+            c2 = TransformMap.Load(int4(indices[i] * 4 + 2, currFrame[1], animIndex[1], 0));
+            c3 = TransformMap.Load(int4(indices[i] * 4 + 3, currFrame[1], animIndex[1], 0));
+            curr = matrix(c0, c1, c2, c3);
+																 		  			
+            n0 = TransformMap.Load(int4(indices[i] * 4 + 0, nextFrame[1], animIndex[1], 0));
+            n1 = TransformMap.Load(int4(indices[i] * 4 + 1, nextFrame[1], animIndex[1], 0));
+            n2 = TransformMap.Load(int4(indices[i] * 4 + 2, nextFrame[1], animIndex[1], 0));
+            n3 = TransformMap.Load(int4(indices[i] * 4 + 3, nextFrame[1], animIndex[1], 0));
+            next = matrix(n0, n1, n2, n3);
+		
+            matrix nextResult = lerp(curr, next, ratio[1]);
+            result = lerp(result, nextResult, TweenFrames[input.instanceID].tweenRatio);
         }
-
-        m += mul(input.weights[i], mat);
+		
+        transform += mul(weights[i], result);
     }
+	
+    return transform;
+}
 
-    float4 skinnedPos = mul(input.position, m);
-    output.position = mul(skinnedPos, input.instWorld);
-    output.worldPosition = output.position.xyz;
+VS_OUT VS(VS_IN input)
+{
+    VS_OUT output;
+	
+	//output.position = mul(input.position, BoneTransforms[BoneIndex]);
+    matrix m = GetAnimationMatrix(input);
+
+    output.position = mul(input.position, m);
+    output.position = mul(output.position, input.world);
+    output.worldPosition = output.position;
     output.position = mul(output.position, VP);
-
     output.uv = input.uv;
-    output.normal = normalize(mul(mul(input.normal, (float3x3) m), (float3x3) input.instWorld));
-    output.tangent = normalize(mul(mul(input.tangent, (float3x3) m), (float3x3) input.instWorld));
-
+    output.normal = input.normal;
+		
     return output;
 }
 
-float4 PS(MeshOutput input) : SV_TARGET
+float4 PS(VS_OUT input) : SV_TARGET
 {
-    return DiffuseMap.Sample(LinearSampler, input.uv);
+	//float4 color = ComputeLight(input.normal, input.uv, input.worldPosition);
+	
+    float4 color = DiffuseMap.Sample(LinearSampler, input.uv);
+    return color;
 }
 
 technique11 T0
 {
-    PASS_VP(P0, VS, PS)
+	PASS_VP(P0, VS, PS)
 }
