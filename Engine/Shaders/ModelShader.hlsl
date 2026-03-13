@@ -48,6 +48,7 @@ struct VS_IN
     float3 tangent : TANGENT;
     float4 blendIndices : BLEND_INDICES;
     float4 blendWeights : BLEND_WEIGHTS;
+
 	// INSTANCING
     uint instanceID : SV_INSTANCEID;
     matrix world : INST;

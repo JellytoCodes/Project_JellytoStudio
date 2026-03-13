@@ -31,23 +31,16 @@ void MainApp::Init()
     m1->ReadMaterial(L"Character/Ch03");
     m1->ReadAnimation(L"Character/Twist_Dance");
 
-    for (int z = 0 ; z < 5 ; z++)
-    {
-        for (int x = 0; x < 5; x++)
-        {
-            auto e1 = std::make_shared<Entity>();
-            e1->AddComponent(std::make_shared<Transform>());
+    auto e1 = std::make_shared<Entity>();
+    e1->AddComponent(std::make_shared<Transform>());
 
-            auto animator = std::make_shared<ModelAnimator>(shader);
-            animator->SetModel(m1);
-            e1->AddComponent(animator);
+    auto animator = std::make_shared<ModelAnimator>(shader);
+    animator->SetModel(m1);
+    e1->AddComponent(animator);
 
-            e1->GetTransform()->SetScale(Vec3(0.1f));
-            e1->GetTransform()->SetPosition(Vec3(8.f * x, 0.f, 8.f * z));
+    e1->GetTransform()->SetScale(Vec3(0.1f));
 
-            scene->Add(e1);
-        }
-    }
+    scene->Add(e1);
 
     GET_SINGLE(SceneManager)->ChangeScene(scene);
 }
