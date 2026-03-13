@@ -46,35 +46,7 @@ void Converter::ExportModelData(std::wstring savePath)
 
 	//Write CSV File
 	/*{
-		FILE* file;
-		::fopen_s(&file, "../Vertices.csv", "w");
 
-		for (std::shared_ptr<asBone>& bone : _bones)
-		{
-			std::string name = bone->name;
-			::fprintf(file, "%d,%s\n", bone->index, bone->name.c_str());
-		}
-
-		::fprintf(file, "\n");
-
-		for (std::shared_ptr<asMesh>& mesh : _meshes)
-		{
-			std::string name = mesh->name;
-			::printf("%s\n", name.c_str());
-
-			for (UINT i = 0; i < mesh->vertices.size(); i++)
-			{
-				Vec3 p = mesh->vertices[i].position;
-				Vec4 indices = mesh->vertices[i].blendIndices;
-				Vec4 weights = mesh->vertices[i].blendWeights;
-
-				::fprintf(file, "%f,%f,%f,", p.x, p.y, p.z);
-				::fprintf(file, "%f,%f,%f,%f,", indices.x, indices.y, indices.z, indices.w);
-				::fprintf(file, "%f,%f,%f,%f\n", weights.x, weights.y, weights.z, weights.w);
-			}
-		}
-
-		::fclose(file);
 	}*/
 
 
@@ -94,6 +66,39 @@ void Converter::ExportAnimationData(std::wstring savePath, uint32 index /*= 0*/)
 	assert(index < _scene->mNumAnimations);
 	std::shared_ptr<asAnimation> animation = ReadAnimationData(_scene->mAnimations[index]);
 	WriteAnimationData(animation, finalPath);
+}
+
+void Converter::ExportCSV(std::wstring savePath)
+{
+	FILE* file;
+	::fopen_s(&file, "../Vertices.csv", "w");
+
+	for (std::shared_ptr<asBone>& bone : _bones)
+	{
+		std::string name = bone->name;
+		::fprintf(file, "%d,%s\n", bone->index, bone->name.c_str());
+	}
+
+	::fprintf(file, "\n");
+
+	for (std::shared_ptr<asMesh>& mesh : _meshes)
+	{
+		std::string name = mesh->name;
+		::printf("%s\n", name.c_str());
+
+		for (UINT i = 0; i < mesh->vertices.size(); i++)
+		{
+			Vec3 p = mesh->vertices[i].position;
+			Vec4 indices = mesh->vertices[i].blendIndices;
+			Vec4 weights = mesh->vertices[i].blendWeights;
+
+			::fprintf(file, "%f,%f,%f,", p.x, p.y, p.z);
+			::fprintf(file, "%f,%f,%f,%f,", indices.x, indices.y, indices.z, indices.w);
+			::fprintf(file, "%f,%f,%f,%f\n", weights.x, weights.y, weights.z, weights.w);
+		}
+	}
+
+	::fclose(file);
 }
 
 void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)

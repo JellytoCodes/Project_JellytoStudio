@@ -71,15 +71,15 @@ matrix GetAnimationMatrix(VS_IN input)
     int nextFrame[2];
     float ratio[2];
 
-    animIndex[0] = TweenFrames[input.instanceID].curr.animIndex;
-    currFrame[0] = TweenFrames[input.instanceID].curr.currFrame;
-    nextFrame[0] = TweenFrames[input.instanceID].curr.nextFrame;
-    ratio[0] = TweenFrames[input.instanceID].curr.ratio;
+    animIndex[0]    = TweenFrames[input.instanceID].curr.animIndex;
+    currFrame[0]    = TweenFrames[input.instanceID].curr.currFrame;
+    nextFrame[0]    = TweenFrames[input.instanceID].curr.nextFrame;
+    ratio[0]        = TweenFrames[input.instanceID].curr.ratio;
 								 
-    animIndex[1] = TweenFrames[input.instanceID].next.animIndex;
-    currFrame[1] = TweenFrames[input.instanceID].next.currFrame;
-    nextFrame[1] = TweenFrames[input.instanceID].next.nextFrame;
-    ratio[1] = TweenFrames[input.instanceID].next.ratio;
+    animIndex[1]    = TweenFrames[input.instanceID].next.animIndex;
+    currFrame[1]    = TweenFrames[input.instanceID].next.currFrame;
+    nextFrame[1]    = TweenFrames[input.instanceID].next.nextFrame;
+    ratio[1]        = TweenFrames[input.instanceID].next.ratio;
 	
 	
     float4 c0, c1, c2, c3;

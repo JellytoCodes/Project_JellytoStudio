@@ -185,7 +185,7 @@ void ModelAnimator::CreateTexture()
 				::memcpy(ptr, _animTransforms[c].transforms[f].data(), dataSize);
 			}
 		}
-
+		 
 		// 리소스 만들기
 		std::vector<D3D11_SUBRESOURCE_DATA> subResources(_model->GetAnimationCount());
 

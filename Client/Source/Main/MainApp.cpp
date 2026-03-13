@@ -49,7 +49,6 @@ void MainApp::Init()
         }
     }
 
-
     GET_SINGLE(SceneManager)->ChangeScene(scene);
 }
 
