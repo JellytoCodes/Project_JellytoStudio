@@ -44,12 +44,6 @@ void Converter::ExportModelData(std::wstring savePath)
 	ReadModelData(_scene->mRootNode, -1, -1);
 	ReadSkinData();
 
-	//Write CSV File
-	/*{
-
-	}*/
-
-
 	WriteModelFile(finalPath);
 }
 
@@ -108,24 +102,19 @@ void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)
 	bone->parent = parent;
 	bone->name = node->mName.C_Str();
 
-	// Relative Transform
 	Matrix transform(node->mTransformation[0]);
 	bone->transform = transform.Transpose();
 
-	// 2) Root (Local)
 	Matrix matParent = Matrix::Identity;
 	if (parent >= 0)
 		matParent = _bones[parent]->transform;
 
-	// Local (Root) Transform
 	bone->transform = bone->transform * matParent;
 
 	_bones.push_back(bone);
 
-	// Mesh
 	ReadMeshData(node, index);
 
-	// 재귀 함수
 	for (uint32 i = 0; i < node->mNumChildren; i++)
 		ReadModelData(node->mChildren[i], _bones.size(), index);
 }
@@ -144,7 +133,6 @@ void Converter::ReadMeshData(aiNode* node, int32 bone)
 		uint32 index = node->mMeshes[i];
 		const aiMesh* srcMesh = _scene->mMeshes[index];
 
-		// Material Name
 		const aiMaterial* material = _scene->mMaterials[srcMesh->mMaterialIndex];
 		mesh->materialName = material->GetName().C_Str();
 
@@ -167,7 +155,6 @@ void Converter::ReadMeshData(aiNode* node, int32 bone)
 			mesh->vertices.push_back(vertex);
 		}
 
-		// Index
 		for (uint32 f = 0; f < srcMesh->mNumFaces; f++)
 		{
 			aiFace& face = srcMesh->mFaces[f];
@@ -193,7 +180,6 @@ void Converter::ReadSkinData()
 		std::vector<asBoneWeights> tempVertexBoneWeights;
 		tempVertexBoneWeights.resize(mesh->vertices.size());
 
-		// Bone을 순회하면서 연관된 VertexId, Weight를 구해서 기록한다.
 		for (uint32 b = 0; b < srcMesh->mNumBones; b++)
 		{
 			aiBone* srcMeshBone = srcMesh->mBones[b];
@@ -207,7 +193,6 @@ void Converter::ReadSkinData()
 			}
 		}
 
-		// 최종 결과 계산
 		for (uint32 v = 0; v < tempVertexBoneWeights.size(); v++)
 		{
 			tempVertexBoneWeights[v].Normalize();
@@ -223,13 +208,11 @@ void Converter::WriteModelFile(std::wstring finalPath)
 {
 	auto path = std::filesystem::path(finalPath);
 
-	// 폴더가 없으면 만든다.
 	std::filesystem::create_directory(path.parent_path());
 
 	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();
 	file->Open(finalPath, FileMode::Write);
 
-	// Bone Data
 	file->Write<uint32>(_bones.size());
 	for (std::shared_ptr<asBone>& bone : _bones)
 	{
@@ -239,7 +222,6 @@ void Converter::WriteModelFile(std::wstring finalPath)
 		file->Write<Matrix>(bone->transform);
 	}
 
-	// Mesh Data
 	file->Write<uint32>(_meshes.size());
 	for (std::shared_ptr<asMesh>& meshData : _meshes)
 	{
@@ -247,11 +229,9 @@ void Converter::WriteModelFile(std::wstring finalPath)
 		file->Write<int32>(meshData->boneIndex);
 		file->Write<std::string>(meshData->materialName);
 
-		// Vertex Data
 		file->Write<uint32>(meshData->vertices.size());
 		file->Write(&meshData->vertices[0], sizeof(VertexType) * meshData->vertices.size());
 
-		// Index Data
 		file->Write<uint32>(meshData->indices.size());
 		file->Write(&meshData->indices[0], sizeof(uint32) * meshData->indices.size());
 	}
@@ -306,7 +286,6 @@ void Converter::WriteMaterialData(std::wstring finalPath)
 {
 	auto path = std::filesystem::path(finalPath);
 
-	// 폴더가 없으면 만든다.
 	std::filesystem::create_directory(path.parent_path());
 
 	std::string folder = path.parent_path().string();
@@ -445,10 +424,8 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 	{
 		aiNodeAnim* srcNode = srcAnimation->mChannels[i];
 
-		// 애니메이션 노드 데이터 파싱
 		std::shared_ptr<asAnimationNode> node = ParseAnimationNode(animation, srcNode);
 
-		// 현재 찾은 노드 중에 제일 긴 시간으로 애니메이션 시간 갱신
 		animation->duration = max(animation->duration, node->keyframe.back().time);
 
 		cacheAnimNodes[srcNode->mNodeName.C_Str()] = node;
@@ -483,7 +460,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			found = true;
 		}
 
-		// Rotation
 		if (::fabsf((float)srcNode->mRotationKeys[k].mTime - (float)t) <= 0.0001f)
 		{
 			aiQuatKey key = srcNode->mRotationKeys[k];
@@ -497,7 +473,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			found = true;
 		}
 
-		// Scale
 		if (::fabsf((float)srcNode->mScalingKeys[k].mTime - (float)t) <= 0.0001f)
 		{
 			aiVectorKey key = srcNode->mScalingKeys[k];
@@ -511,7 +486,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			node->keyframe.push_back(frameData);
 	}
 
-	// Keyframe 늘려주기
 	if (node->keyframe.size() < animation->frameCount)
 	{
 		uint32 count = animation->frameCount - node->keyframe.size();
