@@ -16,7 +16,7 @@ struct asMesh
 {
 	std::string					name;
 
-	aiMesh* mesh;
+	aiMesh*						mesh;
 	std::vector<VertexType>		vertices;
 	std::vector<uint32>			indices;
 
@@ -75,9 +75,9 @@ struct asBoneWeights
 		if (weight <= 0.f) return;
 
 		auto findIt = std::find_if(boneWeights.begin(), boneWeights.end(),
-			[weight](const Pair& p) { return weight > p.second; });
+			[weight](const std::pair<int32, float>& p) { return weight > p.second; });
 
-		boneWeights.insert(findIt, Pair(boneIndex, weight));
+		boneWeights.insert(findIt, std::pair<int32, float>(boneIndex, weight));
 	}
 
 	asBlendWeight GetBlendWeights()
@@ -107,8 +107,7 @@ struct asBoneWeights
 			item.second /= totalWeight;
 	}
 
-	using Pair = std::pair<int32, float>;
-	std::vector<Pair> boneWeights;
+	std::vector<std::pair<int32, float>> boneWeights;
 };
 
 struct asKeyframeData

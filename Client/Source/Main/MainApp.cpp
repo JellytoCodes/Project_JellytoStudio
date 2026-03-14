@@ -29,7 +29,7 @@ void MainApp::Init()
     std::shared_ptr<Model> m1 = std::make_shared<Model>();
     m1->ReadModel(L"Character/Ch03");
     m1->ReadMaterial(L"Character/Ch03");
-    m1->ReadAnimation(L"Character/Twist_Dance");
+    m1->ReadAnimation(L"Character/TwistDance");
 
     auto e1 = std::make_shared<Entity>();
     e1->AddComponent(std::make_shared<Transform>());

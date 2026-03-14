@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Converter.h"
 #include <filesystem>
@@ -11,12 +10,10 @@
 Converter::Converter()
 {
 	_importer = std::make_shared<Assimp::Importer>();
-
 }
 
 Converter::~Converter()
 {
-
 }
 
 void Converter::ReadAssetFile(std::wstring file)
@@ -43,6 +40,8 @@ void Converter::ExportModelData(std::wstring savePath)
 	std::wstring finalPath = _modelPath + savePath + L".mesh";
 	ReadModelData(_scene->mRootNode, -1, -1);
 	ReadSkinData();
+
+	ExportCSV(savePath);
 
 	WriteModelFile(finalPath);
 }
@@ -95,10 +94,93 @@ void Converter::ExportCSV(std::wstring savePath)
 	::fclose(file);
 }
 
+void Converter::ExportAnimationCSV(std::wstring savePath)
+{
+	std::string tag = Utils::ToString(savePath);
+	for (char& c : tag) if (c == '/' || c == '\\') c = '_';
+	std::string csvPath = "../AnimDebug_" + tag + ".csv";
+
+	FILE* file;
+	if (::fopen_s(&file, csvPath.c_str(), "w") != 0 || !file)
+	{
+		::printf("[ExportAnimationCSV] Failed to open: %s\n", csvPath.c_str());
+		return;
+	}
+
+	for (uint32 animIdx = 0; animIdx < _scene->mNumAnimations; animIdx++)
+	{
+		aiAnimation* srcAnim = _scene->mAnimations[animIdx];
+		float tps = (srcAnim->mTicksPerSecond > 0.0) ? (float)srcAnim->mTicksPerSecond : 30.f;
+		uint32 frameCount = (uint32)srcAnim->mDuration + 1;
+		float duration    = (float)srcAnim->mDuration / tps;
+
+		// 1. 메타 정보
+		::fprintf(file, "[ANIM_META]\n");
+		::fprintf(file, "AnimIndex,Name,mDuration_ticks,mTicksPerSecond,FrameCount,Duration_sec\n");
+		::fprintf(file, "%u,%s,%.4f,%.4f,%u,%.6f\n\n",
+			animIdx, srcAnim->mName.C_Str(),
+			(float)srcAnim->mDuration, tps, frameCount, duration);
+
+		// 2. 원본 mTime 틱 값 (이상 프레임 진단용)
+		::fprintf(file, "[RAW_KEYS] AnimIndex=%u\n", animIdx);
+		::fprintf(file, "Channel,KeyType,KeyIndex,mTime_ticks\n");
+		for (uint32 ch = 0; ch < srcAnim->mNumChannels; ch++)
+		{
+			aiNodeAnim* node = srcAnim->mChannels[ch];
+			const char* nodeName = node->mNodeName.C_Str();
+
+			for (uint32 k = 0; k < node->mNumPositionKeys; k++)
+				::fprintf(file, "%s,POS,%u,%.6f\n", nodeName, k, (float)node->mPositionKeys[k].mTime);
+			for (uint32 k = 0; k < node->mNumRotationKeys; k++)
+				::fprintf(file, "%s,ROT,%u,%.6f\n", nodeName, k, (float)node->mRotationKeys[k].mTime);
+			for (uint32 k = 0; k < node->mNumScalingKeys; k++)
+				::fprintf(file, "%s,SCL,%u,%.6f\n", nodeName, k, (float)node->mScalingKeys[k].mTime);
+		}
+		::fprintf(file, "\n");
+
+		// 3. 파싱 후 asKeyframeData (bone별 프레임별 TRS + QuatNorm)
+		std::shared_ptr<asAnimation> parsedAnim = ReadAnimationData(srcAnim);
+
+		::fprintf(file, "[PARSED_KEYFRAMES] AnimIndex=%u FrameCount=%u\n", animIdx, parsedAnim->frameCount);
+		::fprintf(file, "BoneName,Frame,Time_sec,Tx,Ty,Tz,Rx,Ry,Rz,Rw,Sx,Sy,Sz,QuatNorm\n");
+
+		for (auto& kf : parsedAnim->keyframes)
+		{
+			for (uint32 f = 0; f < (uint32)kf->transforms.size(); f++)
+			{
+				const asKeyframeData& d = kf->transforms[f];
+				float quatNorm = sqrtf(
+					d.rotation.x * d.rotation.x +
+					d.rotation.y * d.rotation.y +
+					d.rotation.z * d.rotation.z +
+					d.rotation.w * d.rotation.w);
+
+				::fprintf(file,
+					"%s,%u,%.6f,"
+					"%.6f,%.6f,%.6f,"
+					"%.6f,%.6f,%.6f,%.6f,"
+					"%.6f,%.6f,%.6f,"
+					"%.6f\n",
+					kf->boneName.c_str(), f, d.time,
+					d.translation.x, d.translation.y, d.translation.z,
+					d.rotation.x, d.rotation.y, d.rotation.z, d.rotation.w,
+					d.scale.x, d.scale.y, d.scale.z,
+					quatNorm);
+			}
+		}
+		::fprintf(file, "\n");
+	}
+
+	::fclose(file);
+	::printf("[ExportAnimationCSV] Saved: %s\n", csvPath.c_str());
+}
+
 void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)
 {
 	std::shared_ptr<asBone> bone = std::make_shared<asBone>();
-	bone->index = index;
+
+	int32 boneIndex = (int32)_bones.size();
+	bone->index = boneIndex;
 	bone->parent = parent;
 	bone->name = node->mName.C_Str();
 
@@ -113,10 +195,12 @@ void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)
 
 	_bones.push_back(bone);
 
-	ReadMeshData(node, index);
+	ReadMeshData(node, boneIndex);
 
 	for (uint32 i = 0; i < node->mNumChildren; i++)
-		ReadModelData(node->mChildren[i], _bones.size(), index);
+	{
+		ReadModelData(node->mChildren[i], (int32)_bones.size(), boneIndex);
+	}
 }
 
 void Converter::ReadMeshData(aiNode* node, int32 bone)
@@ -140,15 +224,12 @@ void Converter::ReadMeshData(aiNode* node, int32 bone)
 
 		for (uint32 v = 0; v < srcMesh->mNumVertices; v++)
 		{
-			// Vertex
 			VertexType vertex;
 			::memcpy(&vertex.position, &srcMesh->mVertices[v], sizeof(Vec3));
 
-			// UV
 			if (srcMesh->HasTextureCoords(0))
 				::memcpy(&vertex.uv, &srcMesh->mTextureCoords[0][v], sizeof(Vec2));
 
-			// Normal
 			if (srcMesh->HasNormals())
 				::memcpy(&vertex.normal, &srcMesh->mNormals[v], sizeof(Vec3));
 
@@ -207,7 +288,6 @@ void Converter::ReadSkinData()
 void Converter::WriteModelFile(std::wstring finalPath)
 {
 	auto path = std::filesystem::path(finalPath);
-
 	std::filesystem::create_directory(path.parent_path());
 
 	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();
@@ -247,34 +327,26 @@ void Converter::ReadMaterialData()
 		material->name = srcMaterial->GetName().C_Str();
 
 		aiColor3D color;
-		// Ambient
 		srcMaterial->Get(AI_MATKEY_COLOR_AMBIENT, color);
 		material->ambient = Color(color.r, color.g, color.b, 1.f);
 
-		// Diffuse
 		srcMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 		material->diffuse = Color(color.r, color.g, color.b, 1.f);
 
-		// Specular
 		srcMaterial->Get(AI_MATKEY_COLOR_SPECULAR, color);
 		material->specular = Color(color.r, color.g, color.b, 1.f);
 		srcMaterial->Get(AI_MATKEY_SHININESS, material->specular.w);
 
-		// Emissive
 		srcMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, color);
 		material->emissive = Color(color.r, color.g, color.b, 1.0f);
 
 		aiString file;
-
-		// Diffuse Texture
 		srcMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &file);
 		material->diffuseFile = file.C_Str();
 
-		// Specular Texture
 		srcMaterial->GetTexture(aiTextureType_SPECULAR, 0, &file);
 		material->specularFile = file.C_Str();
 
-		// Normal Texture
 		srcMaterial->GetTexture(aiTextureType_NORMALS, 0, &file);
 		material->normalFile = file.C_Str();
 
@@ -285,7 +357,6 @@ void Converter::ReadMaterialData()
 void Converter::WriteMaterialData(std::wstring finalPath)
 {
 	auto path = std::filesystem::path(finalPath);
-
 	std::filesystem::create_directory(path.parent_path());
 
 	std::string folder = path.parent_path().string();
@@ -392,7 +463,6 @@ std::string Converter::WriteTexture(std::string saveFolder, std::string file)
 			DirectX::ScratchImage img;
 			::CaptureTexture(Graphics::Get()->GetDevice().Get(), Graphics::Get()->GetDeviceContext().Get(), texture.Get(), img);
 
-			// Save To File
 			hr = DirectX::SaveToDDSFile(*img.GetImages(), DirectX::DDS_FLAGS_NONE, Utils::ToWString(fileName).c_str());
 			CHECK(hr);
 		}
@@ -415,20 +485,32 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 {
 	std::shared_ptr<asAnimation> animation = std::make_shared<asAnimation>();
 	animation->name = srcAnimation->mName.C_Str();
-	animation->frameRate = (float)srcAnimation->mTicksPerSecond;
+
+	float ticksPerSecond = (srcAnimation->mTicksPerSecond > 0.0)
+		? (float)srcAnimation->mTicksPerSecond
+		: 30.0f;
+
+	animation->frameRate  = ticksPerSecond;
 	animation->frameCount = (uint32)srcAnimation->mDuration + 1;
+	animation->duration   = (float)srcAnimation->mDuration / ticksPerSecond;
 
 	std::map<std::string, std::shared_ptr<asAnimationNode>> cacheAnimNodes;
 
 	for (uint32 i = 0; i < srcAnimation->mNumChannels; i++)
 	{
 		aiNodeAnim* srcNode = srcAnimation->mChannels[i];
-
 		std::shared_ptr<asAnimationNode> node = ParseAnimationNode(animation, srcNode);
 
-		animation->duration = max(animation->duration, node->keyframe.back().time);
-
-		cacheAnimNodes[srcNode->mNodeName.C_Str()] = node;
+		// Mixamo FBX는 각 본의 rotation을 "BoneName_$AssimpFbx$_Rotation" 이라는
+		// 별도 중간 노드에 저장함. 이 접미사를 제거해 원래 본 이름으로 매핑.
+		std::string channelName = srcNode->mNodeName.C_Str();
+		const std::string fbxSuffix = "_$AssimpFbx$_Rotation";
+		if (channelName.size() > fbxSuffix.size() &&
+			channelName.substr(channelName.size() - fbxSuffix.size()) == fbxSuffix)
+		{
+			channelName = channelName.substr(0, channelName.size() - fbxSuffix.size());
+		}
+		cacheAnimNodes[channelName] = node;
 	}
 
 	ReadKeyframeData(animation, _scene->mRootNode, cacheAnimNodes);
@@ -439,60 +521,118 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<asAnimation> animation, aiNodeAnim* srcNode)
 {
 	std::shared_ptr<asAnimationNode> node = std::make_shared<asAnimationNode>();
-	node->name = srcNode->mNodeName;
+	node->name = srcNode->mNodeName.C_Str();
 
-	uint32 keyCount = max(max(srcNode->mNumPositionKeys, srcNode->mNumScalingKeys), srcNode->mNumRotationKeys);
+	const uint32 frameCount = animation->frameCount;
 
-	for (uint32 k = 0; k < keyCount; k++)
+	auto buildIndexMap = [](uint32 numKeys, auto* keys) -> std::vector<uint32>
+	{
+		// -inf / NaN / 음수 mTime은 Mixamo FBX의 쓰레기 키 → 완전히 무시
+		uint32 maxFrame = 0;
+		for (uint32 i = 0; i < numKeys; i++)
+		{
+			double t = keys[i].mTime;
+			if (!std::isfinite(t) || t < 0.0) continue;
+			maxFrame = max(maxFrame, (uint32)t);
+		}
+
+		std::vector<uint32> map(maxFrame + 1, UINT32_MAX);
+		for (uint32 i = 0; i < numKeys; i++)
+		{
+			double t = keys[i].mTime;
+			if (!std::isfinite(t) || t < 0.0) continue;
+			uint32 f = (uint32)t;
+			if (f <= maxFrame) map[f] = i;
+		}
+		return map;
+	};
+
+	auto posMap   = buildIndexMap(srcNode->mNumPositionKeys, srcNode->mPositionKeys);
+	auto rotMap   = buildIndexMap(srcNode->mNumRotationKeys, srcNode->mRotationKeys);
+	auto scaleMap = buildIndexMap(srcNode->mNumScalingKeys,  srcNode->mScalingKeys);
+
+	auto findKey = [](const std::vector<uint32>& map, uint32 frame) -> uint32
+	{
+		if (frame < map.size() && map[frame] != UINT32_MAX)
+			return map[frame];
+
+		int32 f = (int32)std::min(frame, (uint32)map.size() - 1);
+		while (f >= 0)
+		{
+			if (map[f] != UINT32_MAX) return map[f];
+			f--;
+		}
+		return 0;
+	};
+
+	for (uint32 f = 0; f < frameCount; f++)
 	{
 		asKeyframeData frameData;
+		frameData.time = (float)f / animation->frameRate;
 
-		bool found = false;
-		uint32 t = node->keyframe.size();
-
-		// Position
-		if (::fabsf((float)srcNode->mPositionKeys[k].mTime - (float)t) <= 0.0001f)
+		// --- Position ---
+		if (srcNode->mNumPositionKeys > 0)
 		{
-			aiVectorKey key = srcNode->mPositionKeys[k];
-			frameData.time = (float)key.mTime;
-			::memcpy_s(&frameData.translation, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
+			uint32 k     = findKey(posMap, f);
+			uint32 kNext = (f + 1 < posMap.size() && posMap[f + 1] != UINT32_MAX) ? posMap[f + 1] : k;
 
-			found = true;
+			aiVector3D p0 = srcNode->mPositionKeys[k].mValue;
+			if (kNext != k)
+			{
+				aiVector3D p1 = srcNode->mPositionKeys[kNext].mValue;
+				float t0 = (float)srcNode->mPositionKeys[k].mTime;
+				float t1 = (float)srcNode->mPositionKeys[kNext].mTime;
+				float factor = (t1 - t0) > 0.f ? ((float)f - t0) / (t1 - t0) : 0.f;
+				factor = max(0.f, std::min(1.f, factor));
+				p0 = p0 + (p1 - p0) * factor;
+			}
+			::memcpy_s(&frameData.translation, sizeof(Vec3), &p0, sizeof(aiVector3D));
 		}
+		else { frameData.translation = Vec3(0, 0, 0); }
 
-		if (::fabsf((float)srcNode->mRotationKeys[k].mTime - (float)t) <= 0.0001f)
+		// --- Rotation ---
+		if (srcNode->mNumRotationKeys > 0)
 		{
-			aiQuatKey key = srcNode->mRotationKeys[k];
-			frameData.time = (float)key.mTime;
+			uint32 k     = findKey(rotMap, f);
+			uint32 kNext = (f + 1 < rotMap.size() && rotMap[f + 1] != UINT32_MAX) ? rotMap[f + 1] : k;
 
-			frameData.rotation.x = key.mValue.x;
-			frameData.rotation.y = key.mValue.y;
-			frameData.rotation.z = key.mValue.z;
-			frameData.rotation.w = key.mValue.w;
-
-			found = true;
+			aiQuaternion r0 = srcNode->mRotationKeys[k].mValue;
+			if (kNext != k)
+			{
+				aiQuaternion r1 = srcNode->mRotationKeys[kNext].mValue;
+				float t0 = (float)srcNode->mRotationKeys[k].mTime;
+				float t1 = (float)srcNode->mRotationKeys[kNext].mTime;
+				float factor = (t1 - t0) > 0.f ? ((float)f - t0) / (t1 - t0) : 0.f;
+				factor = max(0.f, std::min(1.f, factor));
+				aiQuaternion interpolated;
+				aiQuaternion::Interpolate(interpolated, r0, r1, factor);
+				r0 = interpolated;
+			}
+			frameData.rotation = { r0.x, r0.y, r0.z, r0.w };
 		}
+		else { frameData.rotation = { 0, 0, 0, 1 }; }
 
-		if (::fabsf((float)srcNode->mScalingKeys[k].mTime - (float)t) <= 0.0001f)
+		// --- Scale ---
+		if (srcNode->mNumScalingKeys > 0)
 		{
-			aiVectorKey key = srcNode->mScalingKeys[k];
-			frameData.time = (float)key.mTime;
-			::memcpy_s(&frameData.scale, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
+			uint32 k     = findKey(scaleMap, f);
+			uint32 kNext = (f + 1 < scaleMap.size() && scaleMap[f + 1] != UINT32_MAX) ? scaleMap[f + 1] : k;
 
-			found = true;
+			aiVector3D s0 = srcNode->mScalingKeys[k].mValue;
+			if (kNext != k)
+			{
+				aiVector3D s1 = srcNode->mScalingKeys[kNext].mValue;
+				float t0 = (float)srcNode->mScalingKeys[k].mTime;
+				float t1 = (float)srcNode->mScalingKeys[kNext].mTime;
+				float factor = (t1 - t0) > 0.f ? ((float)f - t0) / (t1 - t0) : 0.f;
+				factor = max(0.f, std::min(1.f, factor));
+				s0 = s0 + (s1 - s0) * factor;
+			}
+			::memcpy_s(&frameData.scale, sizeof(Vec3), &s0, sizeof(aiVector3D));
 		}
+		else { frameData.scale = Vec3(1, 1, 1); }
 
-		if (found == true)
-			node->keyframe.push_back(frameData);
-	}
-
-	if (node->keyframe.size() < animation->frameCount)
-	{
-		uint32 count = animation->frameCount - node->keyframe.size();
-		asKeyframeData keyFrame = node->keyframe.back();
-
-		for (uint32 n = 0; n < count; n++)
-			node->keyframe.push_back(keyFrame);
+		node->keyframe.push_back(frameData);
 	}
 
 	return node;
@@ -513,7 +653,7 @@ void Converter::ReadKeyframeData(std::shared_ptr<asAnimation> animation, aiNode*
 		{
 			Matrix transform(srcNode->mTransformation[0]);
 			transform = transform.Transpose();
-			frameData.time = (float)i;
+			frameData.time = (float)i / animation->frameRate;
 			transform.Decompose(OUT frameData.scale, OUT frameData.rotation, OUT frameData.translation);
 		}
 		else
@@ -524,7 +664,6 @@ void Converter::ReadKeyframeData(std::shared_ptr<asAnimation> animation, aiNode*
 		keyframe->transforms.push_back(frameData);
 	}
 
-	// 애니메이션 키프레임 채우기
 	animation->keyframes.push_back(keyframe);
 
 	for (uint32 i = 0; i < srcNode->mNumChildren; i++)
@@ -534,8 +673,6 @@ void Converter::ReadKeyframeData(std::shared_ptr<asAnimation> animation, aiNode*
 void Converter::WriteAnimationData(std::shared_ptr<asAnimation> animation, std::wstring finalPath)
 {
 	auto path = std::filesystem::path(finalPath);
-
-	// 폴더가 없으면 만든다.
 	std::filesystem::create_directory(path.parent_path());
 
 	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();

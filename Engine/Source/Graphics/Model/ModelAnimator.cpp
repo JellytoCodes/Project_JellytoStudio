@@ -3,7 +3,6 @@
 #include "ModelAnimator.h"
 #include "ModelAnimation.h"
 #include "Model.h"
-#include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Camera.h"
@@ -219,48 +218,61 @@ void ModelAnimator::CreateTexture()
 
 void ModelAnimator::CreateAnimationTransform(uint32 index)
 {
-	std::vector<Matrix> tempAnimBoneTransforms(MAX_MODEL_TRANSFORMS, Matrix::Identity);
-	std::shared_ptr<ModelAnimation> animation = _model->GetAnimationByIndex(index);
+    std::vector<Matrix> tempAnimBoneTransforms(MAX_MODEL_TRANSFORMS, Matrix::Identity);
 
-	for (uint32 f = 0; f < animation->frameCount; f++)
-	{
-		for (uint32 b = 0; b < _model->GetBoneCount(); b++)
-		{
-			std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
+    std::vector<Matrix> bindPoseGlobal(MAX_MODEL_TRANSFORMS, Matrix::Identity);
+    for (uint32 b = 0; b < _model->GetBoneCount(); b++)
+    {
+        std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
+        
+        // bone->transform은 누적된 global이 아니라 local로 저장돼 있어야 함
+        // 현재 Converter가 global로 구워넣고 있으므로, 
+        // 부모 global의 역행렬 × 현재 global = local 복원
+        int32 parentIndex = bone->parentIndex;
+        if (parentIndex < 0)
+        {
+            bindPoseGlobal[b] = bone->transform;
+        }
+        else
+        {
+            // 부모가 이미 계산됐으므로 그걸 그대로 사용
+            bindPoseGlobal[b] = bone->transform; // 이미 global
+        }
+    }
 
-			Matrix matAnimation;
+    std::shared_ptr<ModelAnimation> animation = _model->GetAnimationByIndex(index);
 
-			std::shared_ptr<ModelKeyframe> frame = animation->GetKeyframe(bone->name);
-			if (frame != nullptr)
-			{
-				ModelKeyframeData& data = frame->transforms[f];
+    for (uint32 f = 0; f < animation->frameCount; f++)
+    {
+        for (uint32 b = 0; b < _model->GetBoneCount(); b++)
+        {
+            std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
 
-				Matrix S, R, T;
-				S = Matrix::CreateScale(data.scale.x, data.scale.y, data.scale.z);
-				R = Matrix::CreateFromQuaternion(data.rotation);
-				T = Matrix::CreateTranslation(data.translation.x, data.translation.y, data.translation.z);
+            Matrix matAnimation;
+            std::shared_ptr<ModelKeyframe> frame = animation->GetKeyframe(bone->name);
+            if (frame != nullptr)
+            {
+                ModelKeyframeData& data = frame->transforms[f];
 
-				matAnimation = S * R * T;
-			}
-			else
-			{
-				matAnimation = Matrix::Identity;
-			}
+                Matrix S = Matrix::CreateScale(data.scale);
+                Matrix R = Matrix::CreateFromQuaternion(data.rotation);
+                Matrix T = Matrix::CreateTranslation(data.translation);
+                matAnimation = S * R * T;
+            }
+            else
+            {
+                matAnimation = Matrix::Identity;
+            }
 
-			// T-Pose
-			Matrix toRootMatrix = bone->transform;
-			Matrix invGlobal = toRootMatrix.Invert();
+            int32 parentIndex = bone->parentIndex;
+            Matrix matParent = Matrix::Identity;
+            if (parentIndex >= 0)
+                matParent = tempAnimBoneTransforms[parentIndex];
 
-			int32 parentIndex = bone->parentIndex;
+            tempAnimBoneTransforms[b] = matAnimation * matParent;
 
-			// Animation Transform
-			Matrix matParent = Matrix::Identity;
-			if (parentIndex >= 0) matParent = tempAnimBoneTransforms[parentIndex];
-
-			tempAnimBoneTransforms[b] = matAnimation * matParent;
-
-			// 결론
-			_animTransforms[index].transforms[f][b] = invGlobal * tempAnimBoneTransforms[b];
-		}
-	}
+            Matrix invBindPose = bindPoseGlobal[b].Invert();
+            _animTransforms[index].transforms[f][b] = invBindPose * tempAnimBoneTransforms[b];
+        }
+    }
 }
