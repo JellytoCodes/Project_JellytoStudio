@@ -1,5 +1,5 @@
 
-#include "Core/Framework.h"
+#include "pch.h"
 #include "Utils/Converter.h"
 #include "FBXConverter.h"
 
@@ -13,9 +13,9 @@ void FBXConverter::Init()
 	}
 	{
 		std::shared_ptr<Converter> converter = std::make_shared<Converter>();
-		converter->ReadAssetFile(L"Character/TwistDance.fbx");
-		converter->ExportAnimationData(L"Character/TwistDance");
-		converter->ExportAnimationCSV(L"Character/TwistDance");
+		converter->ReadAssetFile(L"Character/Capoeira.fbx");
+		converter->ExportAnimationData(L"Character/Capoeira");
+		converter->ExportAnimationCSV(L"Character/Capoeira");
 	}
 }
 

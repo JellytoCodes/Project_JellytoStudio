@@ -29,10 +29,7 @@ void MeshRenderer::Awake()
 
 void MeshRenderer::Start()
 {
-	auto device = Graphics::Get()->GetDevice();
-
-	_mesh = std::make_shared<Mesh>();
-	_mesh->CreateCube(device);
+	
 }
 
 void MeshRenderer::Update()
@@ -52,7 +49,7 @@ void MeshRenderer::OnDestroy()
 
 void MeshRenderer::RenderInstancing(const std::shared_ptr<InstancingBuffer>& buffer)
 {
-	if (_mesh == nullptr | _material == nullptr) return;
+	if (_mesh == nullptr || _material == nullptr) return;
 
 	std::shared_ptr<Shader> shader = _material->GetShader();
 	if (shader == nullptr) return;

@@ -13,5 +13,12 @@ public :
 	virtual void Render() override;
 
 private :
+	void CreateCamera();
+	void CreateModelAnimator();
+	void CreateSkySphere();
+	void CreateLightSphere();
+	void CreateFloor();
+
+	std::shared_ptr<Scene> _scene;
 };
 

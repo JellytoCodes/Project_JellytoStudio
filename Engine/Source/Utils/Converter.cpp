@@ -501,8 +501,6 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 		aiNodeAnim* srcNode = srcAnimation->mChannels[i];
 		std::shared_ptr<asAnimationNode> node = ParseAnimationNode(animation, srcNode);
 
-		// Mixamo FBX는 각 본의 rotation을 "BoneName_$AssimpFbx$_Rotation" 이라는
-		// 별도 중간 노드에 저장함. 이 접미사를 제거해 원래 본 이름으로 매핑.
 		std::string channelName = srcNode->mNodeName.C_Str();
 		const std::string fbxSuffix = "_$AssimpFbx$_Rotation";
 		if (channelName.size() > fbxSuffix.size() &&
@@ -542,7 +540,8 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			double t = keys[i].mTime;
 			if (!std::isfinite(t) || t < 0.0) continue;
 			uint32 f = (uint32)t;
-			if (f <= maxFrame) map[f] = i;
+			// 첫 번째 유효 키만 유지 (쓰레기 키가 같은 mTime=0.0으로 덮어쓰는 것 방지)
+			if (f <= maxFrame && map[f] == UINT32_MAX) map[f] = i;
 		}
 		return map;
 	};

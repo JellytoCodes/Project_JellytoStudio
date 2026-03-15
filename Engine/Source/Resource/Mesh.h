@@ -20,7 +20,7 @@ public:
 
 	void Bind(const ComPtr<ID3D11DeviceContext>& deviceContext);
 
-	//shared_ptr<Geometry<VertexTextureNormalTangentData>> GetGeometry() { return _geometry; }
+	std::shared_ptr<Geometry<VertexTextureNormalTangentData>> GetGeometry() { return _geometry; }
 	std::shared_ptr<VertexBuffer> GetVertexBuffer()		{ return _vertexBuffer; }
 	std::shared_ptr<IndexBuffer> GetIndexBuffer()		{ return _indexBuffer; }
 
@@ -29,8 +29,8 @@ private:
 
 private:
 	
-	std::shared_ptr<Geometry<VertexColorData>>	_geometry;
-	std::shared_ptr<VertexBuffer>				_vertexBuffer;
-	std::shared_ptr<IndexBuffer>				_indexBuffer;
+	std::shared_ptr<Geometry<VertexTextureNormalTangentData>>	_geometry;
+	std::shared_ptr<VertexBuffer>								_vertexBuffer;
+	std::shared_ptr<IndexBuffer>								_indexBuffer;
 };
 

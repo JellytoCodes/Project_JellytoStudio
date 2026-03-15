@@ -15,26 +15,30 @@ Mesh::~Mesh()
 
 void Mesh::CreateQuad(const ComPtr<ID3D11Device>& device)
 {
-	_geometry = std::make_shared<Geometry<VertexColorData>>();
-	GeometryHelper::CreateQuad(_geometry, Color(1.f, 1.f, 1.f, 1.f));
+	_geometry = std::make_shared<Geometry<VertexTextureNormalTangentData>>();
+	GeometryHelper::CreateQuad(_geometry);
 	CreateBuffers(device);
 }
 
 void Mesh::CreateCube(const ComPtr<ID3D11Device>& device)
 {
-	_geometry = std::make_shared<Geometry<VertexColorData>>();
+	_geometry = std::make_shared<Geometry<VertexTextureNormalTangentData>>();
 	GeometryHelper::CreateCube(_geometry);
 	CreateBuffers(device);
 }
 
 void Mesh::CreateGrid(const ComPtr<ID3D11Device>& device, int32 sizeX, int32 sizeZ)
 {
-
+	_geometry = std::make_shared<Geometry<VertexTextureNormalTangentData>>();
+	GeometryHelper::CreateGrid(_geometry, sizeX, sizeZ);
+	CreateBuffers(device);
 }
 
 void Mesh::CreateSphere(const ComPtr<ID3D11Device>& device)
 {
-
+	_geometry = std::make_shared<Geometry<VertexTextureNormalTangentData>>();
+	GeometryHelper::CreateSphere(_geometry);
+	CreateBuffers(device);
 }
 
 void Mesh::Bind(const ComPtr<ID3D11DeviceContext>& deviceContext)

@@ -108,6 +108,8 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)Client\Source\;$(SolutionDir)Libraries\Include\;$(SolutionDir)Libraries\Include\Engine\</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -130,6 +132,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Core\pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Source\Main\FBXConverter.cpp" />
     <ClCompile Include="Source\Main\MainApp.cpp" />
     <ClCompile Include="Source\Scripts\CameraController.cpp" />
@@ -141,6 +146,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Core\pch.h" />
     <ClInclude Include="Source\Main\FBXConverter.h" />
     <ClInclude Include="Source\Main\MainApp.h" />
     <ClInclude Include="Source\Scripts\CameraController.h" />

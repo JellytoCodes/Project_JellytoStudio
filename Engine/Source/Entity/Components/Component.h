@@ -10,6 +10,7 @@ enum class ComponentType : int8
 	ModelRenderer,
 	Light,
 	Animator,
+	Terrain,
 
 	///////////////
 	Script,
