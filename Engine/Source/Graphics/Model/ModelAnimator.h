@@ -30,6 +30,7 @@ public:
 	TweenDesc& GetTweenDesc() { return _tweenDesc; }
 
 private:
+	void PressedKeyForCheckFrame();
 	void CreateTexture();
 	void CreateAnimationTransform(uint32 index);
 

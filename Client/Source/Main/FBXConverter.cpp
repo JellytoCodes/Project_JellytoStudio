@@ -13,9 +13,9 @@ void FBXConverter::Init()
 	}
 	{
 		std::shared_ptr<Converter> converter = std::make_shared<Converter>();
-		converter->ReadAssetFile(L"Character/Capoeira.fbx");
-		converter->ExportAnimationData(L"Character/Capoeira");
-		converter->ExportAnimationCSV(L"Character/Capoeira");
+		converter->ReadAssetFile(L"Character/Dance.fbx");
+		converter->ExportAnimationData(L"Character/Dance");
+		converter->ExportAnimationCSV(L"Character/Dance");
 	}
 }
 

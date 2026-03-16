@@ -47,7 +47,7 @@ void MainApp::CreateCamera()
     cameraEntity->AddComponent(std::make_shared<Transform>());
     cameraEntity->AddComponent(std::make_shared<Camera>());
     cameraEntity->AddComponent(std::make_shared<CameraController>());
-    cameraEntity->GetTransform()->SetPosition(Vec3(0, 5, -20.f));
+    cameraEntity->GetTransform()->SetPosition(Vec3(0, 1, -3.f));
 
     _scene->Add(cameraEntity);
     _scene->SetMainCamera(cameraEntity->GetComponent<Camera>());
@@ -60,7 +60,7 @@ void MainApp::CreateModelAnimator()
     std::shared_ptr<Model> m1 = std::make_shared<Model>();
     m1->ReadModel(L"Character/Ch03");
     m1->ReadMaterial(L"Character/Ch03");
-    m1->ReadAnimation(L"Character/Capoeira");
+    m1->ReadAnimation(L"Character/Dance");
 
     auto model = std::make_shared<Entity>();
     model->AddComponent(std::make_shared<Transform>());
@@ -69,7 +69,7 @@ void MainApp::CreateModelAnimator()
     animator->SetModel(m1);
     model->AddComponent(animator);
 
-    model->GetTransform()->SetScale(Vec3(0.1f));
+    model->GetTransform()->SetScale(Vec3(0.01f));
 
     _scene->Add(model);
 }
@@ -80,7 +80,7 @@ void MainApp::CreateSkySphere()
 
 	std::shared_ptr<Material> material = std::make_shared<Material>();
 	material->SetShader(shader);
-	auto texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"Sky", L"../Resources/Textures/Sky01.jpg");
+	auto texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"Sky", L"../Resources/Textures/clear_sky.png");
 	material->SetDiffuseMap(texture);
 	MaterialDesc& desc = material->GetMaterialDesc();
 	desc.ambient = Vec4(1.f);
@@ -129,8 +129,10 @@ void MainApp::CreateFloor()
 
     auto terrain = std::make_shared<Terrain>();
     terrainEntity->AddComponent(terrain);
+    terrainEntity->AddComponent(std::make_shared<Transform>());
+    terrainEntity->GetTransform()->SetPosition(Vec3(-2.f, 0.f, -2.f));
 
-    terrain->Create(100.f, 100.f, floorMat);
+    terrain->Create(5.f, 5.f, floorMat);
 
     _scene->Add(terrainEntity);
 }

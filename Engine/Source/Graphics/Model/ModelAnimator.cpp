@@ -1,8 +1,8 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "ModelAnimator.h"
 #include "ModelAnimation.h"
 #include "Model.h"
+#include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Camera.h"
@@ -11,10 +11,11 @@
 #include "Scene/SceneManager.h"
 #include "Entity/Components/Light.h"
 
-ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader) 
+ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader)
 	: Super(ComponentType::Animator), _shader(shader)
 {
 	_tweenDesc.next.animIndex = 0;
+	_tweenDesc.tweenSumTime = 0;
 }
 
 ModelAnimator::~ModelAnimator()
@@ -35,7 +36,8 @@ void ModelAnimator::SetModel(std::shared_ptr<Model> model)
 
 void ModelAnimator::Update()
 {
-
+	// 디버깅용 프레임 체크 함수
+	//PressedKeyForCheckFrame();
 }
 
 void ModelAnimator::UpdateTweenData()
@@ -43,7 +45,6 @@ void ModelAnimator::UpdateTweenData()
 	TweenDesc& desc = _tweenDesc;
 
 	desc.curr.sumTime += GET_SINGLE(TimeManager)->GetDeltaTime();
-	// 현재 애니메이션
 	{
 		std::shared_ptr<ModelAnimation> currentAnim = _model->GetAnimationByIndex(desc.curr.animIndex);
 		if (currentAnim)
@@ -60,7 +61,6 @@ void ModelAnimator::UpdateTweenData()
 		}
 	}
 
-	// 다음 애니메이션이 예약 되어 있다면
 	if (desc.next.animIndex >= 0)
 	{
 		desc.tweenSumTime += GET_SINGLE(TimeManager)->GetDeltaTime();
@@ -68,13 +68,11 @@ void ModelAnimator::UpdateTweenData()
 
 		if (desc.tweenRatio >= 1.f)
 		{
-			// 애니메이션 교체 성공
 			desc.curr = desc.next;
 			desc.ClearNextAnim();
 		}
 		else
 		{
-			// 교체중
 			std::shared_ptr<ModelAnimation> nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
 			desc.next.sumTime += GET_SINGLE(TimeManager)->GetDeltaTime();
 
@@ -87,7 +85,6 @@ void ModelAnimator::UpdateTweenData()
 				desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
 				desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
 			}
-
 			desc.next.ratio = desc.next.sumTime / timePerFrame;
 		}
 	}
@@ -145,13 +142,60 @@ InstanceID ModelAnimator::GetInstanceID()
 	return std::make_pair((uint64)_model.get(), (uint64)_shader.get());
 }
 
+void ModelAnimator::PressedKeyForCheckFrame()
+{
+	if (_model == nullptr) return;
+
+	std::shared_ptr<ModelAnimation> currentAnim = _model->GetAnimationByIndex(_tweenDesc.curr.animIndex);
+	if (currentAnim == nullptr) return;
+
+	// [디버깅] 자동 재생을 거의 멈춰서 수동으로만 넘어가게 세팅
+	_tweenDesc.curr.speed = 0.00001f;
+
+	bool isFrameChanged = false; // 프레임이 변경되었는지 체크
+
+	// [다음 프레임] 오른쪽 방향키
+	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::RIGHT))
+	{
+		_tweenDesc.curr.currFrame = (_tweenDesc.curr.currFrame + 1) % currentAnim->frameCount;
+		_tweenDesc.curr.nextFrame = _tweenDesc.curr.currFrame;
+		_tweenDesc.curr.sumTime = 0.0f;
+		isFrameChanged = true;
+	}
+
+	// [이전 프레임] 왼쪽 방향키
+	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LEFT))
+	{
+		if (_tweenDesc.curr.currFrame == 0)
+			_tweenDesc.curr.currFrame = currentAnim->frameCount - 1;
+		else
+			_tweenDesc.curr.currFrame--;
+
+		_tweenDesc.curr.nextFrame = _tweenDesc.curr.currFrame;
+		_tweenDesc.curr.sumTime = 0.0f;
+		isFrameChanged = true;
+	}
+
+	// [출력창 로그] 프레임이 변경되었을 때만 비주얼 스튜디오 출력창에 띄움
+	if (isFrameChanged)
+	{
+		std::wstring debugLog = L"[Animation Debug] Current Frame : "
+			+ std::to_wstring(_tweenDesc.curr.currFrame)
+			+ L" / "
+			+ std::to_wstring(currentAnim->frameCount)
+			+ L"\n";
+
+		::OutputDebugStringW(debugLog.c_str());
+	}
+}
+
 void ModelAnimator::CreateTexture()
 {
 	if (_model->GetAnimationCount() == 0) return;
 
 	_animTransforms.resize(_model->GetAnimationCount());
 
-	for (uint32 i = 0; i < _model->GetAnimationCount(); i++) 
+	for (uint32 i = 0; i < _model->GetAnimationCount(); i++)
 		CreateAnimationTransform(i);
 
 	// Creature Texture
@@ -184,7 +228,7 @@ void ModelAnimator::CreateTexture()
 				::memcpy(ptr, _animTransforms[c].transforms[f].data(), dataSize);
 			}
 		}
-		 
+
 		// 리소스 만들기
 		std::vector<D3D11_SUBRESOURCE_DATA> subResources(_model->GetAnimationCount());
 
@@ -218,61 +262,57 @@ void ModelAnimator::CreateTexture()
 
 void ModelAnimator::CreateAnimationTransform(uint32 index)
 {
-    std::vector<Matrix> tempAnimBoneTransforms(MAX_MODEL_TRANSFORMS, Matrix::Identity);
+	std::vector<Matrix> tempAnimBoneTransforms(MAX_MODEL_TRANSFORMS, Matrix::Identity);
 
-    std::vector<Matrix> bindPoseGlobal(MAX_MODEL_TRANSFORMS, Matrix::Identity);
-    for (uint32 b = 0; b < _model->GetBoneCount(); b++)
-    {
-        std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
-        
-        // bone->transform은 누적된 global이 아니라 local로 저장돼 있어야 함
-        // 현재 Converter가 global로 구워넣고 있으므로, 
-        // 부모 global의 역행렬 × 현재 global = local 복원
-        int32 parentIndex = bone->parentIndex;
-        if (parentIndex < 0)
-        {
-            bindPoseGlobal[b] = bone->transform;
-        }
-        else
-        {
-            // 부모가 이미 계산됐으므로 그걸 그대로 사용
-            bindPoseGlobal[b] = bone->transform; // 이미 global
-        }
-    }
+	std::vector<Matrix> bindPoseGlobal(MAX_MODEL_TRANSFORMS, Matrix::Identity);
+	for (uint32 b = 0; b < _model->GetBoneCount(); b++)
+	{
+		std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
 
-    std::shared_ptr<ModelAnimation> animation = _model->GetAnimationByIndex(index);
+		int32 parentIndex = bone->parentIndex;
+		if (parentIndex < 0)
+		{
+			bindPoseGlobal[b] = bone->transform;
+		}
+		else
+		{
+			bindPoseGlobal[b] = bone->transform;
+		}
+	}
 
-    for (uint32 f = 0; f < animation->frameCount; f++)
-    {
-        for (uint32 b = 0; b < _model->GetBoneCount(); b++)
-        {
-            std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
+	std::shared_ptr<ModelAnimation> animation = _model->GetAnimationByIndex(index);
 
-            Matrix matAnimation;
-            std::shared_ptr<ModelKeyframe> frame = animation->GetKeyframe(bone->name);
-            if (frame != nullptr)
-            {
-                ModelKeyframeData& data = frame->transforms[f];
+	for (uint32 f = 0; f < animation->frameCount; f++)
+	{
+		for (uint32 b = 0; b < _model->GetBoneCount(); b++)
+		{
+			std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
 
-                Matrix S = Matrix::CreateScale(data.scale);
-                Matrix R = Matrix::CreateFromQuaternion(data.rotation);
-                Matrix T = Matrix::CreateTranslation(data.translation);
-                matAnimation = S * R * T;
-            }
-            else
-            {
-                matAnimation = Matrix::Identity;
-            }
+			Matrix matAnimation;
+			std::shared_ptr<ModelKeyframe> frame = animation->GetKeyframe(bone->name);
+			if (frame != nullptr)
+			{
+				ModelKeyframeData& data = frame->transforms[f];
 
-            int32 parentIndex = bone->parentIndex;
-            Matrix matParent = Matrix::Identity;
-            if (parentIndex >= 0)
-                matParent = tempAnimBoneTransforms[parentIndex];
+				Matrix S = Matrix::CreateScale(data.scale);
+				Matrix R = Matrix::CreateFromQuaternion(data.rotation);
+				Matrix T = Matrix::CreateTranslation(data.translation);
+				matAnimation = S * R * T;
+			}
+			else
+			{
+				matAnimation = Matrix::Identity;
+			}
 
-            tempAnimBoneTransforms[b] = matAnimation * matParent;
+			int32 parentIndex = bone->parentIndex;
+			Matrix matParent = Matrix::Identity;
+			if (parentIndex >= 0)
+				matParent = tempAnimBoneTransforms[parentIndex];
 
-            Matrix invBindPose = bindPoseGlobal[b].Invert();
-            _animTransforms[index].transforms[f][b] = invBindPose * tempAnimBoneTransforms[b];
-        }
-    }
+			tempAnimBoneTransforms[b] = matAnimation * matParent;
+
+			Matrix invBindPose = bindPoseGlobal[b].Invert();
+			_animTransforms[index].transforms[f][b] = invBindPose * tempAnimBoneTransforms[b];
+		}
+	}
 }

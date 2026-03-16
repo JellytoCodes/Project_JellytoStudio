@@ -112,7 +112,7 @@ void Converter::ExportAnimationCSV(std::wstring savePath)
 		aiAnimation* srcAnim = _scene->mAnimations[animIdx];
 		float tps = (srcAnim->mTicksPerSecond > 0.0) ? (float)srcAnim->mTicksPerSecond : 30.f;
 		uint32 frameCount = (uint32)srcAnim->mDuration + 1;
-		float duration    = (float)srcAnim->mDuration / tps;
+		float duration = (float)srcAnim->mDuration / tps;
 
 		// 1. 메타 정보
 		::fprintf(file, "[ANIM_META]\n");
@@ -490,9 +490,30 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 		? (float)srcAnimation->mTicksPerSecond
 		: 30.0f;
 
-	animation->frameRate  = ticksPerSecond;
-	animation->frameCount = (uint32)srcAnimation->mDuration + 1;
-	animation->duration   = (float)srcAnimation->mDuration / ticksPerSecond;
+	animation->frameRate = ticksPerSecond;
+
+	// mDuration이 실제 유효 키 범위보다 클 수 있음 (Mixamo FBX 이슈)
+	// 모든 채널에서 실제 마지막 유효 키 틱을 스캔해서 frameCount 결정
+	uint32 maxValidTick = 0;
+	for (uint32 i = 0; i < srcAnimation->mNumChannels; i++)
+	{
+		aiNodeAnim* ch = srcAnimation->mChannels[i];
+		auto scanKeys = [&](uint32 numKeys, auto* keys)
+			{
+				for (uint32 k = 0; k < numKeys; k++)
+				{
+					double t = keys[k].mTime;
+					if (std::isfinite(t) && t >= 0.0)
+						maxValidTick = max(maxValidTick, (uint32)t);
+				}
+			};
+		scanKeys(ch->mNumPositionKeys, ch->mPositionKeys);
+		scanKeys(ch->mNumRotationKeys, ch->mRotationKeys);
+		scanKeys(ch->mNumScalingKeys, ch->mScalingKeys);
+	}
+	uint32 effectiveDuration = (maxValidTick > 0) ? maxValidTick : (uint32)srcAnimation->mDuration;
+	animation->frameCount = effectiveDuration + 1;
+	animation->duration = (float)effectiveDuration / ticksPerSecond;
 
 	std::map<std::string, std::shared_ptr<asAnimationNode>> cacheAnimNodes;
 
@@ -524,45 +545,53 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 	const uint32 frameCount = animation->frameCount;
 
 	auto buildIndexMap = [](uint32 numKeys, auto* keys) -> std::vector<uint32>
-	{
-		// -inf / NaN / 음수 mTime은 Mixamo FBX의 쓰레기 키 → 완전히 무시
-		uint32 maxFrame = 0;
-		for (uint32 i = 0; i < numKeys; i++)
 		{
-			double t = keys[i].mTime;
-			if (!std::isfinite(t) || t < 0.0) continue;
-			maxFrame = max(maxFrame, (uint32)t);
-		}
+			// -inf / NaN / 음수 mTime은 Mixamo FBX의 쓰레기 키 → 완전히 무시
+			uint32 maxFrame = 0;
+			for (uint32 i = 0; i < numKeys; i++)
+			{
+				double t = keys[i].mTime;
+				if (!std::isfinite(t) || t < 0.0) continue;
+				maxFrame = max(maxFrame, (uint32)t);
+			}
 
-		std::vector<uint32> map(maxFrame + 1, UINT32_MAX);
-		for (uint32 i = 0; i < numKeys; i++)
-		{
-			double t = keys[i].mTime;
-			if (!std::isfinite(t) || t < 0.0) continue;
-			uint32 f = (uint32)t;
-			// 첫 번째 유효 키만 유지 (쓰레기 키가 같은 mTime=0.0으로 덮어쓰는 것 방지)
-			if (f <= maxFrame && map[f] == UINT32_MAX) map[f] = i;
-		}
-		return map;
-	};
+			std::vector<uint32> map(maxFrame + 1, UINT32_MAX);
+			for (uint32 i = 0; i < numKeys; i++)
+			{
+				double t = keys[i].mTime;
+				if (!std::isfinite(t) || t < 0.0) continue;
+				uint32 f = (uint32)t;
+				// 첫 번째 유효 키만 유지 (쓰레기 키가 같은 mTime=0.0으로 덮어쓰는 것 방지)
+				if (f <= maxFrame && map[f] == UINT32_MAX) map[f] = i;
+			}
+			return map;
+		};
 
-	auto posMap   = buildIndexMap(srcNode->mNumPositionKeys, srcNode->mPositionKeys);
-	auto rotMap   = buildIndexMap(srcNode->mNumRotationKeys, srcNode->mRotationKeys);
-	auto scaleMap = buildIndexMap(srcNode->mNumScalingKeys,  srcNode->mScalingKeys);
+	auto posMap = buildIndexMap(srcNode->mNumPositionKeys, srcNode->mPositionKeys);
+	auto rotMap = buildIndexMap(srcNode->mNumRotationKeys, srcNode->mRotationKeys);
+	auto scaleMap = buildIndexMap(srcNode->mNumScalingKeys, srcNode->mScalingKeys);
 
 	auto findKey = [](const std::vector<uint32>& map, uint32 frame) -> uint32
-	{
-		if (frame < map.size() && map[frame] != UINT32_MAX)
-			return map[frame];
-
-		int32 f = (int32)std::min(frame, (uint32)map.size() - 1);
-		while (f >= 0)
 		{
-			if (map[f] != UINT32_MAX) return map[f];
-			f--;
-		}
-		return 0;
-	};
+			if (frame < map.size() && map[frame] != UINT32_MAX)
+				return map[frame];
+
+			int32 f = (int32)std::min(frame, (uint32)map.size() - 1);
+			while (f >= 0)
+			{
+				if (map[f] != UINT32_MAX) return map[f];
+				f--;
+			}
+			return 0;
+		};
+
+	// f 이후 다음 유효 키 탐색 (f+1만 보면 3틱 간격 키에서 보간 안 됨)
+	auto findNextKey = [](const std::vector<uint32>& map, uint32 frame) -> uint32
+		{
+			for (uint32 i = frame + 1; i < map.size(); i++)
+				if (map[i] != UINT32_MAX) return map[i];
+			return UINT32_MAX;
+		};
 
 	for (uint32 f = 0; f < frameCount; f++)
 	{
@@ -572,8 +601,9 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 		// --- Position ---
 		if (srcNode->mNumPositionKeys > 0)
 		{
-			uint32 k     = findKey(posMap, f);
-			uint32 kNext = (f + 1 < posMap.size() && posMap[f + 1] != UINT32_MAX) ? posMap[f + 1] : k;
+			uint32 k = findKey(posMap, f);
+			uint32 kNextIdx = findNextKey(posMap, f);
+			uint32 kNext = (kNextIdx != UINT32_MAX) ? kNextIdx : k;
 
 			aiVector3D p0 = srcNode->mPositionKeys[k].mValue;
 			if (kNext != k)
@@ -587,13 +617,17 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			}
 			::memcpy_s(&frameData.translation, sizeof(Vec3), &p0, sizeof(aiVector3D));
 		}
-		else { frameData.translation = Vec3(0, 0, 0); }
+		else
+		{
+			frameData.translation = Vec3(0, 0, 0);
+		}
 
 		// --- Rotation ---
 		if (srcNode->mNumRotationKeys > 0)
 		{
-			uint32 k     = findKey(rotMap, f);
-			uint32 kNext = (f + 1 < rotMap.size() && rotMap[f + 1] != UINT32_MAX) ? rotMap[f + 1] : k;
+			uint32 k = findKey(rotMap, f);
+			uint32 kNextIdx = findNextKey(rotMap, f);
+			uint32 kNext = (kNextIdx != UINT32_MAX) ? kNextIdx : k;
 
 			aiQuaternion r0 = srcNode->mRotationKeys[k].mValue;
 			if (kNext != k)
@@ -609,13 +643,17 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			}
 			frameData.rotation = { r0.x, r0.y, r0.z, r0.w };
 		}
-		else { frameData.rotation = { 0, 0, 0, 1 }; }
+		else
+		{
+			frameData.rotation = { 0, 0, 0, 1 };
+		}
 
 		// --- Scale ---
 		if (srcNode->mNumScalingKeys > 0)
 		{
-			uint32 k     = findKey(scaleMap, f);
-			uint32 kNext = (f + 1 < scaleMap.size() && scaleMap[f + 1] != UINT32_MAX) ? scaleMap[f + 1] : k;
+			uint32 k = findKey(scaleMap, f);
+			uint32 kNextIdx = findNextKey(scaleMap, f);
+			uint32 kNext = (kNextIdx != UINT32_MAX) ? kNextIdx : k;
 
 			aiVector3D s0 = srcNode->mScalingKeys[k].mValue;
 			if (kNext != k)
@@ -629,7 +667,10 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			}
 			::memcpy_s(&frameData.scale, sizeof(Vec3), &s0, sizeof(aiVector3D));
 		}
-		else { frameData.scale = Vec3(1, 1, 1); }
+		else
+		{
+			frameData.scale = Vec3(1, 1, 1);
+		}
 
 		node->keyframe.push_back(frameData);
 	}
