@@ -59,8 +59,9 @@ void MainApp::CreateModelAnimator()
 
     std::shared_ptr<Model> m1 = std::make_shared<Model>();
     m1->ReadModel(L"Character/Ch03");
-    m1->ReadMaterial(L"Character/Ch03");
+    m1->ReadMaterial(L"Character/Ch03"); 
     m1->ReadAnimation(L"Character/Dance");
+    m1->ReadAnimation(L"Character/Flair");
 
     auto model = std::make_shared<Entity>();
     model->AddComponent(std::make_shared<Transform>());

@@ -492,26 +492,21 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 
 	animation->frameRate = ticksPerSecond;
 
-	// mDuration이 실제 유효 키 범위보다 클 수 있음 (Mixamo FBX 이슈)
-	// 모든 채널에서 실제 마지막 유효 키 틱을 스캔해서 frameCount 결정
-	uint32 maxValidTick = 0;
+	// POS는 매 프레임 키가 있고 ROT는 일부 구간만 키가 있는 경우
+	// mDuration 기준 frameCount를 쓰면 ROT 없는 후반부가 더미가 됨
+	// → ROT 채널의 실제 마지막 유효 키 틱 기준으로 frameCount 결정
+	uint32 maxRotTick = 0;
 	for (uint32 i = 0; i < srcAnimation->mNumChannels; i++)
 	{
 		aiNodeAnim* ch = srcAnimation->mChannels[i];
-		auto scanKeys = [&](uint32 numKeys, auto* keys)
-			{
-				for (uint32 k = 0; k < numKeys; k++)
-				{
-					double t = keys[k].mTime;
-					if (std::isfinite(t) && t >= 0.0)
-						maxValidTick = max(maxValidTick, (uint32)t);
-				}
-			};
-		scanKeys(ch->mNumPositionKeys, ch->mPositionKeys);
-		scanKeys(ch->mNumRotationKeys, ch->mRotationKeys);
-		scanKeys(ch->mNumScalingKeys, ch->mScalingKeys);
+		for (uint32 k = 0; k < ch->mNumRotationKeys; k++)
+		{
+			double t = ch->mRotationKeys[k].mTime;
+			if (std::isfinite(t) && t >= 0.0)
+				maxRotTick = max(maxRotTick, (uint32)t);
+		}
 	}
-	uint32 effectiveDuration = (maxValidTick > 0) ? maxValidTick : (uint32)srcAnimation->mDuration;
+	uint32 effectiveDuration = (maxRotTick > 0) ? maxRotTick : (uint32)srcAnimation->mDuration;
 	animation->frameCount = effectiveDuration + 1;
 	animation->duration = (float)effectiveDuration / ticksPerSecond;
 

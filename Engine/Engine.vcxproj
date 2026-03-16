@@ -158,6 +158,11 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Entity\Components\Collider\AABBCollider.cpp" />
+    <ClCompile Include="Source\Entity\Components\Collider\BaseCollider.cpp" />
+    <ClCompile Include="Source\Entity\Components\Collider\FrustumCollider.cpp" />
+    <ClCompile Include="Source\Entity\Components\Collider\OBBCollider.cpp" />
+    <ClCompile Include="Source\Entity\Components\Collider\SphereCollider.cpp" />
     <ClCompile Include="Source\Entity\Components\Light.cpp" />
     <ClCompile Include="Source\Entity\Components\Terrain.cpp" />
     <ClCompile Include="Source\Graphics\Managers\InstancingManager.cpp" />
@@ -209,6 +214,11 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Entity\Components\Collider\AABBCollider.h" />
+    <ClInclude Include="Source\Entity\Components\Collider\BaseCollider.h" />
+    <ClInclude Include="Source\Entity\Components\Collider\FrustumCollider.h" />
+    <ClInclude Include="Source\Entity\Components\Collider\OBBCollider.h" />
+    <ClInclude Include="Source\Entity\Components\Collider\SphereCollider.h" />
     <ClInclude Include="Source\Entity\Components\Light.h" />
     <ClInclude Include="Source\Entity\Components\Terrain.h" />
     <ClInclude Include="Source\Graphics\Managers\InstancingManager.h" />

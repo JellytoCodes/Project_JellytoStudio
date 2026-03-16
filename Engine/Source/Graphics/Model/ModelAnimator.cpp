@@ -14,7 +14,7 @@
 ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader)
 	: Super(ComponentType::Animator), _shader(shader)
 {
-	_tweenDesc.next.animIndex = 0;
+	_tweenDesc.next.animIndex = 1;
 	_tweenDesc.tweenSumTime = 0;
 }
 
@@ -149,12 +149,10 @@ void ModelAnimator::PressedKeyForCheckFrame()
 	std::shared_ptr<ModelAnimation> currentAnim = _model->GetAnimationByIndex(_tweenDesc.curr.animIndex);
 	if (currentAnim == nullptr) return;
 
-	// [디버깅] 자동 재생을 거의 멈춰서 수동으로만 넘어가게 세팅
 	_tweenDesc.curr.speed = 0.00001f;
 
-	bool isFrameChanged = false; // 프레임이 변경되었는지 체크
+	bool isFrameChanged = false;
 
-	// [다음 프레임] 오른쪽 방향키
 	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::RIGHT))
 	{
 		_tweenDesc.curr.currFrame = (_tweenDesc.curr.currFrame + 1) % currentAnim->frameCount;
@@ -163,7 +161,6 @@ void ModelAnimator::PressedKeyForCheckFrame()
 		isFrameChanged = true;
 	}
 
-	// [이전 프레임] 왼쪽 방향키
 	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LEFT))
 	{
 		if (_tweenDesc.curr.currFrame == 0)
@@ -176,7 +173,6 @@ void ModelAnimator::PressedKeyForCheckFrame()
 		isFrameChanged = true;
 	}
 
-	// [출력창 로그] 프레임이 변경되었을 때만 비주얼 스튜디오 출력창에 띄움
 	if (isFrameChanged)
 	{
 		std::wstring debugLog = L"[Animation Debug] Current Frame : "

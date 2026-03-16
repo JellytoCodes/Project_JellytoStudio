@@ -13,10 +13,13 @@ void FBXConverter::Init()
 	}
 	{
 		std::shared_ptr<Converter> converter = std::make_shared<Converter>();
-		converter->ReadAssetFile(L"Character/Dance.fbx");
-		converter->ExportAnimationData(L"Character/Dance");
-		converter->ExportAnimationCSV(L"Character/Dance");
+		converter->ReadAssetFile(L"Character/Flair.fbx");
+		converter->ExportAnimationData(L"Character/Flair");
+		converter->ExportAnimationCSV(L"Character/Flair");
 	}
+
+	std::wstring debugLog = L"!!Complete FBX Parsing!!";
+	::OutputDebugStringW(debugLog.c_str());
 }
 
 void FBXConverter::Update()
