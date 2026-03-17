@@ -35,6 +35,22 @@ void Converter::ReadAssetFile(std::wstring file)
 	assert(_scene != nullptr);
 }
 
+void Converter::ReadAssetFileAbsolute(const std::wstring& absolutePath)
+{
+	auto p = std::filesystem::path(absolutePath);
+	assert(std::filesystem::exists(p));
+
+	_scene = _importer->ReadFile(
+		Utils::ToString(absolutePath),
+		aiProcess_ConvertToLeftHanded |
+		aiProcess_Triangulate |
+		aiProcess_GenUVCoords |
+		aiProcess_GenNormals |
+		aiProcess_CalcTangentSpace
+	);
+	assert(_scene != nullptr);
+}
+
 void Converter::ExportModelData(std::wstring savePath)
 {
 	std::wstring finalPath = _modelPath + savePath + L".mesh";
