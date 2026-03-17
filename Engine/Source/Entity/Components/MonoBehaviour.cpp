@@ -36,3 +36,8 @@ void MonoBehaviour::OnDestroy()
 {
 	
 }
+
+void MonoBehaviour::OnCollision(std::shared_ptr<Entity>& other)
+{
+
+}

@@ -13,9 +13,9 @@ void FBXConverter::Init()
 	}
 	{
 		std::shared_ptr<Converter> converter = std::make_shared<Converter>();
-		converter->ReadAssetFile(L"Character/Flair.fbx");
-		converter->ExportAnimationData(L"Character/Flair");
-		converter->ExportAnimationCSV(L"Character/Flair");
+		converter->ReadAssetFile(L"Character/Idle.fbx");
+		converter->ExportAnimationData(L"Character/Idle");
+		converter->ExportAnimationCSV(L"Character/Idle");
 	}
 
 	std::wstring debugLog = L"!!Complete FBX Parsing!!";

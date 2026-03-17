@@ -14,7 +14,7 @@
 ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader)
 	: Super(ComponentType::Animator), _shader(shader)
 {
-	_tweenDesc.next.animIndex = 1;
+	_tweenDesc.next.animIndex = 0;
 	_tweenDesc.tweenSumTime = 0;
 }
 

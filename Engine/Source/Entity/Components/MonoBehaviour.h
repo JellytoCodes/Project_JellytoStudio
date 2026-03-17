@@ -14,5 +14,7 @@ public :
 	virtual void Update() override;
 	virtual void LateUpdate() override;
 	virtual void OnDestroy() override;
+
+	virtual void OnCollision(std::shared_ptr<Entity>& other);
 };
 

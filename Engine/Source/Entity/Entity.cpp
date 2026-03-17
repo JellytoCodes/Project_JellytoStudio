@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/MonoBehaviour.h"
@@ -10,7 +9,6 @@ Entity::Entity()
 
 Entity::~Entity()
 {
-
 }
 
 void Entity::Awake()
@@ -85,6 +83,15 @@ void Entity::OnDestroy()
 	{
 		if (script)
 			script->OnDestroy();
+	}
+}
+
+void Entity::OnCollision(std::shared_ptr<Entity>& other)
+{
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->OnCollision(other);
 	}
 }
 

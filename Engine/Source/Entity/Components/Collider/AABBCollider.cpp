@@ -8,12 +8,25 @@
 AABBCollider::AABBCollider()
 	: Super(ColliderType::AABB)
 {
-
 }
 
 AABBCollider::~AABBCollider()
 {
+}
 
+void AABBCollider::UpdateBounds()
+{
+	// AABB는 회전을 무시하고 위치·스케일만 반영
+	Vec3 scale, position;
+	Quaternion quat;
+	_colliderWorld.Decompose(scale, quat, position);
+
+	_boundingBox.Center = position;
+	_boundingBox.Extents = Vec3(
+		_boxExtents.x * scale.x,
+		_boxExtents.y * scale.y,
+		_boxExtents.z * scale.z
+	);
 }
 
 bool AABBCollider::Intersects(Ray& ray, float& distance)
@@ -23,9 +36,7 @@ bool AABBCollider::Intersects(Ray& ray, float& distance)
 
 bool AABBCollider::Intersects(std::shared_ptr<BaseCollider>& other)
 {
-	ColliderType type = other->GetColliderType();
-
-	switch (type)
+	switch (other->GetColliderType())
 	{
 	case ColliderType::Sphere:
 		return _boundingBox.Intersects(dynamic_pointer_cast<SphereCollider>(other)->GetBoundingSphere());
@@ -36,6 +47,5 @@ bool AABBCollider::Intersects(std::shared_ptr<BaseCollider>& other)
 	case ColliderType::Frustum:
 		return _boundingBox.Intersects(dynamic_pointer_cast<FrustumCollider>(other)->GetBoundingFrustum());
 	}
-
 	return false;
 }

@@ -14,6 +14,14 @@ public:
 
 	BoundingFrustum& GetBoundingFrustum() { return _boundingFrustum; }
 
+	void SetFromProjection(const Matrix& matProjection)
+	{
+		BoundingFrustum::CreateFromMatrix(_boundingFrustum, matProjection);
+	}
+
+protected:
+	void UpdateBounds() override;
+
 private:
-	BoundingFrustum _boundingFrustum;
+	BoundingFrustum _boundingFrustum = {};
 };

@@ -14,6 +14,14 @@ public:
 
 	BoundingOrientedBox& GetBoundingBox() { return _boundingBox; }
 
+	// 박스 반지름 (각 축 ±Extents 크기, offsetScale 적용 전)
+	Vec3 GetBoxExtents() const { return _boxExtents; }
+	void SetBoxExtents(const Vec3& e) { _boxExtents = e; }
+
+protected:
+	void UpdateBounds() override;
+
 private:
-	BoundingOrientedBox _boundingBox;
+	Vec3				_boxExtents = { 0.5f, 0.5f, 0.5f };
+	BoundingOrientedBox	_boundingBox = {};
 };

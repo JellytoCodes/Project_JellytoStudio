@@ -158,6 +158,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Entity\Managers\CollisionManager.cpp" />
     <ClCompile Include="Source\Entity\Components\Collider\AABBCollider.cpp" />
     <ClCompile Include="Source\Entity\Components\Collider\BaseCollider.cpp" />
     <ClCompile Include="Source\Entity\Components\Collider\FrustumCollider.cpp" />
@@ -214,6 +215,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Utils\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Entity\Managers\CollisionManager.h" />
     <ClInclude Include="Source\Entity\Components\Collider\AABBCollider.h" />
     <ClInclude Include="Source\Entity\Components\Collider\BaseCollider.h" />
     <ClInclude Include="Source\Entity\Components\Collider\FrustumCollider.h" />

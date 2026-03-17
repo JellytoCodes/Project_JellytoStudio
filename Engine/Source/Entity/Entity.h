@@ -6,7 +6,7 @@ class MonoBehaviour;
 class Entity : public std::enable_shared_from_this<Entity>
 {
 
-public :
+public:
 	Entity();
 	~Entity();
 
@@ -16,6 +16,9 @@ public :
 	void LateUpdate();
 	void OnDestroy();
 
+	// CollisionManager가 충돌 시 호출 → 모든 Script에 전달
+	void OnCollision(std::shared_ptr<Entity>& other);
+
 	std::shared_ptr<Transform> GetTransform();
 
 	void AddComponent(const std::shared_ptr<Component>& component);
@@ -23,10 +26,10 @@ public :
 	template<typename T>
 	std::shared_ptr<T> GetComponent();
 
-	void SetLayerIndex(const uint8 layer)	{ _layerIndex = layer; }
-	uint8 GetLayerIndex() const				{ return _layerIndex; }
+	void SetLayerIndex(const uint8 layer) { _layerIndex = layer; }
+	uint8 GetLayerIndex() const { return _layerIndex; }
 
-protected :
+protected:
 	std::shared_ptr<Transform> _transform;
 	std::array<std::shared_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
 
@@ -43,7 +46,7 @@ std::shared_ptr<T> Entity::GetComponent()
 		if (component == nullptr) continue;
 
 		std::shared_ptr<T> target = std::dynamic_pointer_cast<T>(component);
-		if (target != nullptr) 
+		if (target != nullptr)
 			return target;
 	}
 	return nullptr;

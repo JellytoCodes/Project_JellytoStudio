@@ -1,5 +1,4 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "AABBCollider.h"
 #include "FrustumCollider.h"
 #include "OBBCollider.h"
@@ -8,12 +7,10 @@
 SphereCollider::SphereCollider()
 	: Super(ColliderType::Sphere)
 {
-
 }
 
 SphereCollider::~SphereCollider()
 {
-
 }
 
 bool SphereCollider::Intersects(Ray& ray, float& distance)
@@ -23,9 +20,7 @@ bool SphereCollider::Intersects(Ray& ray, float& distance)
 
 bool SphereCollider::Intersects(std::shared_ptr<BaseCollider>& other)
 {
-	ColliderType type = other->GetColliderType();
-
-	switch (type)
+	switch (other->GetColliderType())
 	{
 	case ColliderType::Sphere:
 		return _boundingSphere.Intersects(dynamic_pointer_cast<SphereCollider>(other)->GetBoundingSphere());
@@ -36,6 +31,19 @@ bool SphereCollider::Intersects(std::shared_ptr<BaseCollider>& other)
 	case ColliderType::Frustum:
 		return _boundingSphere.Intersects(dynamic_pointer_cast<FrustumCollider>(other)->GetBoundingFrustum());
 	}
-
 	return false;
+}
+
+void SphereCollider::UpdateBounds()
+{
+	Vec3 scale, position;
+	Quaternion quat;
+	_colliderWorld.Decompose(scale, quat, position);
+
+	float maxScale = scale.x;
+	if (scale.y > maxScale) maxScale = scale.y;
+	if (scale.z > maxScale) maxScale = scale.z;
+
+	_boundingSphere.Center = position;
+	_boundingSphere.Radius = _radius * maxScale;
 }
