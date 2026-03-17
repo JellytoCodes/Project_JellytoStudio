@@ -1,5 +1,4 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "AABBCollider.h"
 #include "FrustumCollider.h"
 #include "OBBCollider.h"
@@ -16,7 +15,6 @@ OBBCollider::~OBBCollider()
 
 void OBBCollider::UpdateBounds()
 {
-	// OBB는 회전까지 반영
 	Vec3 scale, position;
 	Quaternion quat;
 	_colliderWorld.Decompose(scale, quat, position);
@@ -28,6 +26,23 @@ void OBBCollider::UpdateBounds()
 		_boxExtents.y * scale.y,
 		_boxExtents.z * scale.z
 	);
+}
+
+Matrix OBBCollider::GetDebugWorldMatrix()
+{
+	Vec3 scale, position;
+	Quaternion quat;
+	_colliderWorld.Decompose(scale, quat, position);
+
+	Vec3 debugScale(
+		_boxExtents.x * scale.x * 2.f,
+		_boxExtents.y * scale.y * 2.f,
+		_boxExtents.z * scale.z * 2.f
+	);
+
+	return Matrix::CreateScale(debugScale)
+		* Matrix::CreateFromQuaternion(quat)
+		* Matrix::CreateTranslation(position);
 }
 
 bool OBBCollider::Intersects(Ray& ray, float& distance)

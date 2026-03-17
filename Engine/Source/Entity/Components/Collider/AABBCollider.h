@@ -9,20 +9,22 @@ public:
 	AABBCollider();
 	virtual ~AABBCollider();
 
-	bool Intersects(Ray& ray, float& distance) override;
-	bool Intersects(std::shared_ptr<BaseCollider>& other) override;
+	virtual bool Intersects(Ray& ray, float& distance) override;
+	virtual bool Intersects(std::shared_ptr<BaseCollider>& other) override;
 
-	BoundingBox& GetBoundingBox() { return _boundingBox; }
+	BoundingBox& GetBoundingBox()					{ return _boundingBox; }
 
-	// 박스 반지름 (각 축 ±Extents 크기, offsetScale 적용 전)
-	// 예) SetBoxExtents({0.5f, 1.f, 0.5f}) → X/Z는 ±0.5, Y는 ±1 범위
-	Vec3 GetBoxExtents() const { return _boxExtents; }
-	void SetBoxExtents(const Vec3& e) { _boxExtents = e; }
+	Vec3 GetBoxExtents() const						{ return _boxExtents; }
+	void SetBoxExtents(const Vec3& e)				{ _boxExtents = e; }
 
 protected:
-	void UpdateBounds() override;
+	virtual void UpdateBounds() override;
+
+	virtual std::wstring GetDebugMeshKey() const override	{ return L"Cube"; }
+	virtual Vec4         GetDebugColor()   const override	{ return Vec4(1.f, 0.f, 0.f, 1.f); }
+	virtual Matrix       GetDebugWorldMatrix() override;
 
 private:
-	Vec3		_boxExtents = { 0.5f, 0.5f, 0.5f };
+	Vec3		_boxExtents = { 0.f, 0.f, 0.f };
 	BoundingBox	_boundingBox = {};
 };

@@ -16,7 +16,6 @@ AABBCollider::~AABBCollider()
 
 void AABBCollider::UpdateBounds()
 {
-	// AABB는 회전을 무시하고 위치·스케일만 반영
 	Vec3 scale, position;
 	Quaternion quat;
 	_colliderWorld.Decompose(scale, quat, position);
@@ -27,6 +26,22 @@ void AABBCollider::UpdateBounds()
 		_boxExtents.y * scale.y,
 		_boxExtents.z * scale.z
 	);
+}
+
+Matrix AABBCollider::GetDebugWorldMatrix()
+{
+	Vec3 scale, position;
+	Quaternion quat;
+	_colliderWorld.Decompose(scale, quat, position);
+
+	// AABB는 회전 없음 → Identity Quat
+	Vec3 debugScale(
+		_boxExtents.x * scale.x * 2.f,
+		_boxExtents.y * scale.y * 2.f,
+		_boxExtents.z * scale.z * 2.f
+	);
+
+	return Matrix::CreateScale(debugScale) * Matrix::CreateTranslation(position);
 }
 
 bool AABBCollider::Intersects(Ray& ray, float& distance)

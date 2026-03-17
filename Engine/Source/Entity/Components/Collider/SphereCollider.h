@@ -9,19 +9,23 @@ public:
 	SphereCollider();
 	virtual ~SphereCollider();
 
-	bool Intersects(Ray& ray, OUT float& distance) override;
-	bool Intersects(std::shared_ptr<BaseCollider>& other) override;
+	virtual bool Intersects(Ray& ray, float& distance) override;
+	virtual bool Intersects(std::shared_ptr<BaseCollider>& other) override;
 
-	BoundingSphere& GetBoundingSphere() { return _boundingSphere; }
+	BoundingSphere& GetBoundingSphere()				{ return _boundingSphere; }
 
-	// 기본 반지름 (offsetScale 적용 전)
-	float GetRadius() const { return _radius; }
-	void SetRadius(float r) { _radius = r; }
+	float GetRadius() const							{ return _radius; }
+	void SetRadius(float r)							{ _radius = r; }
 
 protected:
-	void UpdateBounds() override;
+	virtual void UpdateBounds() override;
+
+	// 디버그 시각화
+	virtual std::wstring GetDebugMeshKey() const override	{ return L"Sphere"; }
+	virtual Vec4         GetDebugColor()   const override	{ return Vec4(1.f, 1.f, 0.f, 1.f); }
+	virtual Matrix       GetDebugWorldMatrix() override;
 
 private:
-	float			_radius = 0.5f;
+	float			_radius = 0.f;
 	BoundingSphere	_boundingSphere = {};
 };

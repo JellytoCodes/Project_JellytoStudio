@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Application.h"
 
@@ -18,7 +17,7 @@ bool Application::Initialize(const ApplicationDesc& desc)
 		return false;
 
 	GET_SINGLE(TimeManager)->Init();
-    GET_SINGLE(InputManager)->Init(_desc.hWnd);
+	GET_SINGLE(InputManager)->Init(_desc.hWnd);
 
 	_desc.app->Init();
 
@@ -47,7 +46,6 @@ WPARAM Application::Run()
 
 void Application::Shutdown()
 {
-	
 }
 
 void Application::Update()
@@ -55,14 +53,15 @@ void Application::Update()
 	Graphics::Get()->RenderBegin();
 
 	GET_SINGLE(TimeManager)->Update();
-    GET_SINGLE(InputManager)->Update();
+	GET_SINGLE(InputManager)->Update();
 
 	UpdateWindowTitle();
-	_desc.app->Update();
-	_desc.app->Render();
-	GET_SINGLE(SceneManager)->Render();
 
 	GET_SINGLE(SceneManager)->Update();
+	_desc.app->Update();
+
+	_desc.app->Render();
+	GET_SINGLE(SceneManager)->Render();
 
 	Graphics::Get()->RenderEnd();
 }
@@ -70,19 +69,19 @@ void Application::Update()
 void Application::UpdateWindowTitle()
 {
 	float fps = GET_SINGLE(TimeManager)->GetFps();
-    float totalTime = GET_SINGLE(TimeManager)->GetTotalTime();
+	float totalTime = GET_SINGLE(TimeManager)->GetTotalTime();
 
-    wchar_t text[100];
-    swprintf_s(text, L"%s (FPS: %.2f, TotalTime: %.2f s)", _desc.appName.c_str(), fps, totalTime);
+	wchar_t text[100];
+	swprintf_s(text, L"%s (FPS: %.2f, TotalTime: %.2f s)", _desc.appName.c_str(), fps, totalTime);
 
-    ::SetWindowTextW(_desc.hWnd, text);
+	::SetWindowTextW(_desc.hWnd, text);
 }
 
 LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (message == WM_NCCREATE)
 	{
-		LPCREATESTRUCT createStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
+		LPCREATESTRUCTW createStruct = reinterpret_cast<LPCREATESTRUCTW>(lParam);
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(createStruct->lpCreateParams));
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -144,5 +143,5 @@ BOOL Application::InitInstance()
 
 	Graphics::Get()->Initialize(_desc.hWnd);
 
-    return TRUE;
+	return TRUE;
 }

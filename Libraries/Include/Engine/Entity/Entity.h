@@ -16,7 +16,6 @@ public:
 	void LateUpdate();
 	void OnDestroy();
 
-	// CollisionManager가 충돌 시 호출 → 모든 Script에 전달
 	void OnCollision(std::shared_ptr<Entity>& other);
 
 	std::shared_ptr<Transform> GetTransform();
