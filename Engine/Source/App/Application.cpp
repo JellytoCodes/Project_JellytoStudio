@@ -1,6 +1,7 @@
 #include "Framework.h"
 #include "Application.h"
 #include "Core/Interfaces/IExecute.h"
+#include "../../Client/Source/Main/MainApp.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Graphics/Graphics.h"
@@ -17,6 +18,13 @@ bool Application::Initialize(const ApplicationDesc& desc)
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
 	_desc.app->Init();
+
+	// MainApp에 윈도우 포인터 주입 (Init 이후 씬이 준비됨)
+	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
+	{
+		mainApp->SetItemWindow(&_itemWindow);
+		mainApp->SetDetailWindow(&_detailWindow);
+	}
 	return true;
 }
 
@@ -99,6 +107,11 @@ void Application::ToggleItemWindow()
 {
 	if (!_itemWindow.GetHWnd())
 		_itemWindow.Create(_desc.hInstance, _desc.hWnd);
+
+	// 항상 최신 씬을 주입 (씬 변경 대응)
+	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
+		_itemWindow.SetScene(mainApp->GetScene());
+
 	_itemWindow.Toggle();
 }
 
@@ -106,6 +119,11 @@ void Application::ToggleDetailWindow()
 {
 	if (!_detailWindow.GetHWnd())
 		_detailWindow.Create(_desc.hInstance, _desc.hWnd);
+
+	// 항상 최신 씬을 주입
+	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
+		_detailWindow.SetScene(mainApp->GetScene());
+
 	_detailWindow.Toggle();
 }
 

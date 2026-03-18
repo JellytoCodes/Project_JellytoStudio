@@ -21,6 +21,7 @@ public:
 	void SetModel(std::shared_ptr<Model> model);
 	void SetPass(uint8 pass) { _pass = pass; }
 	std::shared_ptr<Shader> GetShader() { return _shader; }
+	std::shared_ptr<Model>  GetModel()  { return _model;  }
 
 	virtual void Update() override;
 	void UpdateTweenData();

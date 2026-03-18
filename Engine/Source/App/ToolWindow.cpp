@@ -75,9 +75,6 @@ void ToolWindow::CreateSubMenu()
 	::AppendMenuW(hModel, MF_STRING, (UINT_PTR)SubMenuCmd::ShowModelBrowser, L"모델 브라우저 열기");
 	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hModel, L"모델(&M)");
 
-	HMENU hItem = ::CreatePopupMenu();
-	::AppendMenuW(hItem, MF_STRING, (UINT_PTR)SubMenuCmd::ShowItemPanel, L"아이템 패널 열기");
-	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hItem, L"아이템(&I)");
 
 	::SetMenu(_hWnd, hBar);
 }
@@ -94,7 +91,6 @@ void ToolWindow::SwitchPanel(ActivePanel panel)
 	{
 	case ActivePanel::FbxConverter: BuildFbxConverterPanel(); break;
 	case ActivePanel::ModelBrowser: BuildModelBrowserPanel(); break;
-	case ActivePanel::ItemPanel:    BuildItemPanel();         break;
 	default: break;
 	}
 }
@@ -338,14 +334,6 @@ void ToolWindow::BuildModelBrowserPanel()
 	RefreshModelList();
 }
 
-// ── 아이템 패널 ──────────────────────────────────────────────────────────
-
-void ToolWindow::BuildItemPanel()
-{
-	MakeCtrl(_hWnd, _hInstance,
-		L"STATIC", L"아이템 패널 — 추후 구현 예정",
-		SS_CENTER, 200, 300, 300, 30, 0, _panelControls);
-}
 
 // ── 모델 브라우저 이벤트 ─────────────────────────────────────────────────
 
@@ -436,8 +424,6 @@ LRESULT CALLBACK ToolWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 				self->SwitchPanel(ActivePanel::FbxConverter); return 0;
 			case SubMenuCmd::ShowModelBrowser:
 				self->SwitchPanel(ActivePanel::ModelBrowser); return 0;
-			case SubMenuCmd::ShowItemPanel:
-				self->SwitchPanel(ActivePanel::ItemPanel);    return 0;
 			}
 			// 패널 내부 버튼
 			switch (LOWORD(wParam))

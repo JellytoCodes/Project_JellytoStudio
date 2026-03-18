@@ -1,4 +1,5 @@
 #pragma once
+
 #include "ToolWindow.h"
 #include "ItemWindow.h"
 #include "DetailWindow.h"
@@ -7,10 +8,10 @@ class IExecute;
 
 enum class AppMenuCmd : UINT
 {
-	ToggleToolWindow   = 1001,  // 창 > 툴 윈도우
-	ToggleItemWindow   = 1002,  // 창 > 아이템 배치
-	ToggleDetailWindow = 1003,  // 창 > 오브젝트 상세
-	Exit               = 1004,  // 파일 > 종료
+	ToggleToolWindow   = 1001,
+	ToggleItemWindow   = 1002,
+	ToggleDetailWindow = 1003,
+	Exit               = 1004,
 };
 
 struct ApplicationDesc
@@ -32,7 +33,6 @@ public:
 	WPARAM Run();
 	void   Shutdown();
 
-	// Pick 결과를 DetailWindow에 전달 (외부에서 호출)
 	DetailWindow& GetDetailWindow() { return _detailWindow; }
 
 private:

@@ -4,7 +4,6 @@ enum class SubMenuCmd : UINT
 {
 	ShowFbxConverter = 2001,
 	ShowModelBrowser = 2002,
-	ShowItemPanel    = 2003,
 };
 
 enum class ActivePanel
@@ -12,7 +11,6 @@ enum class ActivePanel
 	None,
 	FbxConverter,
 	ModelBrowser,
-	ItemPanel,
 };
 
 class ToolWindow
@@ -37,7 +35,6 @@ private:
 
 	void BuildFbxConverterPanel();
 	void BuildModelBrowserPanel();
-	void BuildItemPanel();
 	void ClearPanel();
 
 	// FBX 컨버터 이벤트
