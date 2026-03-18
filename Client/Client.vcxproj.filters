@@ -4,17 +4,17 @@
     <ClCompile Include="Source\Main\Main.cpp" />
     <ClCompile Include="Source\Scripts\CameraController.cpp" />
     <ClCompile Include="Source\Main\MainApp.cpp" />
-    <ClCompile Include="Source\Main\FBXConverter.cpp" />
     <ClCompile Include="Source\Core\pch.cpp" />
     <ClCompile Include="Source\Scripts\CharacterController.cpp" />
     <ClCompile Include="Source\Scripts\CubeScript.cpp" />
+    <ClCompile Include="Source\Main\Actors.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CameraController.h" />
     <ClInclude Include="Source\Main\MainApp.h" />
-    <ClInclude Include="Source\Main\FBXConverter.h" />
     <ClInclude Include="Source\Core\pch.h" />
     <ClInclude Include="Source\Scripts\CharacterController.h" />
     <ClInclude Include="Source\Scripts\CubeScript.h" />
+    <ClInclude Include="Source\Main\Actors.h" />
   </ItemGroup>
 </Project>

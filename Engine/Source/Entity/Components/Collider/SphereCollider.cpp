@@ -11,10 +11,7 @@ SphereCollider::SphereCollider()
 
 }
 
-SphereCollider::~SphereCollider()
-{
-
-}
+SphereCollider::~SphereCollider() { }
 
 void SphereCollider::UpdateBounds()
 {

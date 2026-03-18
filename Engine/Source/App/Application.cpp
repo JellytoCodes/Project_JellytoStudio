@@ -17,14 +17,16 @@ bool Application::Initialize(const ApplicationDesc& desc)
 
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
-	_desc.app->Init();
 
-	// MainApp에 윈도우 포인터 주입 (Init 이후 씬이 준비됨)
+	// Init() 전에 창 포인터를 먼저 주입해야
+	// MainApp::Init() 안의 RegisterActors()가 정상 동작함
 	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
 	{
 		mainApp->SetItemWindow(&_itemWindow);
 		mainApp->SetDetailWindow(&_detailWindow);
 	}
+
+	_desc.app->Init();
 	return true;
 }
 
@@ -63,7 +65,7 @@ void Application::Update()
 
 void Application::UpdateWindowTitle()
 {
-	float fps       = GET_SINGLE(TimeManager)->GetFps();
+	float fps = GET_SINGLE(TimeManager)->GetFps();
 	float totalTime = GET_SINGLE(TimeManager)->GetTotalTime();
 	wchar_t text[100];
 	swprintf_s(text, L"%s (FPS: %.2f, TotalTime: %.2f s)",
@@ -84,9 +86,9 @@ void Application::CreateMainMenu()
 	// [창] → 3개 윈도우 토글
 	HMENU hWin = ::CreatePopupMenu();
 	::AppendMenuW(hWin, MF_STRING,
-		(UINT_PTR)AppMenuCmd::ToggleToolWindow,   L"툴 윈도우\tCtrl+T");
+		(UINT_PTR)AppMenuCmd::ToggleToolWindow, L"툴 윈도우\tCtrl+T");
 	::AppendMenuW(hWin, MF_STRING,
-		(UINT_PTR)AppMenuCmd::ToggleItemWindow,   L"아이템 배치\tCtrl+I");
+		(UINT_PTR)AppMenuCmd::ToggleItemWindow, L"아이템 배치\tCtrl+I");
 	::AppendMenuW(hWin, MF_STRING,
 		(UINT_PTR)AppMenuCmd::ToggleDetailWindow, L"오브젝트 상세\tCtrl+D");
 	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hWin, L"창(&W)");
@@ -174,16 +176,16 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 
 ATOM Application::MyRegisterClass()
 {
-	WNDCLASSEXW wcex   = {};
-	wcex.cbSize        = sizeof(WNDCLASSEX);
-	wcex.style         = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc   = Application::WndProc;
-	wcex.hInstance     = _desc.hInstance;
-	wcex.hIcon         = ::LoadIcon(NULL, IDI_APPLICATION);
-	wcex.hCursor       = ::LoadCursor(NULL, IDC_ARROW);
+	WNDCLASSEXW wcex = {};
+	wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = Application::WndProc;
+	wcex.hInstance = _desc.hInstance;
+	wcex.hIcon = ::LoadIcon(NULL, IDI_APPLICATION);
+	wcex.hCursor = ::LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszClassName = _desc.appName.c_str();
-	wcex.hIconSm       = ::LoadIcon(NULL, IDI_APPLICATION);
+	wcex.hIconSm = ::LoadIcon(NULL, IDI_APPLICATION);
 	return ::RegisterClassExW(&wcex);
 }
 
