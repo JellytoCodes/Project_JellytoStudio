@@ -1,13 +1,16 @@
 #pragma once
-#include "SubWindow.h"
+#include "ToolWindow.h"
+#include "ItemWindow.h"
+#include "DetailWindow.h"
 
 class IExecute;
 
-// 메인 윈도우 메뉴 커맨드
 enum class AppMenuCmd : UINT
 {
-	ToggleSubWindow = 1001,   // 창 > 서브 윈도우 열기/닫기
-	Exit            = 1002,   // 파일 > 종료
+	ToggleToolWindow   = 1001,  // 창 > 툴 윈도우
+	ToggleItemWindow   = 1002,  // 창 > 아이템 배치
+	ToggleDetailWindow = 1003,  // 창 > 오브젝트 상세
+	Exit               = 1004,  // 파일 > 종료
 };
 
 struct ApplicationDesc
@@ -29,16 +32,24 @@ public:
 	WPARAM Run();
 	void   Shutdown();
 
+	// Pick 결과를 DetailWindow에 전달 (외부에서 호출)
+	DetailWindow& GetDetailWindow() { return _detailWindow; }
+
 private:
 	void Update();
 	void UpdateWindowTitle();
 	ATOM MyRegisterClass();
 	BOOL InitInstance();
-	void CreateMainMenu();       // 파일 / 창 메뉴만
-	void ToggleSubWindow();
+	void CreateMainMenu();
+
+	void ToggleToolWindow();
+	void ToggleItemWindow();
+	void ToggleDetailWindow();
 
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	ApplicationDesc _desc;
-	SubWindow       _subWindow;
+	ToolWindow      _toolWindow;
+	ItemWindow      _itemWindow;
+	DetailWindow    _detailWindow;
 };

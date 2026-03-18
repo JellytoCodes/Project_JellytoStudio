@@ -63,7 +63,7 @@ void Application::UpdateWindowTitle()
 	::SetWindowTextW(_desc.hWnd, text);
 }
 
-// ── 메인 윈도우 메뉴: 파일 / 창 ────────────────────────────────────────
+// ── 메뉴바 ──────────────────────────────────────────────────────────────
 void Application::CreateMainMenu()
 {
 	HMENU hBar = ::CreateMenu();
@@ -73,24 +73,40 @@ void Application::CreateMainMenu()
 	::AppendMenuW(hFile, MF_STRING, (UINT_PTR)AppMenuCmd::Exit, L"종료(&X)\tAlt+F4");
 	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hFile, L"파일(&F)");
 
-	// [창] → 서브 윈도우 열기/닫기
+	// [창] → 3개 윈도우 토글
 	HMENU hWin = ::CreatePopupMenu();
-	::AppendMenuW(hWin, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleSubWindow,
-		L"서브 윈도우 열기/닫기\tCtrl+W");
+	::AppendMenuW(hWin, MF_STRING,
+		(UINT_PTR)AppMenuCmd::ToggleToolWindow,   L"툴 윈도우\tCtrl+T");
+	::AppendMenuW(hWin, MF_STRING,
+		(UINT_PTR)AppMenuCmd::ToggleItemWindow,   L"아이템 배치\tCtrl+I");
+	::AppendMenuW(hWin, MF_STRING,
+		(UINT_PTR)AppMenuCmd::ToggleDetailWindow, L"오브젝트 상세\tCtrl+D");
 	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hWin, L"창(&W)");
 
 	::SetMenu(_desc.hWnd, hBar);
 }
 
-void Application::ToggleSubWindow()
+// ── 창 토글 ──────────────────────────────────────────────────────────────
+void Application::ToggleToolWindow()
 {
-	if (!_subWindow.GetHWnd())
-	{
-		_subWindow.Create(_desc.hInstance, _desc.hWnd,
-			L"Jellyto Studio - 툴 패널",
-			SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT);
-	}
-	_subWindow.Toggle();
+	if (!_toolWindow.GetHWnd())
+		_toolWindow.Create(_desc.hInstance, _desc.hWnd,
+			L"Jellyto Studio - 툴 윈도우", SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT);
+	_toolWindow.Toggle();
+}
+
+void Application::ToggleItemWindow()
+{
+	if (!_itemWindow.GetHWnd())
+		_itemWindow.Create(_desc.hInstance, _desc.hWnd);
+	_itemWindow.Toggle();
+}
+
+void Application::ToggleDetailWindow()
+{
+	if (!_detailWindow.GetHWnd())
+		_detailWindow.Create(_desc.hInstance, _desc.hWnd);
+	_detailWindow.Toggle();
 }
 
 // ── WndProc ──────────────────────────────────────────────────────────────
@@ -115,18 +131,24 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		case WM_COMMAND:
 			switch ((AppMenuCmd)LOWORD(wParam))
 			{
-			case AppMenuCmd::ToggleSubWindow: self->ToggleSubWindow(); return 0;
-			case AppMenuCmd::Exit:            ::PostQuitMessage(0);    return 0;
+			case AppMenuCmd::ToggleToolWindow:   self->ToggleToolWindow();   return 0;
+			case AppMenuCmd::ToggleItemWindow:   self->ToggleItemWindow();   return 0;
+			case AppMenuCmd::ToggleDetailWindow: self->ToggleDetailWindow(); return 0;
+			case AppMenuCmd::Exit:               ::PostQuitMessage(0);       return 0;
 			}
 			break;
 
 		case WM_KEYDOWN:
-			if ((::GetKeyState(VK_CONTROL) & 0x8000) && wParam == 'W')
+		{
+			bool ctrl = (::GetKeyState(VK_CONTROL) & 0x8000) != 0;
+			if (ctrl)
 			{
-				self->ToggleSubWindow();
-				return 0;
+				if (wParam == 'T') { self->ToggleToolWindow();   return 0; }
+				if (wParam == 'I') { self->ToggleItemWindow();   return 0; }
+				if (wParam == 'D') { self->ToggleDetailWindow(); return 0; }
 			}
 			break;
+		}
 		}
 	}
 	return ::DefWindowProc(hWnd, msg, wParam, lParam);
