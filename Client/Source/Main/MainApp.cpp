@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "MainApp.h"
-#include "Actors.h"              // Client ¡æ Client: OK
-
-#include "App/ItemWindow.h"
-#include "App/DetailWindow.h"
+#include "Actors.h"
 
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
@@ -47,6 +44,7 @@ void MainApp::RegisterActors()
     _itemWindow->RegisterActor(L"SkySphere", [] { return std::make_shared<SkySphereActor>(); });
     _itemWindow->RegisterActor(L"Floor", [] { return std::make_shared<FloorActor>();      });
     _itemWindow->RegisterActor(L"Cube", [] { return std::make_shared<CubeActor>();       });
+    _itemWindow->RegisterActor(L"Sphere", [] { return std::make_shared<SphereActor>();       });
     _itemWindow->RegisterActor(L"Character", [] { return std::make_shared<CharacterActor>();  });
 }
 
@@ -64,7 +62,7 @@ void MainApp::SpawnDefaultActors()
 
 void MainApp::CreateCamera()
 {
-    auto cam = std::make_shared<Entity>();
+    auto cam = std::make_shared<Entity>(L"Ä«¸Þ¶ó");
     cam->AddComponent(std::make_shared<Transform>());
     cam->AddComponent(std::make_shared<Camera>());
     cam->AddComponent(std::make_shared<CameraController>());

@@ -76,6 +76,31 @@ void CubeActor::BuildEntity()
 	_entity->AddComponent(std::make_shared<CubeScript>());
 }
 
+void SphereActor::BuildEntity()
+{
+	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/Terrain.hlsl");
+	auto mat = std::make_shared<Material>();
+	mat->SetShader(shader);
+	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
+	mat->SetDiffuseMap(tex);
+	MaterialDesc& d = mat->GetMaterialDesc();
+	d.ambient = d.diffuse = d.specular = Vec4(1.f);
+	GET_SINGLE(ResourceManager)->Add(L"CubeMat", mat);
+	_entity->GetTransform()->SetLocalScale(Vec3(0.5f));
+
+	auto mr = std::make_shared<MeshRenderer>();
+	mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Sphere"));
+	mr->SetPass(0);
+	mr->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"));
+	_entity->AddComponent(mr);
+
+	auto col = std::make_shared<SphereCollider>();
+	col->SetRadius(0.5f);
+	_entity->AddComponent(col);
+
+	_entity->AddComponent(std::make_shared<CubeScript>());
+}
+
 void CharacterActor::BuildEntity()
 {
 	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
@@ -87,7 +112,7 @@ void CharacterActor::BuildEntity()
 	_entity->GetTransform()->SetLocalScale(Vec3(0.01f));
 	_entity->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
 
-	_entity->AddComponent(std::make_shared<CharacterController>());
+	//_entity->AddComponent(std::make_shared<CharacterController>());
 
 	auto animator = std::make_shared<ModelAnimator>(shader);
 	animator->SetModel(model);

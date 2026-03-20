@@ -106,7 +106,4 @@ public:										\
 #define MAIN_WINDOW_WIDTH	1280
 #define MAIN_WINDOW_HEIGHT	720
 
-#define SUB_WINDOW_WIDTH	460
-#define SUB_WINDOW_HEIGHT	720
-
 #define CHECK(hr) { if(FAILED(hr)) { assert(false); } }

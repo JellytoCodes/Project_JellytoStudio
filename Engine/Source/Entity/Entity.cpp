@@ -2,7 +2,8 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/MonoBehaviour.h"
 
-Entity::Entity()
+Entity::Entity(const std::wstring& name)
+	: _entityName(name)
 {
 	_transform = std::make_shared<Transform>();
 }

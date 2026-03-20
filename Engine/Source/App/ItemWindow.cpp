@@ -22,7 +22,6 @@ bool ItemWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 	int x = hMainWnd ? mainRect.right + 8 : CW_USEDEFAULT;
 	int y = hMainWnd ? mainRect.top : CW_USEDEFAULT;
 
-	// 창 너비: 4열 * 셀 너비 + 여백 + 스크롤바
 	int winW = COLS * CELL_W + GRID_MARGIN * 2 + ::GetSystemMetrics(SM_CXVSCROLL) + 8;
 	int winH = 860;
 

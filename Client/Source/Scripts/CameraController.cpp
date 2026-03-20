@@ -40,6 +40,23 @@ void CameraController::Update()
 
 		transform->SetLocalRotation(rotation);
 	}
+
+	Vec3 rotation = transform->GetLocalRotation();
+
+	transform->SetLocalRotation(rotation);
+
+	Vec3 pos = transform->GetLocalPosition();
+	Vec3 look = transform->GetLook();
+	look.y = 0.f;
+	look.Normalize();
+
+	if (input->GetButton(KEY_TYPE::W))
+		pos += look * _speed * dt;
+
+	if (input->GetButton(KEY_TYPE::S))
+		pos -= look * _speed * dt;
+
+	transform->SetLocalPosition(pos);
 }
 
 void CameraController::LateUpdate()

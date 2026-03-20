@@ -176,16 +176,16 @@ void DetailWindow::RefreshEntityList()
 		if (animator && animator->GetModel())
 		{
 			auto mdl = animator->GetModel();
-			label = L"[Model] ";
+			label = entity->GetEntityName();
 			label += (mdl->GetMeshCount() > 0) ? mdl->GetMeshByIndex(0)->name : L"Unknown";
 		}
 		else if (entity->GetComponent<Camera>() != nullptr)
 		{
-			label = L"[Camera]";
+			label = entity->GetEntityName();
 		}
 		else if (entity->GetComponent<MeshRenderer>() != nullptr)
 		{
-			label = L"[Mesh]";
+			label = entity->GetEntityName();
 		}
 		else
 		{

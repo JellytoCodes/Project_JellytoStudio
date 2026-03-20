@@ -1,7 +1,6 @@
 #include "Framework.h"
 #include "Application.h"
 #include "Core/Interfaces/IExecute.h"
-#include "../../Client/Source/Main/MainApp.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Graphics/Graphics.h"
@@ -18,13 +17,8 @@ bool Application::Initialize(const ApplicationDesc& desc)
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
 
-	// Init() 전에 창 포인터를 먼저 주입해야
-	// MainApp::Init() 안의 RegisterActors()가 정상 동작함
-	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
-	{
-		mainApp->SetItemWindow(&_itemWindow);
-		mainApp->SetDetailWindow(&_detailWindow);
-	}
+	_desc.app->SetItemWindow(&_itemWindow);
+	_desc.app->SetDetailWindow(&_detailWindow);
 
 	_desc.app->Init();
 	return true;
@@ -101,7 +95,7 @@ void Application::ToggleToolWindow()
 {
 	if (!_toolWindow.GetHWnd())
 		_toolWindow.Create(_desc.hInstance, _desc.hWnd,
-			L"Jellyto Studio - 툴 윈도우", SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT);
+			L"Jellyto Studio - 툴 윈도우", 720, 360);
 	_toolWindow.Toggle();
 }
 
@@ -111,8 +105,7 @@ void Application::ToggleItemWindow()
 		_itemWindow.Create(_desc.hInstance, _desc.hWnd);
 
 	// 항상 최신 씬을 주입 (씬 변경 대응)
-	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
-		_itemWindow.SetScene(mainApp->GetScene());
+	_itemWindow.SetScene(_desc.app->GetScene());
 
 	_itemWindow.Toggle();
 }
@@ -123,8 +116,7 @@ void Application::ToggleDetailWindow()
 		_detailWindow.Create(_desc.hInstance, _desc.hWnd);
 
 	// 항상 최신 씬을 주입
-	if (auto* mainApp = dynamic_cast<MainApp*>(_desc.app.get()))
-		_detailWindow.SetScene(mainApp->GetScene());
+	_detailWindow.SetScene(_desc.app->GetScene());
 
 	_detailWindow.Toggle();
 }

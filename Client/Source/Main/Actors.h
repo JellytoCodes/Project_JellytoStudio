@@ -29,6 +29,14 @@ protected:
 	void BuildEntity() override;
 };
 
+class SphereActor : public Actor
+{
+public:
+	std::wstring GetActorName() const override { return L"Sphere"; }
+protected:
+	void BuildEntity() override;
+};
+
 class CharacterActor : public Actor
 {
 public:

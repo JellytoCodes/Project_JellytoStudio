@@ -7,7 +7,7 @@ class Entity : public std::enable_shared_from_this<Entity>
 {
 
 public:
-	Entity();
+	Entity(const std::wstring& name);
 	~Entity();
 
 	void Awake();
@@ -28,6 +28,8 @@ public:
 	void SetLayerIndex(const uint8 layer) { _layerIndex = layer; }
 	uint8 GetLayerIndex() const { return _layerIndex; }
 
+	std::wstring GetEntityName() const { return _entityName; }
+
 protected:
 	std::shared_ptr<Transform> _transform;
 	std::array<std::shared_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
@@ -35,6 +37,8 @@ protected:
 	std::vector<std::shared_ptr<MonoBehaviour>> _scripts;
 
 	uint8 _layerIndex = 0;
+
+	std::wstring _entityName = L"";
 };
 
 template <typename T>

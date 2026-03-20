@@ -9,7 +9,7 @@ bool Actor::Spawn(std::shared_ptr<Scene> scene)
 {
 	if (!scene) return false;
 
-	_entity = std::make_shared<Entity>();
+	_entity = std::make_shared<Entity>(GetActorName());
 	_entity->AddComponent(std::make_shared<Transform>());
 
 	BuildEntity();
