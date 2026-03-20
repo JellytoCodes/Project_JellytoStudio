@@ -22,4 +22,3 @@ protected :
 
 	std::shared_ptr<Scene>      _scene;
 };
-

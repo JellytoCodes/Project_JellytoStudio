@@ -4,6 +4,7 @@
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Graphics/Graphics.h"
+#include "Managers/WindowManager.h"
 #include "Scene/SceneManager.h"
 
 bool Application::Initialize(const ApplicationDesc& desc)
@@ -13,6 +14,8 @@ bool Application::Initialize(const ApplicationDesc& desc)
 
 	MyRegisterClass();
 	if (!InitInstance()) return false;
+
+	GET_SINGLE(WindowManager)->Init(_desc.hInstance, _desc.hWnd);
 
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
