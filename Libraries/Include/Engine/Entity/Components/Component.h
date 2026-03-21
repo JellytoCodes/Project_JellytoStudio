@@ -12,6 +12,8 @@ enum class ComponentType : int8
 	Animator,
 	Terrain,
 	Collider,
+	TileMap,
+	AnimStateMachine,
 
 	///////////////
 	Script,

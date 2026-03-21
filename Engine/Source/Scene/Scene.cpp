@@ -130,3 +130,35 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 
 	return picked;
 }
+// ── Ray → Y=groundY 평면 교차 → 월드 좌표 반환 ──────────────────────────
+// 아이소메트릭 클릭 이동에서 "바닥을 클릭한 위치" 를 구할 때 사용
+bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY)
+{
+	if (!_mainCamera) return false;
+
+	float width  = Graphics::Get()->GetViewport().GetWidth();
+	float height = Graphics::Get()->GetViewport().GetHeight();
+
+	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
+	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
+
+	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
+	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
+
+	Vec4 rayOrigin4 = Vec4(0.f, 0.f, 0.f, 1.f);
+	Vec4 rayDir4    = Vec4(viewX, viewY, 1.f, 0.f);
+
+	Vec3 rayOrigin = XMVector3TransformCoord(rayOrigin4, viewMatrixInv);
+	Vec3 rayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
+	rayDir.Normalize();
+
+	// Ray-Plane 교차: Y = groundY 인 수평 평면
+	// t = (groundY - rayOrigin.y) / rayDir.y
+	if (fabsf(rayDir.y) < 1e-6f) return false; // 평행 (교차 없음)
+
+	float t = (groundY - rayOrigin.y) / rayDir.y;
+	if (t < 0.f) return false; // 카메라 뒤쪽
+
+	outWorldPos = rayOrigin + rayDir * t;
+	return true;
+}

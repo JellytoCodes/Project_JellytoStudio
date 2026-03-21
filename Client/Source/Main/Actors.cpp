@@ -1,11 +1,13 @@
-﻿
-#include "pch.h"
+﻿#include "pch.h"
 #include "Actors.h"
 
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Terrain.h"
+#include "Entity/Components/TileMap.h"
+#include "Entity/Components/AnimStateMachine.h"
+#include "Scripts/PointClickController.h"
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Collider/SphereCollider.h"
 #include "Graphics/Model/ModelAnimator.h"
@@ -45,9 +47,11 @@ void FloorActor::BuildEntity()
 	d.ambient = d.diffuse = d.specular = Vec4(1.f);
 	GET_SINGLE(ResourceManager)->Add(L"FloorMat", mat);
 
-	auto terrain = std::make_shared<Terrain>();
-	_entity->AddComponent(terrain);
-	terrain->Create(5.f, 5.f, GET_SINGLE(ResourceManager)->Get<Material>(L"FloorMat"));
+	auto tileMap = std::make_shared<TileMap>();
+	_entity->AddComponent(tileMap);
+	tileMap->Create(20, 20, 1.f, GET_SINGLE(ResourceManager)->Get<Material>(L"FloorMat"));
+	// 중앙이 (0,0,0)이 되도록 원점 이동
+	_entity->GetTransform()->SetLocalPosition(Vec3(-10.f, 0.f, -10.f));
 }
 
 void CubeActor::BuildEntity()
@@ -106,7 +110,8 @@ void CharacterActor::BuildEntity()
 	auto model = std::make_shared<Model>();
 	model->ReadModel(L"Character/Ch03");
 	model->ReadMaterial(L"Character/Ch03");
-	model->ReadAnimation(L"Character/Idle");
+	model->ReadAnimation(L"Character/Idle"); // index 0
+	//model->ReadAnimation(L"Character/Walk"); // index 1
 
 	_entity->GetTransform()->SetLocalScale(Vec3(0.01f));
 	_entity->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -119,4 +124,17 @@ void CharacterActor::BuildEntity()
 	col->SetBoxExtents(Vec3(20.f, 88.f, 20.f));
 	col->SetOffsetPosition(Vec3(0.f, 88.f, 0.f));
 	_entity->AddComponent(col);
+
+	// 애니메이션 상태머신
+	auto asm_ = std::make_shared<AnimStateMachine>();
+	asm_->RegisterClip(AnimState::Idle, 0); // Idle = 클립 인덱스 0
+	//asm_->RegisterClip(AnimState::Walk, 1); // Walk = 클립 인덱스 1
+	asm_->SetTweenDuration(0.2f);
+	_entity->AddComponent(asm_);
+
+	// 클릭 이동 컨트롤러
+	auto pcc = std::make_shared<PointClickController>();
+	pcc->SetMoveSpeed(3.f);
+	pcc->SetGroundY(0.f);
+	_entity->AddComponent(pcc);
 }

@@ -16,7 +16,7 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
-#include "Scripts/CameraController.h"
+#include "Scripts/IsometricCameraController.h"
 #include "App/Managers/WindowManager.h"
 
 // ── Init ─────────────────────────────────────────────────────────────────
@@ -62,8 +62,13 @@ void MainApp::SpawnDefaultActors()
 
     spawn(std::make_shared<SkySphereActor>());
     spawn(std::make_shared<FloorActor>());
-    spawn(std::make_shared<CubeActor>());   // Collider 있음
-    spawn(std::make_shared<SphereActor>()); // Collider 있음
+    spawn(std::make_shared<CubeActor>());
+    spawn(std::make_shared<SphereActor>());
+
+    auto charActor = std::make_shared<CharacterActor>();
+    charActor->Spawn(_scene);
+    _defaultActors.push_back(charActor);
+    _characterEntity = charActor->GetEntity();
 }
 
 void MainApp::CreateCamera()
@@ -71,10 +76,21 @@ void MainApp::CreateCamera()
     auto cam = std::make_shared<Entity>(L"카메라");
     cam->AddComponent(std::make_shared<Transform>());
     cam->AddComponent(std::make_shared<Camera>());
-    cam->AddComponent(std::make_shared<CameraController>());
-    cam->GetTransform()->SetLocalPosition(Vec3(0.f, 1.5f, -3.f));
+
+    auto isoCtrl = std::make_shared<IsometricCameraController>();
+    isoCtrl->SetDistance(20.f);
+    isoCtrl->SetPanSpeed(10.f);
+    isoCtrl->SetZoomSpeed(15.f);
+    isoCtrl->SetMinDistance(5.f);
+    isoCtrl->SetMaxDistance(60.f);
+    cam->AddComponent(isoCtrl);
+    _isoCamCtrl = isoCtrl;
+
     _scene->Add(cam);
     _scene->SetMainCamera(cam->GetComponent<Camera>());
+
+    if (_characterEntity)
+        isoCtrl->SetTarget(_characterEntity);
 }
 
 // ── Update ───────────────────────────────────────────────────────────────

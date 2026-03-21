@@ -5,6 +5,7 @@
 class Scene;
 class Entity;
 class Actor;
+class IsometricCameraController;
 
 class MainApp : public IExecute
 {
@@ -24,4 +25,6 @@ private:
 	std::vector<std::shared_ptr<Actor>> _defaultActors;
 
 	std::shared_ptr<Entity> _pickedEntity;
+	std::shared_ptr<Entity> _characterEntity;
+	std::shared_ptr<IsometricCameraController> _isoCamCtrl;
 };
