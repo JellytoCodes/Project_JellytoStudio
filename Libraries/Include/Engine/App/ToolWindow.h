@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Interfaces/IWindow.h"
 
 enum class SubMenuCmd : UINT
 {
@@ -13,21 +14,18 @@ enum class ActivePanel
 	ModelBrowser,
 };
 
-class ToolWindow
+class ToolWindow : public IWindow
 {
 public:
-	ToolWindow();
-	~ToolWindow();
 
-	bool Create(HINSTANCE hInstance, HWND hMainWnd,
-		const std::wstring& title, int width, int height);
+	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
 
-	void Show();
-	void Hide();
-	void Toggle();
+	virtual void Show() override;
+	virtual void Hide() override;
+	virtual void Toggle() override;
 
-	bool IsVisible() const { return _visible; }
-	HWND GetHWnd()   const { return _hWnd;    }
+	virtual bool IsVisible() const override		{ return _visible; }
+	virtual HWND GetHWnd()   const override		{ return _hWnd;    }
 
 private:
 	void CreateSubMenu();

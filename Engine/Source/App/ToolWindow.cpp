@@ -8,13 +8,9 @@
 #pragma comment(lib, "comdlg32.lib")
 #pragma comment(lib, "shell32.lib")
 
-ToolWindow::ToolWindow() {}
-ToolWindow::~ToolWindow() {}
-
 // ── 생성 ────────────────────────────────────────────────────────────────
 
-bool ToolWindow::Create(HINSTANCE hInstance, HWND hMainWnd,
-	const std::wstring& title, int width, int height)
+bool ToolWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
 	if (_created) return true;
 	_hInstance = hInstance;
@@ -26,7 +22,9 @@ bool ToolWindow::Create(HINSTANCE hInstance, HWND hMainWnd,
 	int x = hMainWnd ? mainRect.right + 8 : CW_USEDEFAULT;
 	int y = hMainWnd ? mainRect.top       : CW_USEDEFAULT;
 
-	RECT wr = { 0, 0, width, height };
+	std::wstring title = L"Jellyto Studio - 툴 윈도우";
+	RECT wr = { 0, 0, 720, 360 };
+
 	::AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, TRUE);
 
 	_hWnd = ::CreateWindowW(CLASS_NAME, title.c_str(),

@@ -52,8 +52,10 @@ void CharacterController::Update()
 
 void CharacterController::LateUpdate()
 {
+
 }
 
 void CharacterController::OnDestroy()
 {
+
 }

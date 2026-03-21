@@ -16,19 +16,23 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
 #include "Scripts/CameraController.h"
+#include "App/Managers/WindowManager.h"
 
 // 式式 Init 式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式式
 
 void MainApp::Init()
 {
-    GET_SINGLE(ResourceManager)->Init();
+	GET_SINGLE(ResourceManager)->Init();
 
     _scene = std::make_shared<Scene>();
     _scene->SetName(L"Main Scene");
 
+    // WindowManager縑憮 議蝶たж罹 �僱�
+    _itemWindow = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
+    _detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
+
     SpawnDefaultActors();
     CreateCamera();
-
     GET_SINGLE(SceneManager)->ChangeScene(_scene);
 
     if (_itemWindow)   _itemWindow->SetScene(_scene);

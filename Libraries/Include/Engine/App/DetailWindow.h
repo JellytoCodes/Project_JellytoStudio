@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Interfaces/IWindow.h"
 
 class Scene;
 class Entity;
@@ -24,20 +25,18 @@ struct DetailInfo
 	float sx = 1.f, sy = 1.f, sz = 1.f;
 };
 
-class DetailWindow
+class DetailWindow : public IWindow
 {
 public:
-	DetailWindow();
-	~DetailWindow();
 
-	bool Create(HINSTANCE hInstance, HWND hMainWnd);
+	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
 
-	void Show();
-	void Hide();
-	void Toggle();
+	virtual void Show() override;
+	virtual void Hide() override;
+	virtual void Toggle() override;
 
-	bool IsVisible() const { return _visible; }
-	HWND GetHWnd()   const { return _hWnd; }
+	virtual bool IsVisible() const override		{ return _visible; }
+	virtual HWND GetHWnd()   const override		{ return _hWnd;    }
 
 	// 씬 주입 및 목록 갱신
 	void SetScene(std::shared_ptr<Scene> scene);

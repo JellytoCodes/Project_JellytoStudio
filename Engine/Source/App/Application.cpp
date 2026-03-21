@@ -17,11 +17,12 @@ bool Application::Initialize(const ApplicationDesc& desc)
 
 	GET_SINGLE(WindowManager)->Init(_desc.hInstance, _desc.hWnd);
 
+	GET_SINGLE(WindowManager)->RegisterWindow<ToolWindow>(L"ToolWindow");
+	GET_SINGLE(WindowManager)->RegisterWindow<ItemWindow>(L"ItemWindow");
+	GET_SINGLE(WindowManager)->RegisterWindow<DetailWindow>(L"DetailWindow");
+
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
-
-	_desc.app->SetItemWindow(&_itemWindow);
-	_desc.app->SetDetailWindow(&_detailWindow);
 
 	_desc.app->Init();
 	return true;
@@ -96,32 +97,17 @@ void Application::CreateMainMenu()
 // ── 창 토글 ──────────────────────────────────────────────────────────────
 void Application::ToggleToolWindow()
 {
-	if (!_toolWindow.GetHWnd())
-		_toolWindow.Create(_desc.hInstance, _desc.hWnd,
-			L"Jellyto Studio - 툴 윈도우", 720, 360);
-	_toolWindow.Toggle();
+	GET_SINGLE(WindowManager)->ToggleWindow(L"ToolWindow");
 }
 
 void Application::ToggleItemWindow()
 {
-	if (!_itemWindow.GetHWnd())
-		_itemWindow.Create(_desc.hInstance, _desc.hWnd);
-
-	// 항상 최신 씬을 주입 (씬 변경 대응)
-	_itemWindow.SetScene(_desc.app->GetScene());
-
-	_itemWindow.Toggle();
+	GET_SINGLE(WindowManager)->ToggleWindow(L"ItemWindow");
 }
 
 void Application::ToggleDetailWindow()
 {
-	if (!_detailWindow.GetHWnd())
-		_detailWindow.Create(_desc.hInstance, _desc.hWnd);
-
-	// 항상 최신 씬을 주입
-	_detailWindow.SetScene(_desc.app->GetScene());
-
-	_detailWindow.Toggle();
+	GET_SINGLE(WindowManager)->ToggleWindow(L"DetailWindow");
 }
 
 // ── WndProc ──────────────────────────────────────────────────────────────

@@ -11,9 +11,6 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
 
-DetailWindow::DetailWindow()	{ }
-DetailWindow::~DetailWindow()	{ }
-
 // ── 생성 ────────────────────────────────────────────────────────────────
 
 bool DetailWindow::Create(HINSTANCE hInstance, HWND hMainWnd)

@@ -4,9 +4,6 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 
-ItemWindow::ItemWindow() {}
-ItemWindow::~ItemWindow() {}
-
 // ── 창 생성 ──────────────────────────────────────────────────────────────
 
 bool ItemWindow::Create(HINSTANCE hInstance, HWND hMainWnd)

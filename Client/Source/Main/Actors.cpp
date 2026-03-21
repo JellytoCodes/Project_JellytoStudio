@@ -16,7 +16,6 @@
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
 #include "Scripts/CubeScript.h"
-#include "Scripts/CharacterController.h"
 
 void SkySphereActor::BuildEntity()
 {
@@ -111,8 +110,6 @@ void CharacterActor::BuildEntity()
 
 	_entity->GetTransform()->SetLocalScale(Vec3(0.01f));
 	_entity->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-
-	//_entity->AddComponent(std::make_shared<CharacterController>());
 
 	auto animator = std::make_shared<ModelAnimator>(shader);
 	animator->SetModel(model);

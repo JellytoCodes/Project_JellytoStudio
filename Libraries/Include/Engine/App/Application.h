@@ -33,8 +33,6 @@ public:
 	WPARAM Run();
 	void   Shutdown();
 
-	DetailWindow& GetDetailWindow() { return _detailWindow; }
-
 private:
 	void Update();
 	void UpdateWindowTitle();
@@ -49,7 +47,4 @@ private:
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	ApplicationDesc _desc;
-	ToolWindow      _toolWindow;
-	ItemWindow      _itemWindow;
-	DetailWindow    _detailWindow;
 };

@@ -1,26 +1,21 @@
 ﻿#pragma once
 #include "Entity/Actor.h"
+#include "Interfaces/IWindow.h"
 
 class Scene;
 
-// ItemWindow — Actor 아이콘 그리드 (200x200, 4열) + 하단 고정 Transform 패널
-// - 그리드 영역: 스크롤 가능한 자식 패널
-// - 하단: Transform 입력 + 배치 버튼 항상 고정
-// - 같은 Actor 타입을 여러 번 배치 가능
-class ItemWindow
+class ItemWindow : public IWindow
 {
 public:
-	ItemWindow();
-	~ItemWindow();
 
-	bool Create(HINSTANCE hInstance, HWND hMainWnd);
+	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
 
-	void Show();
-	void Hide();
-	void Toggle();
+	virtual void Show() override;
+	virtual void Hide() override;
+	virtual void Toggle() override;
 
-	bool IsVisible() const { return _visible; }
-	HWND GetHWnd()   const { return _hWnd; }
+	virtual bool IsVisible() const override		{ return _visible; }
+	virtual HWND GetHWnd()   const override		{ return _hWnd;    }
 
 	void SetScene(std::shared_ptr<Scene> scene) { _scene = scene; }
 
