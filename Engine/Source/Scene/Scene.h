@@ -29,8 +29,8 @@ public :
 
 	std::shared_ptr<Light>							GetLight()													{ return _mainLight;  }
 
-	// 마우스 Ray 기반 피킹 ? 가장 가까운 Entity 반환 (없으면 nullptr)
-	std::shared_ptr<Entity> Pick(const Ray& ray);
+	// 스크린 좌표 기반 피킹 ? View Space에서 Ray 생성 후 World 변환
+	std::shared_ptr<Entity> Pick(int32 screenX, int32 screenY);
 
 	std::unordered_set<std::shared_ptr<Entity>>&	GetEntities()												{ return _objects; }
 

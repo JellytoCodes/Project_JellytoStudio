@@ -19,7 +19,6 @@ private:
 	void CreateCamera();
 
 	void UpdatePicking();
-	Ray  ScreenToRay(int screenX, int screenY);
 	void FillDetailInfo(std::shared_ptr<Entity> entity, DetailInfo& info);
 
 	std::vector<std::shared_ptr<Actor>> _defaultActors;

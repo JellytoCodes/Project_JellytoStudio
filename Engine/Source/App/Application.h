@@ -1,9 +1,5 @@
 #pragma once
 
-#include "ToolWindow.h"
-#include "ItemWindow.h"
-#include "DetailWindow.h"
-
 class IExecute;
 
 enum class AppMenuCmd : UINT
@@ -40,6 +36,7 @@ private:
 	BOOL InitInstance();
 	void CreateMainMenu();
 
+	void HandleShortcuts(); // InputManager 기반 단축키 처리
 	void ToggleToolWindow();
 	void ToggleItemWindow();
 	void ToggleDetailWindow();

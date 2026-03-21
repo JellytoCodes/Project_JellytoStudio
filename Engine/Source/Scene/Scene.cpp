@@ -1,9 +1,9 @@
 #include "Framework.h"
+#include "Graphics/Graphics.h"
 #include "Scene.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Collider/BaseCollider.h"
-#include "Entity/Managers/CollisionManager.h"
 
 Scene::Scene()
 {
@@ -71,13 +71,46 @@ void Scene::Remove(const std::shared_ptr<Entity>& object)
 	_objects.erase(object);
 }
 
-std::shared_ptr<Entity> Scene::Pick(const Ray& ray)
+std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 {
+	if (!_mainCamera) return nullptr;
+
+	// Viewport 크기
+	float width  = Graphics::Get()->GetViewport().GetWidth();
+	float height = Graphics::Get()->GetViewport().GetHeight();
+
+	Matrix projMatrix = _mainCamera->GetProjectionMatrix();
+	Matrix viewMatrix = _mainCamera->GetViewMatrix();
+	Matrix viewMatrixInv = viewMatrix.Invert();
+
+	// View Space 좌표 (참고 코드 방식)
+	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
+	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
+
+	// View Space Ray → World Space 변환
+	Vec4 rayOrigin4 = Vec4(0.f, 0.f, 0.f, 1.f);
+	Vec4 rayDir4    = Vec4(viewX, viewY, 1.f, 0.f);
+
+	Vec3 worldRayOrigin = XMVector3TransformCoord(rayOrigin4, viewMatrixInv);
+	Vec3 worldRayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
+	worldRayDir.Normalize();
+
+	// [DEBUG]
+	wchar_t dbg[256];
+	swprintf_s(dbg, L"[Scene::Pick] origin=(%.2f,%.2f,%.2f) dir=(%.3f,%.3f,%.3f)\n",
+		worldRayOrigin.x, worldRayOrigin.y, worldRayOrigin.z,
+		worldRayDir.x, worldRayDir.y, worldRayDir.z);
+	::OutputDebugStringW(dbg);
+
+	Ray ray = Ray(worldRayOrigin, worldRayDir);
+
 	std::shared_ptr<Entity> picked = nullptr;
 	float minDist = FLT_MAX;
 
 	for (auto& entity : _objects)
 	{
+		if (_mainCamera->IsCulled(entity->GetLayerIndex())) continue;
+
 		auto collider = entity->GetComponent<BaseCollider>();
 		if (!collider) continue;
 
@@ -87,6 +120,11 @@ std::shared_ptr<Entity> Scene::Pick(const Ray& ray)
 		{
 			minDist = dist;
 			picked  = entity;
+
+			wchar_t dbgHit[256];
+			swprintf_s(dbgHit, L"[Scene::Pick] 후보 히트: %s dist=%.2f\n",
+				entity->GetEntityName().c_str(), dist);
+			::OutputDebugStringW(dbgHit);
 		}
 	}
 

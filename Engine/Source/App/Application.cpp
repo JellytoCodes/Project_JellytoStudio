@@ -1,11 +1,17 @@
 #include "Framework.h"
 #include "Application.h"
+
 #include "Core/Interfaces/IExecute.h"
+#include "Scene/SceneManager.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
-#include "Graphics/Graphics.h"
 #include "Managers/WindowManager.h"
-#include "Scene/SceneManager.h"
+
+#include "ToolWindow.h"
+#include "ItemWindow.h"
+#include "DetailWindow.h"
+#include "Graphics/Graphics.h"
+
 
 bool Application::Initialize(const ApplicationDesc& desc)
 {
@@ -23,6 +29,12 @@ bool Application::Initialize(const ApplicationDesc& desc)
 
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
+
+	// DetailWindow / ItemWindow가 포커스를 가져도 키 입력이 동작하도록 등록
+	if (auto detail = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow"))
+		GET_SINGLE(InputManager)->AddAllowedWindow(detail->GetHWnd());
+	if (auto item = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow"))
+		GET_SINGLE(InputManager)->AddAllowedWindow(item->GetHWnd());
 
 	_desc.app->Init();
 	return true;
@@ -55,6 +67,7 @@ void Application::Update()
 	GET_SINGLE(InputManager)->Update();
 	UpdateWindowTitle();
 	GET_SINGLE(SceneManager)->Update();
+	HandleShortcuts();
 	_desc.app->Update();
 	_desc.app->Render();
 	GET_SINGLE(SceneManager)->Render();
@@ -92,6 +105,17 @@ void Application::CreateMainMenu()
 	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hWin, L"창(&W)");
 
 	::SetMenu(_desc.hWnd, hBar);
+}
+
+// ── 단축키 처리 (InputManager 기반) ────────────────────────────────────
+void Application::HandleShortcuts()
+{
+	// Ctrl은 KEY_TYPE에 없으므로 GetKeyState로 체크
+	if (!(::GetKeyState(VK_CONTROL) & 0x8000)) return;
+
+	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::T)) { ToggleToolWindow();   return; }
+	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::I)) { ToggleItemWindow();   return; }
+	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::D)) { ToggleDetailWindow(); return; }
 }
 
 // ── 창 토글 ──────────────────────────────────────────────────────────────
@@ -139,17 +163,7 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			}
 			break;
 
-		case WM_KEYDOWN:
-		{
-			bool ctrl = (::GetKeyState(VK_CONTROL) & 0x8000) != 0;
-			if (ctrl)
-			{
-				if (wParam == 'T') { self->ToggleToolWindow();   return 0; }
-				if (wParam == 'I') { self->ToggleItemWindow();   return 0; }
-				if (wParam == 'D') { self->ToggleDetailWindow(); return 0; }
-			}
-			break;
-		}
+		// 단축키는 Application::Update()의 InputManager에서 처리
 		}
 	}
 	return ::DefWindowProc(hWnd, msg, wParam, lParam);

@@ -1,48 +1,6 @@
 #pragma once
-#pragma once
 
-enum class KEY_TYPE
-{
-	UP = VK_UP,
-	DOWN = VK_DOWN,
-	LEFT = VK_LEFT,
-	RIGHT = VK_RIGHT,
-
-	W = 'W',
-	A = 'A',
-	S = 'S',
-	D = 'D',
-
-	Q = 'Q',
-	E = 'E',
-	Z = 'Z',
-	C = 'C',
-
-	R = 'R',
-
-	KEY_1 = '1',
-	KEY_2 = '2',
-	KEY_3 = '3',
-	KEY_4 = '4',
-
-	LBUTTON = VK_LBUTTON,
-	RBUTTON = VK_RBUTTON,
-};
-
-enum class KEY_STATE
-{
-	NONE,
-	PRESS,
-	DOWN,
-	UP,
-	END
-};
-
-enum
-{
-	KEY_TYPE_COUNT = static_cast<int32>(UINT8_MAX + 1),
-	KEY_STATE_COUNT = static_cast<int32>(KEY_STATE::END),
-};
+#include "Types/KeyEnums.h"
 
 class InputManager
 {
@@ -51,6 +9,13 @@ class InputManager
 public :
 	void Init(HWND hwnd);
 	void Update();
+
+	// 메인 윈도우 외에도 입력을 허용할 서브 윈도우 등록
+	// (e.g. DetailWindow가 포커스를 가져도 키 입력 유지)
+	void AddAllowedWindow(HWND hwnd)
+	{
+		if (hwnd) _allowedWindows.push_back(hwnd);
+	}
 
 	// 누르고 있을 때
 	bool GetButton(KEY_TYPE key)		{ return GetState(key) == KEY_STATE::PRESS; }
@@ -68,8 +33,8 @@ private :
 	inline KEY_STATE GetState(KEY_TYPE key) { return _states[static_cast<uint8>(key)]; }
 
 	HWND _hwnd;
+	std::vector<HWND> _allowedWindows; // 메인 외 입력 허용 윈도우 목록
 	std::vector<KEY_STATE> _states;
 	POINT _mousePos = {};
     POINT _mouseDelta = {};
 };
-

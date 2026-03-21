@@ -178,6 +178,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Pipeline\ShaderPass.cpp" />
     <ClCompile Include="Source\Pipeline\ShaderTechnique.cpp" />
     <ClCompile Include="Source\Types\InstancingBuffer.cpp" />
+    <ClCompile Include="Source\Types\KeyEnums.cpp" />
     <ClCompile Include="Source\Types\ShaderDesc.cpp" />
     <ClCompile Include="Source\Utils\Converter.cpp" />
     <ClCompile Include="Source\Types\AsTypes.cpp" />
@@ -241,6 +242,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Pipeline\ShaderPass.h" />
     <ClInclude Include="Source\Pipeline\ShaderTechnique.h" />
     <ClInclude Include="Source\Types\InstancingBuffer.h" />
+    <ClInclude Include="Source\Types\KeyEnums.h" />
     <ClInclude Include="Source\Types\ShaderDesc.h" />
     <ClInclude Include="Source\Utils\Converter.h" />
     <ClInclude Include="Source\Types\AsTypes.h" />

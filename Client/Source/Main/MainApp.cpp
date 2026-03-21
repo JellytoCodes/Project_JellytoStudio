@@ -1,12 +1,13 @@
 #include "pch.h"
 #include "MainApp.h"
+
 #include "Actors.h"
 
+#include "Resource/Managers/ResourceManager.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
-#include "Resource/Managers/ResourceManager.h"
-#include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/Scene.h"
 #include "Entity/Entity.h"
 #include "Entity/Actor.h"
 #include "Entity/Components/Transform.h"
@@ -27,7 +28,6 @@ void MainApp::Init()
     _scene = std::make_shared<Scene>();
     _scene->SetName(L"Main Scene");
 
-    // WindowManager에서 캐스팅하여 획득
     _itemWindow = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
     _detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
 
@@ -62,6 +62,8 @@ void MainApp::SpawnDefaultActors()
 
     spawn(std::make_shared<SkySphereActor>());
     spawn(std::make_shared<FloorActor>());
+    spawn(std::make_shared<CubeActor>());   // Collider 있음
+    spawn(std::make_shared<SphereActor>()); // Collider 있음
 }
 
 void MainApp::CreateCamera()
@@ -82,7 +84,6 @@ void MainApp::Update()
     CollisionManager::CheckCollision(_scene);
     UpdatePicking();
 
-    // DetailWindow 오브젝트 목록 0.5초마다 갱신
     if (_detailWindow && _detailWindow->IsVisible())
     {
         static float timer = 0.f;
@@ -97,26 +98,59 @@ void MainApp::Render() {}
 
 void MainApp::UpdatePicking()
 {
+    // ── Delete: 선택된 Entity 제거 ─────────────────────────────────────
+    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::DEL) || GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::P))
+    {
+        auto selected = _detailWindow ? _detailWindow->GetSelectedEntity() : nullptr;
+        if (selected && _scene)
+        {
+            wchar_t dbgDel[256];
+            swprintf_s(dbgDel, L"[Delete] 씬에서 제거: %s\n", selected->GetEntityName().c_str());
+            ::OutputDebugStringW(dbgDel);
+
+            _scene->Remove(selected);
+            _pickedEntity = nullptr;
+            if (_detailWindow)
+            {
+                _detailWindow->ClearDetail();
+                _detailWindow->RefreshEntityList();
+            }
+        }
+        else
+        {
+            ::OutputDebugStringW(L"[Delete] 선택된 Entity 없음\n");
+        }
+    }
+
+    // ── 좌클릭 피킹 ────────────────────────────────────────────────────
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
     POINT mp = GET_SINGLE(InputManager)->GetMousePos();
-    Ray   ray = ScreenToRay(mp.x, mp.y);
 
-    auto picked = _scene->Pick(ray);
-    if (picked == _pickedEntity) return;
+    wchar_t dbgClick[128];
+    swprintf_s(dbgClick, L"[Picking] 좌클릭 감지 - 스크린 좌표: (%d, %d)\n", mp.x, mp.y);
+    ::OutputDebugStringW(dbgClick);
+
+    auto picked = _scene->Pick((int32)mp.x, (int32)mp.y);
     _pickedEntity = picked;
 
+    if (!picked)
+    {
+        ::OutputDebugStringW(L"[Picking] 히트 없음\n");
+        if (_detailWindow) _detailWindow->ClearDetail();
+        return;
+    }
+
+    wchar_t dbgHit[256];
+    swprintf_s(dbgHit, L"[Picking] 히트! Entity: %s\n", picked->GetEntityName().c_str());
+    ::OutputDebugStringW(dbgHit);
+
     if (!_detailWindow) return;
-
-    if (!picked) { _detailWindow->ClearDetail(); return; }
-
     DetailInfo info;
     FillDetailInfo(picked, info);
     _detailWindow->UpdateDetail(info);
-    _detailWindow->SelectEntity(picked); // 목록 강조
-
-    if (!_detailWindow->IsVisible())
-        _detailWindow->Show();
+    _detailWindow->SelectEntity(picked);
+    if (!_detailWindow->IsVisible()) _detailWindow->Show();
 }
 
 void MainApp::FillDetailInfo(std::shared_ptr<Entity> entity, DetailInfo& info)
@@ -152,27 +186,4 @@ void MainApp::FillDetailInfo(std::shared_ptr<Entity> entity, DetailInfo& info)
             info.duration = anim->duration;
         }
     }
-}
-
-Ray MainApp::ScreenToRay(int screenX, int screenY)
-{
-    auto scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-    auto camera = scene ? scene->GetMainCamera() : nullptr;
-    if (!camera) return Ray(Vec3::Zero, Vec3::Forward);
-
-    float W = camera->GetWidth(), H = camera->GetHeight();
-    float ndcX = (2.f * screenX / W) - 1.f;
-    float ndcY = 1.f - (2.f * screenY / H);
-
-    Matrix invProj = camera->GetProjectionMatrix().Invert();
-    Matrix invView = camera->GetViewMatrix().Invert();
-
-    Vec4 viewDir = Vec4::Transform(Vec4(ndcX, ndcY, 1.f, 0.f), invProj);
-    viewDir.w = 0.f;
-    Vec4 worldDir = Vec4::Transform(viewDir, invView);
-    Vec3 dir(worldDir.x, worldDir.y, worldDir.z);
-    dir.Normalize();
-
-    Vec3 origin(invView._41, invView._42, invView._43);
-    return Ray(origin, dir);
 }

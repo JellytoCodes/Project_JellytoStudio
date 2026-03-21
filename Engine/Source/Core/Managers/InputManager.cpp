@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "InputManager.h"
 
@@ -10,12 +9,20 @@ void InputManager::Init(HWND hwnd)
 
 void InputManager::Update()
 {
-	HWND hwnd = ::GetActiveWindow();
-	if (_hwnd != hwnd)
+	HWND activeHwnd = ::GetActiveWindow();
+
+	// 메인 윈도우 또는 허용된 서브 윈도우가 활성화된 경우에만 입력 처리
+	bool isAllowed = (activeHwnd == _hwnd);
+	if (!isAllowed)
+	{
+		for (HWND allowed : _allowedWindows)
+			if (activeHwnd == allowed) { isAllowed = true; break; }
+	}
+
+	if (!isAllowed)
 	{
 		for (uint32 key = 0; key < KEY_TYPE_COUNT; key++)
 			_states[key] = KEY_STATE::NONE;
-
 		return;
 	}
 
