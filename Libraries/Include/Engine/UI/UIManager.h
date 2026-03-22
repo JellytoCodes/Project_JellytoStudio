@@ -6,10 +6,9 @@ class UIManager
 
 public:
     void Init(float screenW, float screenH);
-    void Render();                          // Scene::Render() 이후 호출
+    void Render();
     void SetScreenSize(float w, float h);
 
-    // ── DrawList API (Widget/UIText/UIButton 에서 호출) ──────────────
     void AddRect(float x, float y, float w, float h, Color color);
     void AddRectBorder(float x, float y, float w, float h, Color color, float thickness = 1.f);
     void AddTexturedRect(float x, float y, float w, float h, Color tint,
@@ -20,12 +19,11 @@ public:
                  const std::wstring& fontName = L"Arial");
 
 private:
-    // ── 내부 드로우 커맨드 ──────────────────────────────────────────
     struct DrawCmd
     {
         uint32 indexOffset = 0;
         uint32 indexCount  = 0;
-        uint32 pass        = 0;   // 0=색상, 1=텍스처
+        uint32 pass        = 0;   // 0=color, 1=texture
         ComPtr<ID3D11ShaderResourceView> srv = nullptr;
     };
 
@@ -37,6 +35,7 @@ private:
         const std::wstring& text, uint32 tw, uint32 th,
         Color color, int fontSize, const std::wstring& fontName);
 
+    void CreateDeviceObjects();
     void CreateBuffers();
     void UpdateBuffers();
 
@@ -45,14 +44,21 @@ private:
     std::vector<uint32>    _indices;
     std::vector<DrawCmd>   _cmds;
 
-    // GPU 버퍼 (DYNAMIC)
+    // GPU 버퍼
     ComPtr<ID3D11Buffer>      _vb;
     ComPtr<ID3D11Buffer>      _ib;
     uint32 _vbCap = 0, _ibCap = 0;
 
-    // InputLayout + Shader
-    ComPtr<ID3D11InputLayout>     _inputLayout;
-    std::shared_ptr<class Shader> _shader;
+    // 직접 D3D11 오브젝트 (IMGUI 방식)
+    ComPtr<ID3D11InputLayout>       _inputLayout;
+    ComPtr<ID3D11VertexShader>      _vs;
+    ComPtr<ID3D11PixelShader>       _psColor;   // pass=0
+    ComPtr<ID3D11PixelShader>       _psTex;     // pass=1
+    ComPtr<ID3D11Buffer>            _cbuffer;   // ScreenSize
+    ComPtr<ID3D11SamplerState>      _sampler;
+    ComPtr<ID3D11BlendState>        _blendState;
+    ComPtr<ID3D11DepthStencilState> _depthState;
+    ComPtr<ID3D11RasterizerState>   _rasterState;
 
     float _screenW = 1280.f;
     float _screenH =  720.f;

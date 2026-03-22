@@ -2,6 +2,7 @@
 #include "Widget.h"
 
 #include "UI/Components/UIButton.h"
+#include "UI/Components/UIText.h"
 #include "UI/UIManager.h"
 #include "Core/Managers/InputManager.h"
 
@@ -13,13 +14,10 @@ Widget::Widget(const std::wstring& name)
 void Widget::AddUIComponent(const std::shared_ptr<UIComponent>& comp)
 {
     _uiComponents.push_back(comp);
-    AddComponent(comp);
 }
 
 void Widget::Update()
 {
-    Super::Update();
-
     POINT mp       = GET_SINGLE(InputManager)->GetMousePos();
     float mx       = static_cast<float>(mp.x);
     float my       = static_cast<float>(mp.y);
@@ -28,6 +26,8 @@ void Widget::Update()
 
     for (auto& comp : _uiComponents)
     {
+        comp->Update();
+
         if (auto btn = std::dynamic_pointer_cast<UIButton>(comp))
         {
             bool over = btn->HitTest(mx, my, _sx, _sy);

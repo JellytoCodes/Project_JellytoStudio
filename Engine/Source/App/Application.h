@@ -18,6 +18,8 @@ struct ApplicationDesc
 	HWND hWnd;
 	UINT width;
 	UINT height;
+
+	bool isCreateWindow = false;
 	bool vsync    = false;
 	bool windowed = true;
 };

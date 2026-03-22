@@ -8,6 +8,7 @@
     <ClCompile Include="Source\Scripts\CubeScript.cpp" />
     <ClCompile Include="Source\Main\Actors.cpp" />
     <ClCompile Include="Source\Scripts\PointClickController.cpp" />
+    <ClCompile Include="Source\Main\EditorApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
@@ -16,5 +17,6 @@
     <ClInclude Include="Source\Scripts\CubeScript.h" />
     <ClInclude Include="Source\Main\Actors.h" />
     <ClInclude Include="Source\Scripts\PointClickController.h" />
+    <ClInclude Include="Source\Main\EditorApp.h" />
   </ItemGroup>
 </Project>

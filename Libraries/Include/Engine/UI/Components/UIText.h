@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "UIComponent.h"
 
+// UIButton과 동일하게 UIManager::AddText() 경유
 class UIText : public UIComponent
 {
     using Super = UIComponent;
@@ -11,9 +12,7 @@ public:
     virtual void Update()  override;
     virtual void DrawUI(float ox, float oy) override;
 
-    // 정적 텍스트
     void SetText(const std::wstring& t)                      { _text = t; }
-    // 동적 텍스트 (매 프레임 호출)
     void SetTextGetter(std::function<std::wstring()> getter) { _getter = getter; }
 
     void SetTextColor(Color c)                 { _textColor = c; }
@@ -22,9 +21,6 @@ public:
     void SetFontName(const std::wstring& name) { _fontName = name; }
 
 private:
-    // CPU DIB → D3D SRV
-    ComPtr<ID3D11ShaderResourceView> BuildTextSRV();
-
     std::wstring                  _text;
     std::function<std::wstring()> _getter;
 

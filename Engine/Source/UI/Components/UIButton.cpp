@@ -13,10 +13,6 @@ void UIButton::Update()
     POINT mp      = GET_SINGLE(InputManager)->GetMousePos();
     float mx      = static_cast<float>(mp.x);
     float my      = static_cast<float>(mp.y);
-
-    // 부모 Widget의 스크린 기준점은 Widget::Update에서 전달받아야 하지만
-    // 여기서는 0,0 기준 절대 좌표로 판단 (Widget이 Transform pos를 넘겨줌)
-    // → Widget::Update() 에서 _screenOx/Oy를 설정해준 뒤 HitTest 호출
 }
 
 void UIButton::DrawUI(float ox, float oy)

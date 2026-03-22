@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scene name="Main Scene">
+    <Entity name="SkySphere">
+        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+    <Entity name="Floor">
+        <Transform px="-10" py="0" pz="-10" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+    <Entity name="카메라">
+        <Transform px="-11.547061" py="11.546896" pz="-11.547061" rx="0.61547291" ry="0.78539819" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+    <Entity name="DirectionalLight">
+        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+    <Entity name="Character">
+        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="0.0099999998" sy="0.0099999998" sz="0.0099999998"/>
+    </Entity>
+    <Entity name="HUD">
+        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+</Scene>

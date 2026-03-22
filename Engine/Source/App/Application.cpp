@@ -30,13 +30,11 @@ bool Application::Initialize(const ApplicationDesc& desc)
 	GET_SINGLE(TimeManager)->Init();
 	GET_SINGLE(InputManager)->Init(_desc.hWnd);
 
-	// DetailWindow / ItemWindow가 포커스를 가져도 키 입력이 동작하도록 등록
 	if (auto detail = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow"))
 		GET_SINGLE(InputManager)->AddAllowedWindow(detail->GetHWnd());
 	if (auto item = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow"))
 		GET_SINGLE(InputManager)->AddAllowedWindow(item->GetHWnd());
 
-	// UIManager: Graphics 초기화 이후, app->Init() 이전에 반드시 호출
 	GET_SINGLE(UIManager)->Init(
 		static_cast<float>(_desc.width),
 		static_cast<float>(_desc.height));
@@ -93,6 +91,8 @@ void Application::UpdateWindowTitle()
 // ── 메뉴바 ──────────────────────────────────────────────────────────────
 void Application::CreateMainMenu()
 {
+	if (_desc.isCreateWindow == false) return;
+
 	HMENU hBar = ::CreateMenu();
 
 	// [파일] → 종료
@@ -100,7 +100,6 @@ void Application::CreateMainMenu()
 	::AppendMenuW(hFile, MF_STRING, (UINT_PTR)AppMenuCmd::Exit, L"종료(&X)\tAlt+F4");
 	::AppendMenuW(hBar, MF_POPUP, (UINT_PTR)hFile, L"파일(&F)");
 
-	// [창] → 3개 윈도우 토글
 	HMENU hWin = ::CreatePopupMenu();
 	::AppendMenuW(hWin, MF_STRING,
 		(UINT_PTR)AppMenuCmd::ToggleToolWindow, L"툴 윈도우\tCtrl+T");
