@@ -44,3 +44,11 @@ public:
 protected:
 	void BuildEntity() override;
 };
+
+class LightActor : public Actor
+{
+public:
+	std::wstring GetActorName() const override { return L"DirectionalLight"; }
+protected:
+	void BuildEntity() override;
+};

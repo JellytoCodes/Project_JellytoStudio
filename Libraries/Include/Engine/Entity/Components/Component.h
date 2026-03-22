@@ -5,15 +5,16 @@ class Transform;
 enum class ComponentType : int8
 {
 	Transform,
-	MeshRenderer,
-	Camera,
-	ModelRenderer,
 	Light,
-	Animator,
-	Terrain,
+	Camera,
+	MeshRenderer,
 	Collider,
-	TileMap,
+	ModelRenderer,
+	Animator,
 	AnimStateMachine,
+	Terrain,
+	TileMap,
+	UIComponent,
 
 	///////////////
 	Script,

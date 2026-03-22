@@ -27,12 +27,11 @@ public :
 	void											SetMainCamera(const std::shared_ptr<Camera>& mainCamera)	{ _mainCamera = mainCamera; }
 	std::shared_ptr<Camera>							GetMainCamera()												{ return _mainCamera; }
 
-	std::shared_ptr<Light>							GetLight()													{ return _mainLight;  }
+	std::shared_ptr<Light> GetLight();
+	void SetMainLight(const std::shared_ptr<Light>& light);
 
-	// 스크린 좌표 기반 피킹 — View Space에서 Ray 생성 후 World 변환
 	std::shared_ptr<Entity> Pick(int32 screenX, int32 screenY);
 
-	// 스크린 좌표 → 수평 평면(Y=groundY) 월드 교차점 반환 (클릭 이동용)
 	bool PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY = 0.f);
 
 	std::unordered_set<std::shared_ptr<Entity>>&	GetEntities()												{ return _objects; }

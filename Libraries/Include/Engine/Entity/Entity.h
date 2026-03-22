@@ -10,11 +10,11 @@ public:
 	Entity(const std::wstring& name);
 	~Entity();
 
-	void Awake();
-	void Start();
-	void Update();
-	void LateUpdate();
-	void OnDestroy();
+	virtual void Awake();
+	virtual void Start();
+	virtual void Update();
+	virtual void LateUpdate();
+	virtual void OnDestroy();
 
 	void OnCollision(std::shared_ptr<Entity>& other);
 

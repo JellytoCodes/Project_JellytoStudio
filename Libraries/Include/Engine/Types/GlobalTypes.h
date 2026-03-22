@@ -26,3 +26,9 @@ struct TransformData
     Matrix view;
     Matrix projection;
 };
+// Layer indices
+enum : uint8
+{
+	Layer_Default = 0,
+	Layer_UI      = 1,
+};

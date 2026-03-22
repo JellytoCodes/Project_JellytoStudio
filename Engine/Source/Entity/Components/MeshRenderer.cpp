@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Camera.h"
@@ -59,7 +58,10 @@ void MeshRenderer::RenderInstancing(const std::shared_ptr<InstancingBuffer>& buf
 
 	// Light
 	if (std::shared_ptr<Light> lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
-		_shader->PushLightData(lightObj->GetLightDesc());
+	{
+		assert(lightObj.get() != nullptr && "[MeshRenderer] lightObj is null");
+		shader->PushLightData(lightObj->GetLightDesc());
+	}
 
 	// Light
 	_material->Update();

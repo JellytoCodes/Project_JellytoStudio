@@ -182,6 +182,10 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Types\InstancingBuffer.cpp" />
     <ClCompile Include="Source\Types\KeyEnums.cpp" />
     <ClCompile Include="Source\Types\ShaderDesc.cpp" />
+    <ClCompile Include="Source\UI\Components\UIButton.cpp" />
+    <ClCompile Include="Source\UI\Components\UIComponent.cpp" />
+    <ClCompile Include="Source\UI\Components\UIText.cpp" />
+    <ClCompile Include="Source\UI\Widget.cpp" />
     <ClCompile Include="Source\Utils\Converter.cpp" />
     <ClCompile Include="Source\Types\AsTypes.cpp" />
     <ClCompile Include="Source\Resource\Managers\ResourceManager.cpp" />
@@ -222,6 +226,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Source\Utils\Utils.cpp" />
+    <ClCompile Include="Source\UI\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\App\DetailWindow.h" />
@@ -248,6 +253,10 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Types\InstancingBuffer.h" />
     <ClInclude Include="Source\Types\KeyEnums.h" />
     <ClInclude Include="Source\Types\ShaderDesc.h" />
+    <ClInclude Include="Source\UI\Components\UIButton.h" />
+    <ClInclude Include="Source\UI\Components\UIComponent.h" />
+    <ClInclude Include="Source\UI\Components\UIText.h" />
+    <ClInclude Include="Source\UI\Widget.h" />
     <ClInclude Include="Source\Utils\Converter.h" />
     <ClInclude Include="Source\Types\AsTypes.h" />
     <ClInclude Include="Source\Resource\Managers\ResourceManager.h" />
@@ -284,6 +293,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Utils\SimpleMath.h" />
     <ClInclude Include="Source\Utils\tinyxml2.h" />
     <ClInclude Include="Source\Utils\Utils.h" />
+    <ClInclude Include="Source\UI\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ColliderDebug.hlsl">
@@ -301,6 +311,11 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\UI.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
     <None Include="Shaders\Terrain.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>

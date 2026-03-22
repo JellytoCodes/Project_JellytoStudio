@@ -1,11 +1,8 @@
 #include "Global.hlsli"
 
-// 콜라이더 디버그 시각화 셰이더
-// WireFrame으로 외곽선만 그려서 언리얼 엔진의 콜리전 뷰어처럼 동작
-
 cbuffer ColliderColorBuffer
 {
-    float4 ColliderColor; // 기본: 녹색(AABB), 노랑(Sphere)
+    float4 ColliderColor;
 };
 
 struct VertexDebug
@@ -37,6 +34,5 @@ float4 PS(DebugOutput input) : SV_TARGET
 
 technique11 T0
 {
-    // P0: WireFrame 외곽선 Pass
     PASS_RS_VP(P0, FillModeWireFrame, VS, PS)
 }

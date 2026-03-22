@@ -18,6 +18,7 @@ private:
 	void RegisterActors();      // ItemWindow에 Actor 팩토리 등록
 	void SpawnDefaultActors();  // 기본 Actor 스폰
 	void CreateCamera();
+	void CreateHUD();
 
 	void UpdatePicking();
 	void FillDetailInfo(std::shared_ptr<Entity> entity, DetailInfo& info);

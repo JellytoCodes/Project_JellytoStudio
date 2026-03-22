@@ -17,7 +17,11 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
 #include "Scripts/IsometricCameraController.h"
+#include "Entity/Components/Light.h"
 #include "App/Managers/WindowManager.h"
+#include "UI/Widget.h"
+#include "UI/Components/UIText.h"
+#include "UI/Components/UIButton.h"
 
 // ── Init ─────────────────────────────────────────────────────────────────
 
@@ -33,6 +37,8 @@ void MainApp::Init()
 
     SpawnDefaultActors();
     CreateCamera();
+    CreateHUD();
+
     GET_SINGLE(SceneManager)->ChangeScene(_scene);
 
     if (_itemWindow)   _itemWindow->SetScene(_scene);
@@ -69,6 +75,52 @@ void MainApp::SpawnDefaultActors()
     charActor->Spawn(_scene);
     _defaultActors.push_back(charActor);
     _characterEntity = charActor->GetEntity();
+
+    // Directional Light
+    auto lightActor = std::make_shared<LightActor>();
+    lightActor->Spawn(_scene);
+    _defaultActors.push_back(lightActor);
+	if (auto lightComp = lightActor->GetEntity()->GetComponent<Light>())
+        _scene->SetMainLight(lightComp);
+}
+
+void MainApp::CreateHUD()
+{
+    // Widget = Entity 상속 → scene->Add() 로 Update/DrawUI 자동
+    auto hud = std::make_shared<Widget>(L"HUD");
+
+    // 화면 중앙 상단 배치 (1280x720 기준)
+    float cx = MAIN_WINDOW_WIDTH * 0.5f - 130.f;
+    float cy = 12.f;
+    hud->SetScreenPos(cx, cy);
+
+    // ── 경과 시간 UIText ─────────────────────────────────────────
+    auto txt = std::make_shared<UIText>();
+    txt->SetRect(0.f, 0.f, 260.f, 36.f);
+    txt->SetFontSize(20);
+    txt->SetTextColor(Color(1.f, 0.9f, 0.4f, 1.f));
+    txt->SetBgColor(Color(0.05f, 0.05f, 0.05f, 0.85f), true);
+    txt->SetTextGetter([]()
+    {
+        float t = GET_SINGLE(TimeManager)->GetTotalTime();
+        wchar_t buf[64];
+        swprintf_s(buf, L"Time  %02d:%02d", (int)(t/60), (int)t % 60);
+        return std::wstring(buf);
+    });
+    hud->AddUIComponent(txt);
+
+    // ── UIButton ──────────────────────────────────────────────────
+    auto btn = std::make_shared<UIButton>();
+    btn->SetRect(50.f, 44.f, 160.f, 28.f);
+    btn->SetText(L"Reset Timer");
+    btn->SetFontSize(15);
+    btn->SetOnClick([]()
+    {
+        ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n");
+    });
+    hud->AddUIComponent(btn);
+
+    _scene->Add(hud);
 }
 
 void MainApp::CreateCamera()

@@ -4,13 +4,18 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Collider/BaseCollider.h"
+#include "Entity/Components/Light.h"
+#include "UI/Widget.h"
+#include "UI/UIManager.h"
 
 Scene::Scene()
 {
+	
 }
 
 Scene::~Scene()
 {
+
 }
 
 void Scene::Awake()
@@ -59,6 +64,26 @@ void Scene::Render()
 		if (collider == nullptr) continue;
 		collider->RenderDebug();
 	}
+
+	// UI: Widget(Entity 상속)들 DrawUI → UIManager 드로우리스트 누적
+	for (auto& object : _objects)
+	{
+		if (auto widget = std::dynamic_pointer_cast<Widget>(object))
+			widget->DrawUI();
+	}
+	// IMGUI 방식: 3D 렌더 완료 후 동일 DeviceContext로 UI 일괄 제출
+	GET_SINGLE(UIManager)->Render();
+}
+
+std::shared_ptr<Light> Scene::GetLight()
+{
+	return _mainLight;
+}
+
+void Scene::SetMainLight(const std::shared_ptr<Light>& light)
+{
+	assert(light != nullptr && "[Scene::SetMainLight] light is null");
+	_mainLight = light;
 }
 
 void Scene::Add(const std::shared_ptr<Entity>& object)
@@ -130,8 +155,7 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 
 	return picked;
 }
-// ── Ray → Y=groundY 평면 교차 → 월드 좌표 반환 ──────────────────────────
-// 아이소메트릭 클릭 이동에서 "바닥을 클릭한 위치" 를 구할 때 사용
+
 bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY)
 {
 	if (!_mainCamera) return false;

@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Entity/Components/Component.h"
 
-class Light : Component
+class Light : public Component
 {
 	using Super = Component;
 public:

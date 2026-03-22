@@ -41,3 +41,10 @@ struct VertexTextureNormalTangentBlendData
 	Vec4 blendIndices = {0, 0, 0, 0};
 	Vec4 blendWeights = {0, 0, 0, 0};
 };
+
+struct VertexUI
+{
+	Vec2  position = { 0, 0 };
+	Vec2  uv       = { 0, 0 };
+	Color color    = { 1, 1, 1, 1 };
+};

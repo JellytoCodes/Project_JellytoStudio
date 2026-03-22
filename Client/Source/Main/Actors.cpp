@@ -18,6 +18,7 @@
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
 #include "Scripts/CubeScript.h"
+#include "Entity/Components/Light.h"
 
 void SkySphereActor::BuildEntity()
 {
@@ -137,4 +138,32 @@ void CharacterActor::BuildEntity()
 	pcc->SetMoveSpeed(3.f);
 	pcc->SetGroundY(0.f);
 	_entity->AddComponent(pcc);
+}
+
+void LightActor::BuildEntity()
+{
+	// 카메라와 동일하게 Transform이 있는지 검증
+	assert(_entity != nullptr && "[LightActor] _entity is null before AddComponent");
+	assert(_entity->GetTransform() != nullptr && "[LightActor] Transform not set");
+	::OutputDebugStringW(L"[LightActor] BuildEntity start\n");
+
+	auto light = std::make_shared<Light>();
+
+	LightDesc desc;
+	desc.ambient  = Color(0.3f, 0.3f, 0.3f, 1.f);
+	desc.diffuse  = Color(1.0f, 0.98f, 0.9f, 1.f);
+	desc.specular = Color(0.5f, 0.5f, 0.5f, 1.f);
+	desc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);
+
+	Vec3 dir = Vec3(1.f, -2.f, 1.f);
+	dir.Normalize();
+	desc.direction = dir;
+	light->SetLightDesc(desc);
+
+	_entity->AddComponent(light);
+
+	// 컴포넌트가 정상 등록됐는지 즉시 검증
+	auto check = _entity->GetComponent<Light>();
+	assert(check != nullptr && "[LightActor] GetComponent<Light>() returned null after AddComponent");
+	::OutputDebugStringW(L"[LightActor] BuildEntity OK - Light component registered\n");
 }

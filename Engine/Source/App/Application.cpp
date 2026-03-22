@@ -11,7 +11,7 @@
 #include "ItemWindow.h"
 #include "DetailWindow.h"
 #include "Graphics/Graphics.h"
-
+#include "UI/UIManager.h"
 
 bool Application::Initialize(const ApplicationDesc& desc)
 {
@@ -35,6 +35,11 @@ bool Application::Initialize(const ApplicationDesc& desc)
 		GET_SINGLE(InputManager)->AddAllowedWindow(detail->GetHWnd());
 	if (auto item = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow"))
 		GET_SINGLE(InputManager)->AddAllowedWindow(item->GetHWnd());
+
+	// UIManager: Graphics 초기화 이후, app->Init() 이전에 반드시 호출
+	GET_SINGLE(UIManager)->Init(
+		static_cast<float>(_desc.width),
+		static_cast<float>(_desc.height));
 
 	_desc.app->Init();
 	return true;
@@ -71,6 +76,7 @@ void Application::Update()
 	_desc.app->Update();
 	_desc.app->Render();
 	GET_SINGLE(SceneManager)->Render();
+	
 	Graphics::Get()->RenderEnd();
 }
 
@@ -162,8 +168,6 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 			case AppMenuCmd::Exit:               ::PostQuitMessage(0);       return 0;
 			}
 			break;
-
-		// 단축키는 Application::Update()의 InputManager에서 처리
 		}
 	}
 	return ::DefWindowProc(hWnd, msg, wParam, lParam);
