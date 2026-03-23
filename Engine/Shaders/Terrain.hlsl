@@ -30,14 +30,23 @@ MeshOutput VS(VertexMesh input)
     return output;
 }
 
-// «»ºø ºŒ¿Ã¥ı (Pixel Shader)
 float4 PS(MeshOutput input) : SV_TARGET
 {
     float4 color = DiffuseMap.Sample(LinearSampler, input.uv);
     return color;
 }
 
+RasterizerState NoCull
+{
+    CullMode = None;
+};
+
 technique11 T0
 {
-    PASS_VP(P0, VS, PS)
+    pass P0
+    {
+        SetRasterizerState(NoCull);
+        SetVertexShader(CompileShader(vs_5_0, VS()));
+        SetPixelShader(CompileShader(ps_5_0, PS()));
+    }
 }

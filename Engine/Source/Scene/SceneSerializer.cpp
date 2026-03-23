@@ -5,7 +5,12 @@
 #include "Entity/Entity.h"
 #include "Entity/Actor.h"
 #include "Entity/Components/Transform.h"
+#include "Entity/Components/Light.h"
+#include "Entity/Components/Camera.h"
+#include "UI/Widget.h"
 #include "Utils/tinyxml2.h"
+
+#include <filesystem>
 
 using namespace tinyxml2;
 
@@ -17,16 +22,24 @@ void SceneSerializer::RegisterActor(const std::wstring& actorType, ActorFactory 
 }
 
 // ── Save ──────────────────────────────────────────────────────────────────
+
 bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstring& path)
 {
     if (!scene) return false;
 
-    tinyxml2::XMLDocument doc;
+    // 폴더 자동 생성
+    std::filesystem::path fsPath = WstrToStr(path);
+    auto dir = fsPath.parent_path();
+    if (!dir.empty() && !std::filesystem::exists(dir))
+    {
+        std::filesystem::create_directories(dir);
+        ::OutputDebugStringW((L"[SceneSerializer::Save] 폴더 생성: " +
+            StrToWstr(dir.string()) + L"\n").c_str());
+    }
 
-    // <?xml ...>
+    tinyxml2::XMLDocument doc;
     doc.InsertFirstChild(doc.NewDeclaration());
 
-    // <Scene name="...">
     XMLElement* sceneElem = doc.NewElement("Scene");
     sceneElem->SetAttribute("name", WstrToStr(scene->GetName()).c_str());
     doc.InsertEndChild(sceneElem);
@@ -35,15 +48,17 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
     {
         if (!entity) continue;
 
-        // Widget, Camera, Light Entity는 씬 저장 대상에서 제외
-        // (런타임 시 코드로 다시 생성)
-        // Actor 타입이 없는 Entity도 제외
-        const std::wstring& entityName = entity->GetEntityName();
+        if (std::dynamic_pointer_cast<Widget>(entity)) continue;
+        if (entity->GetComponent<Camera>()) continue;
+
+        std::wstring actorType = FindActorType(entity->GetEntityName());
 
         XMLElement* entityElem = doc.NewElement("Entity");
-        entityElem->SetAttribute("name", WstrToStr(entityName).c_str());
+        entityElem->SetAttribute("name", WstrToStr(entity->GetEntityName()).c_str());
 
-        // Transform 저장
+        if (!actorType.empty())
+            entityElem->SetAttribute("actor", WstrToStr(actorType).c_str());
+
         if (auto tf = entity->GetTransform())
         {
             Vec3 pos = tf->GetLocalPosition();
@@ -60,7 +75,6 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
         sceneElem->InsertEndChild(entityElem);
     }
 
-    // 파일로 저장
     std::string pathStr = WstrToStr(path);
     XMLError err = doc.SaveFile(pathStr.c_str());
     if (err != XML_SUCCESS)
@@ -74,6 +88,7 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────
+
 bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstring& path)
 {
     if (!scene) return false;
@@ -90,24 +105,33 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
     XMLElement* sceneElem = doc.FirstChildElement("Scene");
     if (!sceneElem) return false;
 
-    // 씬 이름 복원
     if (const char* name = sceneElem->Attribute("name"))
         scene->SetName(StrToWstr(name));
 
-    // Entity 복원
-    for (XMLElement* entityElem = sceneElem->FirstChildElement("Entity");
-         entityElem;
-         entityElem = entityElem->NextSiblingElement("Entity"))
+    std::vector<std::shared_ptr<Entity>> toRemove;
+    for (auto& entity : scene->GetEntities())
     {
-        const char* nameAttr     = entityElem->Attribute("name");
-        const char* actorAttr    = entityElem->Attribute("actor");
+        if (!entity) continue;
+        if (std::dynamic_pointer_cast<Widget>(entity)) continue;
+        if (entity->GetComponent<Camera>()) continue;
+        toRemove.push_back(entity);
+    }
+    for (auto& entity : toRemove)
+        scene->Remove(entity);
 
-        std::wstring entityName = nameAttr  ? StrToWstr(nameAttr)  : L"Entity";
-        std::wstring actorType  = actorAttr ? StrToWstr(actorAttr) : L"";
+    // XML에서 Entity 복원
+    for (XMLElement* entityElem = sceneElem->FirstChildElement("Entity");
+        entityElem;
+        entityElem = entityElem->NextSiblingElement("Entity"))
+    {
+        const char* nameAttr = entityElem->Attribute("name");
+        const char* actorAttr = entityElem->Attribute("actor");
+
+        std::wstring entityName = nameAttr ? StrToWstr(nameAttr) : L"Entity";
+        std::wstring actorType = actorAttr ? StrToWstr(actorAttr) : L"";
 
         std::shared_ptr<Entity> entity;
 
-        // Actor 팩토리로 복원
         if (!actorType.empty())
         {
             auto it = _factories.find(actorType);
@@ -118,16 +142,19 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
                 {
                     actor->Spawn(scene);
                     entity = actor->GetEntity();
+
+                    // LightActor면 씬 MainLight 설정
+                    if (auto light = entity->GetComponent<Light>())
+                        scene->SetMainLight(light);
                 }
             }
             else
             {
-                ::OutputDebugStringW((L"[SceneSerializer::Load] 미등록 Actor 타입: " + actorType + L"\n").c_str());
+                ::OutputDebugStringW((L"[SceneSerializer::Load] 미등록 Actor: " + actorType + L"\n").c_str());
             }
         }
         else
         {
-            // 일반 Entity
             entity = std::make_shared<Entity>(entityName);
             scene->Add(entity);
         }
@@ -137,16 +164,10 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
         // Transform 복원
         if (XMLElement* tfElem = entityElem->FirstChildElement("Transform"))
         {
-            Vec3 pos, rot, scl;
-            tfElem->QueryFloatAttribute("px", &pos.x);
-            tfElem->QueryFloatAttribute("py", &pos.y);
-            tfElem->QueryFloatAttribute("pz", &pos.z);
-            tfElem->QueryFloatAttribute("rx", &rot.x);
-            tfElem->QueryFloatAttribute("ry", &rot.y);
-            tfElem->QueryFloatAttribute("rz", &rot.z);
-            tfElem->QueryFloatAttribute("sx", &scl.x);
-            tfElem->QueryFloatAttribute("sy", &scl.y);
-            tfElem->QueryFloatAttribute("sz", &scl.z);
+            Vec3 pos = {}, rot = {}, scl = { 1,1,1 };
+            tfElem->QueryFloatAttribute("px", &pos.x); tfElem->QueryFloatAttribute("py", &pos.y); tfElem->QueryFloatAttribute("pz", &pos.z);
+            tfElem->QueryFloatAttribute("rx", &rot.x); tfElem->QueryFloatAttribute("ry", &rot.y); tfElem->QueryFloatAttribute("rz", &rot.z);
+            tfElem->QueryFloatAttribute("sx", &scl.x); tfElem->QueryFloatAttribute("sy", &scl.y); tfElem->QueryFloatAttribute("sz", &scl.z);
 
             if (auto tf = entity->GetTransform())
             {
@@ -161,7 +182,25 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
     return true;
 }
 
-// ── 문자열 변환 헬퍼 ──────────────────────────────────────────────────────
+// ── Actor 타입 조회 ────────────────────────────────────────────────────────
+
+std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
+{
+    static const std::unordered_map<std::wstring, std::wstring> nameToType = {
+        { L"SkySphere",        L"SkySphereActor" },
+        { L"Floor",            L"FloorActor"     },
+        { L"Cube",             L"CubeActor"      },
+        { L"Sphere",           L"SphereActor"    },
+        { L"Character",        L"CharacterActor" },
+        { L"DirectionalLight", L"LightActor"     },
+    };
+
+    auto it = nameToType.find(entityName);
+    return it != nameToType.end() ? it->second : L"";
+}
+
+// ── 문자열 변환 ───────────────────────────────────────────────────────────
+
 std::string SceneSerializer::WstrToStr(const std::wstring& w)
 {
     if (w.empty()) return {};
