@@ -32,16 +32,16 @@ void EditorApp::Init()
     _scene = std::make_shared<Scene>();
     _scene->SetName(L"Main Scene");
 
-    _itemWindow   = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
+    _itemWindow = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
     _detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
 
     // SceneSerializer에 Actor 팩토리 등록
     SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_shared<SkySphereActor>(); });
-    SceneSerializer::RegisterActor(L"FloorActor",     [] { return std::make_shared<FloorActor>(); });
-    SceneSerializer::RegisterActor(L"CubeActor",      [] { return std::make_shared<CubeActor>(); });
-    SceneSerializer::RegisterActor(L"SphereActor",    [] { return std::make_shared<SphereActor>(); });
+    SceneSerializer::RegisterActor(L"FloorActor", [] { return std::make_shared<FloorActor>(); });
+    SceneSerializer::RegisterActor(L"CubeActor", [] { return std::make_shared<CubeActor>(); });
+    SceneSerializer::RegisterActor(L"SphereActor", [] { return std::make_shared<SphereActor>(); });
     SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_shared<CharacterActor>(); });
-    SceneSerializer::RegisterActor(L"LightActor",     [] { return std::make_shared<LightActor>(); });
+    SceneSerializer::RegisterActor(L"LightActor", [] { return std::make_shared<LightActor>(); });
 
     SpawnDefaultActors();
     CreateCamera();
@@ -59,20 +59,20 @@ void EditorApp::RegisterActors()
 {
     if (!_itemWindow) return;
 
-    _itemWindow->RegisterActor(L"SkySphere",  [] { return std::make_shared<SkySphereActor>(); });
-    _itemWindow->RegisterActor(L"Floor",      [] { return std::make_shared<FloorActor>(); });
-    _itemWindow->RegisterActor(L"Cube",       [] { return std::make_shared<CubeActor>(); });
-    _itemWindow->RegisterActor(L"Sphere",     [] { return std::make_shared<SphereActor>(); });
-    _itemWindow->RegisterActor(L"Character",  [] { return std::make_shared<CharacterActor>(); });
+    _itemWindow->RegisterActor(L"SkySphere", [] { return std::make_shared<SkySphereActor>(); });
+    _itemWindow->RegisterActor(L"Floor", [] { return std::make_shared<FloorActor>(); });
+    _itemWindow->RegisterActor(L"Cube", [] { return std::make_shared<CubeActor>(); });
+    _itemWindow->RegisterActor(L"Sphere", [] { return std::make_shared<SphereActor>(); });
+    _itemWindow->RegisterActor(L"Character", [] { return std::make_shared<CharacterActor>(); });
 }
 
 void EditorApp::SpawnDefaultActors()
 {
     auto spawn = [&](std::shared_ptr<Actor> actor)
-    {
-        actor->Spawn(_scene);
-        _defaultActors.push_back(actor);
-    };
+        {
+            actor->Spawn(_scene);
+            _defaultActors.push_back(actor);
+        };
 
     spawn(std::make_shared<SkySphereActor>());
     spawn(std::make_shared<FloorActor>());
@@ -95,7 +95,7 @@ void EditorApp::CreateHUD()
 {
     auto hud = std::make_shared<Widget>(L"HUD");
 
-    float cx = MAIN_WINDOW_WIDTH  * 0.5f - 130.f;
+    float cx = MAIN_WINDOW_WIDTH * 0.5f - 130.f;
     float cy = 12.f;
     hud->SetScreenPos(cx, cy);
 
@@ -103,12 +103,12 @@ void EditorApp::CreateHUD()
     txt->SetRect(0.f, 0.f, 260.f, 36.f);
     txt->SetFontSize(20);
     txt->SetTextGetter([]()
-    {
-        float t = GET_SINGLE(TimeManager)->GetTotalTime();
-        wchar_t buf[64];
-        swprintf_s(buf, L"Time  %02d:%02d", (int)(t / 60), (int)t % 60);
-        return std::wstring(buf);
-    });
+        {
+            float t = GET_SINGLE(TimeManager)->GetTotalTime();
+            wchar_t buf[64];
+            swprintf_s(buf, L"Time  %02d:%02d", (int)(t / 60), (int)t % 60);
+            return std::wstring(buf);
+        });
     hud->AddUIComponent(txt);
 
     auto btn = std::make_shared<UIButton>();
@@ -116,9 +116,9 @@ void EditorApp::CreateHUD()
     btn->SetText(L"Reset Timer");
     btn->SetFontSize(15);
     btn->SetOnClick([]()
-    {
-        ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n");
-    });
+        {
+            ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n");
+        });
     hud->AddUIComponent(btn);
 
     _scene->Add(hud);
@@ -152,6 +152,19 @@ void EditorApp::Update()
     CollisionManager::CheckCollision(_scene);
     UpdatePicking();
 
+    // Entity 수 변화 감지 → 목록 Dirty
+    if (_detailWindow && _scene)
+    {
+        static size_t prevEntityCount = 0;
+        size_t curCount = _scene->GetEntities().size();
+        if (curCount != prevEntityCount)
+        {
+            prevEntityCount = curCount;
+            _detailWindow->MarkDirty();
+            _detailWindow->RefreshEntityList();
+        }
+    }
+
     // Ctrl+S: 씬 저장
     if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
         GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
@@ -164,14 +177,9 @@ void EditorApp::Update()
         GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
     {
         SceneSerializer::Load(_scene, L"../Saved/scene.xml");
+        if (_detailWindow) _detailWindow->MarkDirty();
     }
 
-    if (_detailWindow && _detailWindow->IsVisible())
-    {
-        static float timer = 0.f;
-        timer += GET_SINGLE(TimeManager)->GetDeltaTime();
-        if (timer >= 0.5f) { timer = 0.f; _detailWindow->RefreshEntityList(); }
-    }
 }
 
 void EditorApp::Render() {}
@@ -194,6 +202,7 @@ void EditorApp::UpdatePicking()
             if (_detailWindow)
             {
                 _detailWindow->ClearDetail();
+                _detailWindow->MarkDirty();
                 _detailWindow->RefreshEntityList();
             }
         }
@@ -202,6 +211,9 @@ void EditorApp::UpdatePicking()
             ::OutputDebugStringW(L"[Delete] 선택된 Entity 없음\n");
         }
     }
+
+    // 메인 창이 활성 상태일 때만 피킹 처리
+    if (!GET_SINGLE(InputManager)->IsMainWindowActive()) return;
 
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
@@ -260,10 +272,10 @@ void EditorApp::FillDetailInfo(std::shared_ptr<Entity> entity, DetailInfo& info)
         if (mdl->GetAnimationCount() > 0)
         {
             auto anim = mdl->GetAnimationByIndex(0);
-            info.animName   = anim->name;
+            info.animName = anim->name;
             info.frameCount = (int)anim->frameCount;
-            info.frameRate  = anim->frameRate;
-            info.duration   = anim->duration;
+            info.frameRate = anim->frameRate;
+            info.duration = anim->duration;
         }
     }
 }

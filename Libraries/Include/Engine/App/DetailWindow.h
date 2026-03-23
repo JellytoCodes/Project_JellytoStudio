@@ -28,33 +28,38 @@ struct DetailInfo
 class DetailWindow : public IWindow
 {
 public:
-
 	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
 
-	virtual void Show() override;
-	virtual void Hide() override;
+	virtual void Show()   override;
+	virtual void Hide()   override;
 	virtual void Toggle() override;
 
-	virtual bool IsVisible() const override		{ return _visible; }
-	virtual HWND GetHWnd()   const override		{ return _hWnd;    }
+	virtual bool IsVisible() const override { return _visible; }
+	virtual HWND GetHWnd()   const override { return _hWnd; }
 
-	// 씬 주입 및 목록 갱신
 	void SetScene(std::shared_ptr<Scene> scene);
+
+	// Entity 추가/삭제 등 씬 구조가 변경됐을 때만 호출
+	// (매 프레임 틱 호출 X)
+	void MarkDirty();
 	void RefreshEntityList();
 
-	// 피킹 결과 갱신 (MainApp에서 Ray pick 성공 시 호출)
 	void UpdateDetail(const DetailInfo& info);
 	void ClearDetail();
 
-	// 현재 선택된 Entity (MainApp이 피킹 결과와 동기화에 사용)
 	std::shared_ptr<Entity> GetSelectedEntity() const { return _selectedEntity; }
 	const std::vector<std::shared_ptr<Entity>>& GetEntitySnapshot() const { return _entitySnapshot; }
 	void SelectEntity(std::shared_ptr<Entity> entity);
 
 private:
 	void BuildUI();
-	void OnEntityListClicked(); // 목록 클릭 → 해당 Entity 정보 표시
+	void OnEntityListClicked();
 	void FillDetailFromEntity(std::shared_ptr<Entity> entity);
+
+	// Transform 편집
+	void    ApplyTransform();
+	float   GetEditFloat(HWND hEdit, float fallback = 0.f);
+	bool    IsTransformEditFocused() const;   // 9개 Edit 컨트롤 중 하나가 포커스 중인지
 
 	void RegisterWindowClass(HINSTANCE hInstance);
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -64,20 +69,21 @@ private:
 	bool      _visible = false;
 	bool      _created = false;
 
-	std::weak_ptr<Scene>  _scene;
-	std::shared_ptr<Entity> _selectedEntity;
+	// Dirty 플래그 — 씬 구조 변경 시 true, Refresh 후 false
+	bool      _listDirty = false;
 
-	// Entity 목록 (ListBox 인덱스와 1:1)
+	std::weak_ptr<Scene>    _scene;
+	std::shared_ptr<Entity> _selectedEntity;
 	std::vector<std::shared_ptr<Entity>> _entitySnapshot;
 
-	// ── [1] 씬 이름 ─────────────────────────────────────────────
+	// [1] 씬
 	HWND _hSceneName = nullptr;
 
-	// ── [2] 씬 Entity 목록 ──────────────────────────────────────
+	// [2] Entity 목록
 	HWND _hEntityCount = nullptr;
 	HWND _hEntityList = nullptr;
 
-	// ── [3] 선택된 오브젝트 정보 ────────────────────────────────
+	// [3] 오브젝트 정보 (읽기전용)
 	HWND _hPickedLabel = nullptr;
 	HWND _hModelName = nullptr;
 	HWND _hBoneCount = nullptr;
@@ -86,10 +92,16 @@ private:
 	HWND _hFrameCount = nullptr;
 	HWND _hFrameRate = nullptr;
 	HWND _hDuration = nullptr;
+
+	// [4] Transform Edit 컨트롤 (읽기/쓰기)
 	HWND _hPosX = nullptr, _hPosY = nullptr, _hPosZ = nullptr;
 	HWND _hRotX = nullptr, _hRotY = nullptr, _hRotZ = nullptr;
 	HWND _hSclX = nullptr, _hSclY = nullptr, _hSclZ = nullptr;
 
+	// Apply 버튼
+	HWND _hApplyBtn = nullptr;
+
 	static constexpr wchar_t CLASS_NAME[] = L"JellytoDetailPanel";
-	static constexpr int ID_LIST_ENTITY = 501;
+	static constexpr int     ID_LIST_ENTITY = 501;
+	static constexpr int     ID_BTN_APPLY = 502;
 };
