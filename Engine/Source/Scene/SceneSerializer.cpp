@@ -12,6 +12,8 @@
 
 #include <filesystem>
 
+#include "Scene/BlockPlacerInterface.h"
+
 using namespace tinyxml2;
 
 std::unordered_map<std::wstring, SceneSerializer::ActorFactory> SceneSerializer::_factories;
@@ -22,8 +24,9 @@ void SceneSerializer::RegisterActor(const std::wstring& actorType, ActorFactory 
 }
 
 // ── Save ──────────────────────────────────────────────────────────────────
-
-bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstring& path)
+bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene,
+    const std::wstring& path,
+    IBlockPlacer* placer)
 {
     if (!scene) return false;
 
@@ -33,8 +36,7 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
     if (!dir.empty() && !std::filesystem::exists(dir))
     {
         std::filesystem::create_directories(dir);
-        ::OutputDebugStringW((L"[SceneSerializer::Save] 폴더 생성: " +
-            StrToWstr(dir.string()) + L"\n").c_str());
+        ::OutputDebugStringW((L"[SceneSerializer] 폴더 생성: " + StrToWstr(dir.string()) + L"\n").c_str());
     }
 
     tinyxml2::XMLDocument doc;
@@ -44,10 +46,10 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
     sceneElem->SetAttribute("name", WstrToStr(scene->GetName()).c_str());
     doc.InsertEndChild(sceneElem);
 
+    // ── Entity 저장 ──────────────────────────────────────────────
     for (auto& entity : scene->GetEntities())
     {
         if (!entity) continue;
-
         if (std::dynamic_pointer_cast<Widget>(entity)) continue;
         if (entity->GetComponent<Camera>()) continue;
 
@@ -55,7 +57,6 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
 
         XMLElement* entityElem = doc.NewElement("Entity");
         entityElem->SetAttribute("name", WstrToStr(entity->GetEntityName()).c_str());
-
         if (!actorType.empty())
             entityElem->SetAttribute("actor", WstrToStr(actorType).c_str());
 
@@ -75,30 +76,46 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene, const std::wstri
         sceneElem->InsertEndChild(entityElem);
     }
 
-    std::string pathStr = WstrToStr(path);
-    XMLError err = doc.SaveFile(pathStr.c_str());
+    // ── 블록 저장 (placer 있을 때만) ─────────────────────────────
+    if (placer && !placer->GetPlacedBlocks().empty())
+    {
+        XMLElement* blocksElem = doc.NewElement("Blocks");
+        for (auto& [col, row] : placer->GetPlacedBlocks())
+        {
+            XMLElement* blockElem = doc.NewElement("Block");
+            blockElem->SetAttribute("col", col);
+            blockElem->SetAttribute("row", row);
+            blocksElem->InsertEndChild(blockElem);
+        }
+        sceneElem->InsertEndChild(blocksElem);
+    }
+
+    XMLError err = doc.SaveFile(WstrToStr(path).c_str());
     if (err != XML_SUCCESS)
     {
-        ::OutputDebugStringW((L"[SceneSerializer::Save] 저장 실패: " + path + L"\n").c_str());
+        ::OutputDebugStringW((L"[SceneSerializer] 저장 실패: " + path + L"\n").c_str());
         return false;
     }
 
-    ::OutputDebugStringW((L"[SceneSerializer::Save] 저장 완료: " + path + L"\n").c_str());
+    int blockCount = placer ? (int)placer->GetPlacedBlocks().size() : 0;
+    wchar_t dbg[128];
+    swprintf_s(dbg, L"[SceneSerializer] 저장 완료: %s  (블록 %d개)\n", path.c_str(), blockCount);
+    ::OutputDebugStringW(dbg);
     return true;
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────
-
-bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstring& path)
+bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene,
+    const std::wstring& path,
+    IBlockPlacer* placer)
 {
     if (!scene) return false;
 
     tinyxml2::XMLDocument doc;
-    std::string pathStr = WstrToStr(path);
-    XMLError err = doc.LoadFile(pathStr.c_str());
+    XMLError err = doc.LoadFile(WstrToStr(path).c_str());
     if (err != XML_SUCCESS)
     {
-        ::OutputDebugStringW((L"[SceneSerializer::Load] 파일 없음: " + path + L"\n").c_str());
+        ::OutputDebugStringW((L"[SceneSerializer] 파일 없음: " + path + L"\n").c_str());
         return false;
     }
 
@@ -108,6 +125,7 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
     if (const char* name = sceneElem->Attribute("name"))
         scene->SetName(StrToWstr(name));
 
+    // 기존 씬 오브젝트 정리 (Widget, Camera 제외)
     std::vector<std::shared_ptr<Entity>> toRemove;
     for (auto& entity : scene->GetEntities())
     {
@@ -119,7 +137,11 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
     for (auto& entity : toRemove)
         scene->Remove(entity);
 
-    // XML에서 Entity 복원
+    // 기존 블록 데이터도 초기화
+    if (placer)
+        placer->ClearAllBlocks();
+
+    // ── Entity 복원 ──────────────────────────────────────────────
     for (XMLElement* entityElem = sceneElem->FirstChildElement("Entity");
         entityElem;
         entityElem = entityElem->NextSiblingElement("Entity"))
@@ -142,15 +164,13 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
                 {
                     actor->Spawn(scene);
                     entity = actor->GetEntity();
-
-                    // LightActor면 씬 MainLight 설정
                     if (auto light = entity->GetComponent<Light>())
                         scene->SetMainLight(light);
                 }
             }
             else
             {
-                ::OutputDebugStringW((L"[SceneSerializer::Load] 미등록 Actor: " + actorType + L"\n").c_str());
+                ::OutputDebugStringW((L"[SceneSerializer] 미등록 Actor: " + actorType + L"\n").c_str());
             }
         }
         else
@@ -161,14 +181,12 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
 
         if (!entity) continue;
 
-        // Transform 복원
         if (XMLElement* tfElem = entityElem->FirstChildElement("Transform"))
         {
             Vec3 pos = {}, rot = {}, scl = { 1,1,1 };
             tfElem->QueryFloatAttribute("px", &pos.x); tfElem->QueryFloatAttribute("py", &pos.y); tfElem->QueryFloatAttribute("pz", &pos.z);
             tfElem->QueryFloatAttribute("rx", &rot.x); tfElem->QueryFloatAttribute("ry", &rot.y); tfElem->QueryFloatAttribute("rz", &rot.z);
             tfElem->QueryFloatAttribute("sx", &scl.x); tfElem->QueryFloatAttribute("sy", &scl.y); tfElem->QueryFloatAttribute("sz", &scl.z);
-
             if (auto tf = entity->GetTransform())
             {
                 tf->SetLocalPosition(pos);
@@ -178,12 +196,32 @@ bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstri
         }
     }
 
-    ::OutputDebugStringW((L"[SceneSerializer::Load] 로드 완료: " + path + L"\n").c_str());
+    // ── 블록 복원 (placer 있을 때만) ─────────────────────────────
+    int blockCount = 0;
+    if (placer)
+    {
+        if (XMLElement* blocksElem = sceneElem->FirstChildElement("Blocks"))
+        {
+            for (XMLElement* blockElem = blocksElem->FirstChildElement("Block");
+                blockElem;
+                blockElem = blockElem->NextSiblingElement("Block"))
+            {
+                int col = 0, row = 0;
+                blockElem->QueryIntAttribute("col", &col);
+                blockElem->QueryIntAttribute("row", &row);
+                placer->PlaceBlock(col, row);
+                blockCount++;
+            }
+        }
+    }
+
+    wchar_t dbg[128];
+    swprintf_s(dbg, L"[SceneSerializer] 로드 완료: %s  (블록 %d개)\n", path.c_str(), blockCount);
+    ::OutputDebugStringW(dbg);
     return true;
 }
 
-// ── Actor 타입 조회 ────────────────────────────────────────────────────────
-
+// ── 유틸 ─────────────────────────────────────────────────────────────────
 std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
 {
     static const std::unordered_map<std::wstring, std::wstring> nameToType = {
@@ -194,12 +232,9 @@ std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
         { L"Character",        L"CharacterActor" },
         { L"DirectionalLight", L"LightActor"     },
     };
-
     auto it = nameToType.find(entityName);
     return it != nameToType.end() ? it->second : L"";
 }
-
-// ── 문자열 변환 ───────────────────────────────────────────────────────────
 
 std::string SceneSerializer::WstrToStr(const std::wstring& w)
 {

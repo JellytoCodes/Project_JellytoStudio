@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "MainApp.h"
 
 #include "Actors.h"
@@ -14,17 +14,29 @@
 #include "Entity/Components/Camera.h"
 #include "Entity/Managers/CollisionManager.h"
 #include "Scripts/IsometricCameraController.h"
+#include "Scripts/BlockPlacer.h"
 #include "Entity/Components/Light.h"
+#include "Resource/Material.h"
+#include "Scene/SceneSerializer.h"
 
 void MainApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
+
+    // SceneSerializer 팩토리 등록
+    SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_shared<SkySphereActor>(); });
+    SceneSerializer::RegisterActor(L"FloorActor", [] { return std::make_shared<FloorActor>(); });
+    SceneSerializer::RegisterActor(L"CubeActor", [] { return std::make_shared<CubeActor>(); });
+    SceneSerializer::RegisterActor(L"SphereActor", [] { return std::make_shared<SphereActor>(); });
+    SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_shared<CharacterActor>(); });
+    SceneSerializer::RegisterActor(L"LightActor", [] { return std::make_shared<LightActor>(); });
 
     _scene = std::make_shared<Scene>();
     _scene->SetName(L"Main Scene");
 
     InitScene();
     CreateCamera();
+    CreateBlockPlacer();
 
     GET_SINGLE(SceneManager)->ChangeScene(_scene);
 }
@@ -32,21 +44,19 @@ void MainApp::Init()
 void MainApp::InitScene()
 {
     auto spawn = [&](std::shared_ptr<Actor> actor)
-    {
-        actor->Spawn(_scene);
-        _actors.push_back(actor);
-    };
+        {
+            actor->Spawn(_scene);
+            _actors.push_back(actor);
+        };
 
     spawn(std::make_shared<SkySphereActor>());
     spawn(std::make_shared<FloorActor>());
 
-    // ĳ����
     auto charActor = std::make_shared<CharacterActor>();
     charActor->Spawn(_scene);
     _actors.push_back(charActor);
     _characterEntity = charActor->GetEntity();
 
-    // ����Ʈ
     auto lightActor = std::make_shared<LightActor>();
     lightActor->Spawn(_scene);
     _actors.push_back(lightActor);
@@ -74,6 +84,30 @@ void MainApp::CreateCamera()
 
     if (_characterEntity)
         isoCtrl->SetTarget(_characterEntity);
+}
+
+void MainApp::CreateBlockPlacer()
+{
+    auto placerEntity = std::make_shared<Entity>(L"BlockPlacer");
+    placerEntity->AddComponent(std::make_shared<Transform>());
+
+    auto placer = std::make_shared<BlockPlacer>();
+    placer->SetSavePath(L"../Saved/scene.xml");
+
+    // CubeMat이 ResourceManager에 있으면 블록 머티리얼로 사용
+    if (auto mat = GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"))
+        placer->SetBlockMaterial(mat);
+
+    placerEntity->AddComponent(placer);
+    _blockPlacer = placer;
+    _scene->Add(placerEntity);
+
+    ::OutputDebugStringW(L"[MainApp] BlockPlacer 준비 완료\n"
+        L"  Tab     — 배치 모드 On/Off\n"
+        L"  좌클릭  — 블록 배치\n"
+        L"  우클릭  — 블록 제거\n"
+        L"  Ctrl+S  — 씬 저장\n"
+        L"  Ctrl+L  — 씬 로드\n");
 }
 
 void MainApp::Update()

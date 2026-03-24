@@ -9,6 +9,7 @@
     <ClCompile Include="Source\Main\Actors.cpp" />
     <ClCompile Include="Source\Scripts\PointClickController.cpp" />
     <ClCompile Include="Source\Main\EditorApp.cpp" />
+    <ClCompile Include="Source\Scripts\BlockPlacer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
@@ -18,5 +19,6 @@
     <ClInclude Include="Source\Main\Actors.h" />
     <ClInclude Include="Source\Scripts\PointClickController.h" />
     <ClInclude Include="Source\Main\EditorApp.h" />
+    <ClInclude Include="Source\Scripts\BlockPlacer.h" />
   </ItemGroup>
 </Project>

@@ -6,23 +6,6 @@
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 
-// ── DirectX LH + SimpleMath 축 정리 ──────────────────────────────────────
-//
-// Transform::UpdateTransform() → Rx * Ry * Rz 순 오일러 적용
-// Camera::UpdateMatrix()       → focusPos = eyePos + GetLook()
-//                              → GetLook() = Backward() = 행렬 3행 (+Z)
-//
-// 따라서:
-//   회전 없을 때(Identity) 카메라는 +Z 방향을 바라봄
-//   SetLocalRotation(Vec3(pitchRad, yawRad, 0))이면:
-//     Rx(pitch) 적용 → pitch 양수 = X축 회전 = Look이 아래로 향함(앞으로 숙임)
-//     Ry(yaw)   적용 → yaw 양수 = Y축 시계방향 회전
-//
-// 카메라 위치 = 피벗에서 Look의 반대 방향으로 distance만큼
-//   lookDir = Ry * Rx * (0, 0, 1)  ← 회전 후 +Z 단위벡터
-//   camPos  = pivot - lookDir * distance
-// ─────────────────────────────────────────────────────────────────────────
-
 IsometricCameraController::IsometricCameraController()
 {
 }
