@@ -21,7 +21,7 @@ public:
     virtual void Update() override;
 
     // DrawUI: UIManager DrawList에 커맨드 제출
-    void DrawUI();
+    virtual void DrawUI();
 
 private:
     std::vector<std::shared_ptr<UIComponent>> _uiComponents;

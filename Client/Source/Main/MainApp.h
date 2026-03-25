@@ -6,12 +6,8 @@ class Entity;
 class Actor;
 class IsometricCameraController;
 class BlockPlacer;
+class PaletteWidget;
 
-// ── MainApp ───────────────────────────────────────────────────────────────
-// 아이소메트릭 콘텐츠 전용 App
-// - Tab: 블록 배치 모드 On/Off
-// - 좌클릭: 블록 배치  |  우클릭: 블록 제거
-// - Ctrl+S: 씬 저장  |  Ctrl+L: 씬 로드
 class MainApp : public IExecute
 {
 public:
@@ -22,12 +18,13 @@ public:
 private:
     void InitScene();
     void CreateCamera();
-    void CreateBlockPlacer();
+    void CreatePlacementSystem(); // BlockPlacer + PaletteWidget 통합 초기화
 
     std::shared_ptr<Scene>  _scene;
     std::shared_ptr<Entity> _characterEntity;
     std::shared_ptr<IsometricCameraController> _isoCamCtrl;
-    std::shared_ptr<BlockPlacer> _blockPlacer;
+    std::shared_ptr<BlockPlacer>    _blockPlacer;
+    std::shared_ptr<PaletteWidget>  _palette;
 
     std::vector<std::shared_ptr<Actor>> _actors;
 };

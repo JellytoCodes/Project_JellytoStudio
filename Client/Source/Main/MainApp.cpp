@@ -5,7 +5,6 @@
 
 #include "Resource/Managers/ResourceManager.h"
 #include "Core/Managers/InputManager.h"
-#include "Core/Managers/TimeManager.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Scene.h"
 #include "Entity/Entity.h"
@@ -15,8 +14,8 @@
 #include "Entity/Managers/CollisionManager.h"
 #include "Scripts/IsometricCameraController.h"
 #include "Scripts/BlockPlacer.h"
+#include "UI/PaletteWidget.h"
 #include "Entity/Components/Light.h"
-#include "Resource/Material.h"
 #include "Scene/SceneSerializer.h"
 
 void MainApp::Init()
@@ -36,7 +35,7 @@ void MainApp::Init()
 
     InitScene();
     CreateCamera();
-    CreateBlockPlacer();
+    CreatePlacementSystem();
 
     GET_SINGLE(SceneManager)->ChangeScene(_scene);
 }
@@ -86,28 +85,34 @@ void MainApp::CreateCamera()
         isoCtrl->SetTarget(_characterEntity);
 }
 
-void MainApp::CreateBlockPlacer()
+void MainApp::CreatePlacementSystem()
 {
+    // ── PaletteWidget: 화면 하단 팔레트 HUD ───────────────────────
+    _palette = std::make_shared<PaletteWidget>(L"Palette");
+    _scene->Add(_palette);
+
+    // ── BlockPlacer: 그리드 오브젝트 배치 컨트롤러 ────────────────
     auto placerEntity = std::make_shared<Entity>(L"BlockPlacer");
     placerEntity->AddComponent(std::make_shared<Transform>());
 
     auto placer = std::make_shared<BlockPlacer>();
+    placer->SetPalette(_palette);
     placer->SetSavePath(L"../Saved/scene.xml");
-
-    // CubeMat이 ResourceManager에 있으면 블록 머티리얼로 사용
-    if (auto mat = GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"))
-        placer->SetBlockMaterial(mat);
 
     placerEntity->AddComponent(placer);
     _blockPlacer = placer;
     _scene->Add(placerEntity);
 
-    ::OutputDebugStringW(L"[MainApp] BlockPlacer 준비 완료\n"
+    ::OutputDebugStringW(
+        L"[MainApp] 배치 시스템 준비 완료\n"
         L"  Tab     — 배치 모드 On/Off\n"
-        L"  좌클릭  — 블록 배치\n"
-        L"  우클릭  — 블록 제거\n"
+        L"  1~5     — 슬롯 선택 (Block / Flat / Large / Sphere / Eraser)\n"
+        L"  Q/E     — 슬롯 이동\n"
+        L"  좌클릭  — 배치 (Eraser 슬롯: 제거)\n"
+        L"  우클릭  — 제거\n"
         L"  Ctrl+S  — 씬 저장\n"
-        L"  Ctrl+L  — 씬 로드\n");
+        L"  Ctrl+L  — 씬 로드\n"
+    );
 }
 
 void MainApp::Update()
@@ -115,6 +120,4 @@ void MainApp::Update()
     CollisionManager::CheckCollision(_scene);
 }
 
-void MainApp::Render()
-{
-}
+void MainApp::Render() {}
