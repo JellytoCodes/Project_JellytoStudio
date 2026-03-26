@@ -1,3 +1,7 @@
 ﻿
 #include "Framework.h"
 #include "ShaderDesc.h"
+
+/////////////////////////
+/// No implementation ///
+/////////////////////////

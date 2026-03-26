@@ -1,3 +1,7 @@
 
 #include "Framework.h"
 #include "VertexData.h"
+
+/////////////////////////
+/// No implementation ///
+/////////////////////////

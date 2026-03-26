@@ -17,8 +17,10 @@ enum { RESOURCE_TYPE_COUNT = static_cast<uint8>(ResourceType::End) };
 class Resource : public std::enable_shared_from_this<Resource>
 {
 public:
-	Resource(ResourceType type);
-	virtual ~Resource();
+	Resource(ResourceType type)
+		: _type(type) { }
+
+	virtual ~Resource() = default;
 
 	ResourceType GetType() { return _type; }
 

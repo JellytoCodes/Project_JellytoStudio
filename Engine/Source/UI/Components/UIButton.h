@@ -4,6 +4,7 @@
 class UIButton : public UIComponent
 {
     using Super = UIComponent;
+
 public:
     UIButton();
     virtual ~UIButton() = default;

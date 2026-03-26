@@ -1,3 +1,7 @@
 ﻿
 #include "Framework.h"
 #include "KeyEnums.h"
+
+/////////////////////////
+/// No implementation ///
+/////////////////////////

@@ -20,11 +20,11 @@ private:
     void CreateCamera();
     void CreatePlacementSystem(); // BlockPlacer + PaletteWidget 통합 초기화
 
-    std::shared_ptr<Scene>  _scene;
-    std::shared_ptr<Entity> _characterEntity;
-    std::shared_ptr<IsometricCameraController> _isoCamCtrl;
-    std::shared_ptr<BlockPlacer>    _blockPlacer;
-    std::shared_ptr<PaletteWidget>  _palette;
+    std::shared_ptr<Scene>                      _scene;
+    std::shared_ptr<Entity>                     _characterEntity;
+    std::shared_ptr<IsometricCameraController>  _isoCamCtrl;
+    std::shared_ptr<BlockPlacer>                _blockPlacer;
+    std::shared_ptr<PaletteWidget>              _palette;
 
-    std::vector<std::shared_ptr<Actor>> _actors;
+    std::vector<std::shared_ptr<Actor>>         _actors;
 };

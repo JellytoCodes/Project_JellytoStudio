@@ -6,6 +6,7 @@ class UIManager;
 class UIComponent : public Component
 {
     using Super = Component;
+
 public:
     explicit UIComponent(ComponentType type = ComponentType::UIComponent);
     virtual ~UIComponent() = default;

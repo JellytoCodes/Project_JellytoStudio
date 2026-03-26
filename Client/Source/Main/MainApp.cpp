@@ -113,6 +113,8 @@ void MainApp::CreatePlacementSystem()
         L"  Ctrl+S  — 씬 저장\n"
         L"  Ctrl+L  — 씬 로드\n"
     );
+
+    int a = 0;
 }
 
 void MainApp::Update()
