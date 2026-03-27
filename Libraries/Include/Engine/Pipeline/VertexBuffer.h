@@ -3,8 +3,8 @@
 class VertexBuffer
 {
 public:
-	VertexBuffer()		{ }
-	~VertexBuffer()		{ }
+	VertexBuffer() = default;
+	~VertexBuffer() = default;
 
 	ComPtr<ID3D11Buffer> GetComPtr()	{ return _vertexBuffer; }
 

@@ -5,19 +5,12 @@ class Material;
 class Mesh;
 class AABBCollider;
 
-// 타일 한 칸의 데이터
 struct TileData
 {
     bool walkable = true;  // 이동/배치 가능 여부
     int  type = 0;     // 타일 타입 (0=기본, 확장 가능)
 };
 
-// ── TileMap ────────────────────────────────────────────────────────────────
-// - 그리드 렌더링 (MeshRenderer 자동 생성)
-// - 타일 단위 walkable 데이터 관리
-// - 월드 ↔ 그리드 좌표 변환 + 그리드 스냅
-// - AABB Collider 자동 추가 (타일맵 전체 범위)
-//   → PickGroundPoint 대신 TileMap Collider로 우클릭 피킹 가능
 class TileMap : public Component
 {
     using Super = Component;

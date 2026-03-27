@@ -5,7 +5,7 @@
 // ── 빌드 타겟 스위치 ──────────────────────────────────────────────────────
 // EDITOR_MODE를 정의하면 EditorApp 실행
 // 주석 처리하면 게임용 MainApp 실행
-#define EDITOR_MODE
+//#define EDITOR_MODE
 
 #ifdef EDITOR_MODE
     #include "EditorApp.h"

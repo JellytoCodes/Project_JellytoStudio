@@ -3,15 +3,6 @@
 class Scene;
 class Entity;
 
-// ── Actor ─────────────────────────────────────────────────────────────────
-// Scene에 배치 가능한 오브젝트의 Engine 레벨 베이스 클래스.
-// Entity/Component 시스템 위에 "씬 배치 단위"를 추상화한다.
-//
-// 배치 위치: Engine/Source/Entity/
-// 구체 구현: Client/Source/Main/Actors.h (게임별 Actor)
-//
-// ItemWindow(Engine)는 Actor 베이스만 알면 되므로
-// Engine → Engine 의존으로 깔끔하게 해결됨.
 class Actor
 {
 public:

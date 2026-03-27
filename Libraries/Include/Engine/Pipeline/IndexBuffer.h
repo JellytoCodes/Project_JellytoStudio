@@ -3,8 +3,8 @@
 class IndexBuffer
 {
 public:
-	IndexBuffer()		{ }
-	~IndexBuffer()		{ }
+	IndexBuffer() = default;
+	~IndexBuffer() = default;
 
 	ComPtr<ID3D11Buffer> GetComPtr()	{ return _indexBuffer; }
 	uint32 GetStride() const			{ return _stride; }

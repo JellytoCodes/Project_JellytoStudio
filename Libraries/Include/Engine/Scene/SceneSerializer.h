@@ -4,19 +4,6 @@ class Scene;
 class Entity;
 class IBlockPlacer;
 
-// ── SceneSerializer ───────────────────────────────────────────────────────
-// 씬을 XML 파일로 저장/로드
-//
-// 저장 포맷:
-//   <Scene name="...">
-//     <Entity name="Floor" actor="FloorActor">
-//       <Transform px="-10" py="0" pz="-10" .../>
-//     </Entity>
-//     <Blocks>
-//       <Block col="5" row="8"/>
-//       <Block col="6" row="8"/>
-//     </Blocks>
-//   </Scene>
 class SceneSerializer
 {
 public:

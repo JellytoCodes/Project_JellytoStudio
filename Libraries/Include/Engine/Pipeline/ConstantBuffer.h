@@ -4,8 +4,8 @@ template<typename T>
 class ConstantBuffer
 {
 public:
-	ConstantBuffer()					{ }
-	~ConstantBuffer()					{ }
+	ConstantBuffer() = default;
+	~ConstantBuffer() = default;
 
 	ComPtr<ID3D11Buffer> GetComPtr()	{ return _constantBuffer; }
 
