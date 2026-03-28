@@ -44,8 +44,8 @@ void PaletteWidget::HandleInput()
 
     // 숫자키 1~5 → 슬롯 직접 선택
     static const KEY_TYPE numKeys[] = {
-        KEY_TYPE::NUM1, KEY_TYPE::NUM2, KEY_TYPE::NUM3,
-        KEY_TYPE::NUM4, KEY_TYPE::NUM5
+        KEY_TYPE::KEY_1, KEY_TYPE::KEY_2, KEY_TYPE::KEY_3,
+        KEY_TYPE::KEY_4, KEY_TYPE::KEY_5
     };
     for (int32 i = 0; i < SLOT_COUNT; i++)
     {
@@ -58,12 +58,6 @@ void PaletteWidget::HandleInput()
             return;
         }
     }
-
-    // 마우스 휠 → 슬롯 순환 (WheelUp/Down은 KeyEnums에 없으면 Q/E 대체)
-    if (input->GetButtonDown(KEY_TYPE::Q))
-        _selectedSlot = (_selectedSlot - 1 + SLOT_COUNT) % SLOT_COUNT;
-    if (input->GetButtonDown(KEY_TYPE::E))
-        _selectedSlot = (_selectedSlot + 1) % SLOT_COUNT;
 }
 
 // ── DrawUI ────────────────────────────────────────────────────────────────
