@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Material.h"
 #include "Resource/Texture.h"
@@ -30,9 +29,17 @@ void Material::Update()
 
 	_shader->PushMaterialData(_desc);
 
-	if (_diffuseMap)	_diffuseEffectBuffer->SetResource(_diffuseMap->GetComPtr().Get());
-	if (_normalMap)		_normalEffectBuffer->SetResource(_normalMap->GetComPtr().Get());
-	if (_specularMap)	_specularEffectBuffer->SetResource(_specularMap->GetComPtr().Get());
+	if (_diffuseEffectBuffer)
+		_diffuseEffectBuffer->SetResource(
+			_diffuseMap ? _diffuseMap->GetComPtr().Get() : nullptr);
+
+	if (_normalEffectBuffer)
+		_normalEffectBuffer->SetResource(
+			_normalMap ? _normalMap->GetComPtr().Get() : nullptr);
+
+	if (_specularEffectBuffer)
+		_specularEffectBuffer->SetResource(
+			_specularMap ? _specularMap->GetComPtr().Get() : nullptr);
 }
 
 std::shared_ptr<Material> Material::Clone()

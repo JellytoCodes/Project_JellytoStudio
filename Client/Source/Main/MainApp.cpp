@@ -103,6 +103,10 @@ void MainApp::CreatePlacementSystem()
     _blockPlacer = placer;
     _scene->Add(placerEntity);
 
+    // 캐릭터 겹침 검사용 참조 주입
+    if (_characterEntity)
+        placer->SetCharacterEntity(_characterEntity);
+
     ::OutputDebugStringW(
         L"[MainApp] 배치 시스템 준비 완료\n"
         L"  Tab     — 배치 모드 On/Off\n"
