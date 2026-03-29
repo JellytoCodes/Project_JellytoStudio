@@ -64,6 +64,10 @@ public:
 	void												ReadModel(const std::wstring& filename);
 	void												ReadAnimation(const std::wstring& filename);
 
+	// 경로 오버라이드 (MapModel 등 하위 폴더 사용 시)
+	void SetModelPath(const std::wstring& p)   { _modelPath   = p; }
+	void SetTexturePath(const std::wstring& p) { _texturePath = p; }
+
 	uint32												GetMaterialCount() const						{ return static_cast<uint32>(_materials.size()); }
 	std::vector<std::shared_ptr<Material>>&				GetMaterials()									{ return _materials; }
 	std::shared_ptr<Material>							GetMaterialByIndex(uint32 index)				{ return _materials[index]; }
@@ -96,4 +100,3 @@ private:
 	std::vector<std::shared_ptr<ModelMesh>>			_meshes;
 	std::vector<std::shared_ptr<ModelAnimation>>	_animations;
 };
-

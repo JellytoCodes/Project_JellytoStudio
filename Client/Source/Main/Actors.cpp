@@ -4,7 +4,6 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
-#include "Entity/Components/Terrain.h"
 #include "Entity/Components/TileMap.h"
 #include "Entity/Components/AnimStateMachine.h"
 #include "Scripts/PointClickController.h"
@@ -39,7 +38,7 @@ void SkySphereActor::BuildEntity()
 
 void FloorActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/Terrain.hlsl");
+	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 	auto mat = std::make_shared<Material>();
 	mat->SetShader(shader);
 	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"FloorMat", L"../Resources/Textures/GridTile.jpg");
@@ -57,7 +56,7 @@ void FloorActor::BuildEntity()
 
 void CubeActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/Terrain.hlsl");
+	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 	auto mat = std::make_shared<Material>();
 	mat->SetShader(shader);
 	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
@@ -82,7 +81,7 @@ void CubeActor::BuildEntity()
 
 void SphereActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/Terrain.hlsl");
+	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 	auto mat = std::make_shared<Material>();
 	mat->SetShader(shader);
 	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");

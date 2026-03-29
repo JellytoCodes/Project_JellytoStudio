@@ -14,6 +14,7 @@ Converter::Converter()
 
 Converter::~Converter()
 {
+
 }
 
 void Converter::ReadAssetFile(std::wstring file)
@@ -56,8 +57,6 @@ void Converter::ExportModelData(std::wstring savePath)
 	std::wstring finalPath = _modelPath + savePath + L".mesh";
 	ReadModelData(_scene->mRootNode, -1, -1);
 	ReadSkinData();
-
-	ExportCSV(savePath);
 
 	WriteModelFile(finalPath);
 }
