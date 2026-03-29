@@ -22,7 +22,6 @@ void MainApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
 
-    // SceneSerializer 팩토리 등록
     SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_shared<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"FloorActor", [] { return std::make_shared<FloorActor>(); });
     SceneSerializer::RegisterActor(L"CubeActor", [] { return std::make_shared<CubeActor>(); });
@@ -42,11 +41,12 @@ void MainApp::Init()
 
 void MainApp::InitScene()
 {
-    auto spawn = [&](std::shared_ptr<Actor> actor)
-        {
-            actor->Spawn(_scene);
-            _actors.push_back(actor);
-        };
+    auto spawn = 
+    [&](std::shared_ptr<Actor> actor)
+    {
+        actor->Spawn(_scene);
+        _actors.push_back(actor);
+    };
 
     spawn(std::make_shared<SkySphereActor>());
     spawn(std::make_shared<FloorActor>());
@@ -87,11 +87,9 @@ void MainApp::CreateCamera()
 
 void MainApp::CreatePlacementSystem()
 {
-    // ── PaletteWidget: 화면 하단 팔레트 HUD ───────────────────────
     _palette = std::make_shared<PaletteWidget>(L"Palette");
     _scene->Add(_palette);
 
-    // ── BlockPlacer: 그리드 오브젝트 배치 컨트롤러 ────────────────
     auto placerEntity = std::make_shared<Entity>(L"BlockPlacer");
     placerEntity->AddComponent(std::make_shared<Transform>());
 
@@ -103,20 +101,8 @@ void MainApp::CreatePlacementSystem()
     _blockPlacer = placer;
     _scene->Add(placerEntity);
 
-    // 캐릭터 겹침 검사용 참조 주입
     if (_characterEntity)
         placer->SetCharacterEntity(_characterEntity);
-
-    ::OutputDebugStringW(
-        L"[MainApp] 배치 시스템 준비 완료\n"
-        L"  Tab     — 배치 모드 On/Off\n"
-        L"  1~5     — 슬롯 선택 (Block / Flat / Large / Sphere / Eraser)\n"
-        L"  Q/E     — 슬롯 이동\n"
-        L"  좌클릭  — 배치 (Eraser 슬롯: 제거)\n"
-        L"  우클릭  — 제거\n"
-        L"  Ctrl+S  — 씬 저장\n"
-        L"  Ctrl+L  — 씬 로드\n"
-    );
 }
 
 void MainApp::Update()

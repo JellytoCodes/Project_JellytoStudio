@@ -102,13 +102,10 @@ float4 ComputeLight(float3 normal, float2 uv, float3 worldPosition)
     return ambientColor + diffuseColor + specularColor + emissiveColor;
 }
 
-// inout은 c/c++로 치면 *(포인터), &(레퍼런스)와 같은 동작을 한다고 생각하면 된다.
 void ComputNormalMapping(inout float3 normal, float3 tangent, float2 uv)
 {
-	// [0, 255] 범위에서 [0, 1]로 변환
     float4 map = NormalMap.Sample(LinearSampler, uv);
 	
-	// NormalMap을 불러왔을 때 아무 정보가 없는 (0, 0, 0) 상태일 때 종료하기 위함
     if (any(map.rgb) == false)
         return;
 
@@ -117,8 +114,7 @@ void ComputNormalMapping(inout float3 normal, float3 tangent, float2 uv)
     float3 B = normalize(cross(N, T)); // y
 	
     float3x3 TBN = float3x3(T, B, N);
-
-	// [0, 1] 범위에서 [-1, 1] 범위로 변환
+    
     float3 tangentSpaceNormal = (map.rgb * 2.f - 1.f);
 	
     float3 worldNormal = mul(tangentSpaceNormal, TBN);

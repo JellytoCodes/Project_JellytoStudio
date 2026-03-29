@@ -18,7 +18,7 @@ public:
 private:
     void InitScene();
     void CreateCamera();
-    void CreatePlacementSystem(); // BlockPlacer + PaletteWidget 통합 초기화
+    void CreatePlacementSystem();
 
     std::shared_ptr<Scene>                      _scene;
     std::shared_ptr<Entity>                     _characterEntity;
