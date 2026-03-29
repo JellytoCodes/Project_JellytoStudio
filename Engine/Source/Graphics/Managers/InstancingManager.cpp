@@ -82,7 +82,9 @@ void InstancingManager::RenderModelRenderer(std::vector<std::shared_ptr<Entity>>
 			{
 				const std::shared_ptr<Entity>& entity = vec[i];
 				InstancingData data;
-				data.world = entity->GetTransform()->GetWorldMatrix();
+				auto mr = entity->GetComponent<ModelRenderer>();
+				Matrix scaleMatrix = mr ? mr->GetModelScaleMatrix() : Matrix::Identity;
+				data.world = scaleMatrix * entity->GetTransform()->GetWorldMatrix();
 
 				AddData(id, data);
 			}

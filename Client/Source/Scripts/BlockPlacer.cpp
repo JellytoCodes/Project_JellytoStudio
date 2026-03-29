@@ -17,25 +17,34 @@
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
 
-using SlotType = PaletteWidget::SlotType;
+using SlotType    = PaletteWidget::SlotType;
+using ColSize     = BlockPlacer::ColliderSize;
 
-// ── 슬롯 → 모델 파라미터 ─────────────────────────────────────────────────
-// modelName: Resources/Models/MapModel/{modelName}.mesh
-// blockHeight: 적층 계산용 (실제 모델 높이에 맞게 조정)
-// extents: AABB 크기 (피킹/겹침 판정용)
+// ── 슬롯별 파라미터 정의 ─────────────────────────────────────────────────
+//
+// collider: 미리 정의된 규격 박스 → Collider + 그리드 배치 기준
+// modelScale: 모델 원본 크기를 규격 박스에 맞게 조정하는 시각 스케일
+//   → 실측이 어렵기 때문에 여기서 눈으로 보면서 맞추는 값
+//
+// 규격 박스 크기:
+//   Small : 0.5 x 0.5 x 0.5
+//   Unit  : 1.0 x 1.0 x 1.0
+//   Tall  : 1.0 x 1.5 x 1.0
+//   Wide  : 2.0 x 0.5 x 1.0
 
 BlockPlacer::MapModelParams BlockPlacer::GetModelParams(SlotType type) const
 {
     switch (type)
     {
-    case SlotType::Mushroom1: return { L"Mushroom_01", 1.2f, Vec3(0.45f,0.6f,0.45f) };
-    case SlotType::Mushroom2: return { L"Mushroom_02", 1.4f, Vec3(0.45f,0.7f,0.45f) };
-    case SlotType::Mushroom3: return { L"Mushroom_03", 1.0f, Vec3(0.40f,0.5f,0.40f) };
-    case SlotType::Priming1:  return { L"Priming_01",  1.5f, Vec3(0.40f,0.75f,0.40f) };
-    case SlotType::Priming2:  return { L"Priming_02",  1.5f, Vec3(0.40f,0.75f,0.40f) };
-    case SlotType::Priming3:  return { L"Priming_03",  1.5f, Vec3(0.40f,0.75f,0.40f) };
-    case SlotType::Bridge:    return { L"Bridge",       0.3f, Vec3(0.90f,0.15f,0.40f) };
-    default:                  return { L"",             1.0f, Vec3(0.5f,0.5f,0.5f)   };
+    //                                        modelName        collider        modelScale
+    case SlotType::Mushroom1: return { L"Mushroom_01", ColSize::Unit,  Vec3(0.012f, 0.012f, 0.012f) };
+    case SlotType::Mushroom2: return { L"Mushroom_02", ColSize::Tall,  Vec3(0.012f, 0.012f, 0.012f) };
+    case SlotType::Mushroom3: return { L"Mushroom_03", ColSize::Small, Vec3(0.010f, 0.010f, 0.010f) };
+    case SlotType::Priming1:  return { L"Priming_01",  ColSize::Tall,  Vec3(0.014f, 0.014f, 0.014f) };
+    case SlotType::Priming2:  return { L"Priming_02",  ColSize::Tall,  Vec3(0.014f, 0.014f, 0.014f) };
+    case SlotType::Priming3:  return { L"Priming_03",  ColSize::Unit,  Vec3(0.012f, 0.012f, 0.012f) };
+    case SlotType::Bridge:    return { L"Bridge",       ColSize::Wide,  Vec3(0.016f, 0.010f, 0.016f) };
+    default:                  return { L"",             ColSize::Unit,  Vec3(1.f,  1.f,  1.f)        };
     }
 }
 
@@ -49,7 +58,6 @@ std::shared_ptr<Model> BlockPlacer::GetOrLoadModel(SlotType type)
     auto params = GetModelParams(type);
     if (params.modelName.empty()) return nullptr;
 
-    // Model 로드: Resources/Models/MapModel/  +  Textures/MapModel/
     auto model = std::make_shared<Model>();
     model->SetModelPath(L"../Resources/Models/MapModel/");
     model->SetTexturePath(L"../Resources/Textures/MapModel/");
@@ -85,7 +93,6 @@ BlockPlacer::BlockPlacer() : MonoBehaviour() {}
 
 void BlockPlacer::Awake()
 {
-    // 슬롯 모델 사전 로드 (배치 시 지연 없음)
     for (int i = 0; i < static_cast<int>(SlotType::Count); i++)
     {
         SlotType t = static_cast<SlotType>(i);
@@ -184,27 +191,32 @@ void BlockPlacer::UpdatePreview()
 
     bool canAct = false;
     Vec3 previewPos = snapped;
+    Vec3 previewScale(1.f);
 
     if (isErase)
     {
         canAct = IsCellOccupied(col, row);
-        previewPos.y = 0.5f;
+        previewPos.y = 0.05f;
+        previewScale = Vec3(0.9f, 0.05f, 0.9f);
     }
     else
     {
         auto params = GetModelParams(st);
+        Vec3 halfExt = GetColliderHalfExtents(params.collider);
+        float boxH   = GetColliderFullHeight(params.collider);
+
         int32 layer; float yPos;
-        if (tileMap->IsValid(col, row) &&
-            FindNextLayer(col, row, params.blockHeight, layer, yPos))
+        if (tileMap->IsValid(col, row) && FindNextLayer(col, row, params.collider, layer, yPos))
         {
-            previewPos.y = yPos;
-            canAct = !IsOverlappingCharacter(previewPos, params.extents);
+            // 프리뷰는 콜라이더 박스 크기로 표시
+            previewPos.y = yPos + halfExt.y;
+            previewScale = Vec3(halfExt.x * 2.f * 0.95f, 0.06f, halfExt.z * 2.f * 0.95f);
+            canAct = !IsOverlappingCharacter(Vec3(previewPos.x, yPos + halfExt.y, previewPos.z), halfExt);
         }
     }
 
     _previewValid = canAct;
 
-    // 프리뷰 Entity — 단순 큐브로 위치만 표시
     if (!_previewEntity)
     {
         _previewEntity = std::make_shared<Entity>(L"__Preview__");
@@ -216,7 +228,7 @@ void BlockPlacer::UpdatePreview()
     }
 
     _previewEntity->GetTransform()->SetLocalPosition(previewPos);
-    _previewEntity->GetTransform()->SetLocalScale(Vec3(0.9f, 0.1f, 0.9f)); // 납작한 발판
+    _previewEntity->GetTransform()->SetLocalScale(previewScale);
 
     if (auto mr = _previewEntity->GetComponent<MeshRenderer>())
     {
@@ -253,45 +265,48 @@ bool BlockPlacer::PlaceBlock(int32 col, int32 row)
     auto scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return false;
 
-    auto pal     = _palette.lock();
+    auto pal      = _palette.lock();
     SlotType type = pal ? pal->GetSelectedSlotType() : SlotType::Mushroom1;
     if (type == SlotType::Eraser) return false;
 
     auto model = GetOrLoadModel(type);
     if (!model) return false;
 
-    auto params = GetModelParams(type);
+    auto params  = GetModelParams(type);
+    Vec3 halfExt = GetColliderHalfExtents(params.collider);
+    float boxH   = GetColliderFullHeight(params.collider);
+
     int32 layer; float yPos;
-    if (!FindNextLayer(col, row, params.blockHeight, layer, yPos)) return false;
+    if (!FindNextLayer(col, row, params.collider, layer, yPos)) return false;
 
+    // Entity 위치: 콜라이더 박스 하단이 yPos에 닿도록 (중심은 yPos + halfExt.y)
     Vec3 center = tileMap->GridToWorld(col, row);
-    center.y    = 0.f; // MapModel은 Y=0 기준(모델 하단이 바닥)
+    center.y = yPos + halfExt.y;
 
-    // layer > 0이면 이전 블록 위로 올림
-    if (layer > 0)
-        center.y = params.blockHeight * static_cast<float>(layer);
-
-    if (IsOverlappingCharacter(Vec3(center.x, center.y + params.extents.y, center.z), params.extents))
+    // 캐릭터 겹침 체크
+    if (IsOverlappingCharacter(center, halfExt))
     {
         ::OutputDebugStringW(L"[BlockPlacer] 캐릭터 겹침 — 배치 불가\n");
         return false;
     }
 
-    // Entity + ModelRenderer
+    // Entity 생성
     auto blockEntity = std::make_shared<Entity>(L"MapBlock");
     blockEntity->AddComponent(std::make_shared<Transform>());
     blockEntity->GetTransform()->SetLocalPosition(center);
-    blockEntity->GetTransform()->SetLocalScale(Vec3(1.f));
+    blockEntity->GetTransform()->SetLocalScale(Vec3(1.f)); // 스케일은 modelScale로 조정
 
+    // ModelRenderer: modelScale을 보정으로 설정
     auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
     auto modelRenderer = std::make_shared<ModelRenderer>(shader);
     modelRenderer->SetModel(model);
+    modelRenderer->SetModelScale(params.modelScale);
     blockEntity->AddComponent(modelRenderer);
 
-    // AABB Collider
+    // AABB Collider: 규격 박스 크기 그대로
     auto col_ = std::make_shared<AABBCollider>();
-    col_->SetBoxExtents(params.extents);
-    col_->SetOffsetPosition(Vec3(0.f, params.extents.y, 0.f)); // 모델 하단 → 중심 보정
+    col_->SetBoxExtents(halfExt);
+    // Entity Transform 중심이 이미 박스 중심이므로 offset 불필요
     blockEntity->AddComponent(col_);
 
     scene->Add(blockEntity);
@@ -303,8 +318,12 @@ bool BlockPlacer::PlaceBlock(int32 col, int32 row)
     _placedCells.emplace_back(col, row);
 
     wchar_t dbg[128];
-    swprintf_s(dbg, L"[BlockPlacer] 배치: %s (%d,%d) layer=%d\n",
-        params.modelName.c_str(), col, row, layer);
+    swprintf_s(dbg, L"[BlockPlacer] 배치: %s (%d,%d) layer=%d  collider=%s  y=%.2f\n",
+        params.modelName.c_str(), col, row, layer,
+        (params.collider == ColSize::Small ? L"Small" :
+         params.collider == ColSize::Unit  ? L"Unit"  :
+         params.collider == ColSize::Tall  ? L"Tall"  : L"Wide"),
+        center.y);
     ::OutputDebugStringW(dbg);
     return true;
 }
@@ -353,8 +372,7 @@ void BlockPlacer::ClearAllBlocks()
         if (scene) scene->Remove(entity);
         if (tileMap)
         {
-            int32 c = (int32)(key/1000000), r = (int32)((key%1000000)/100),
-                  l = (int32)(key%100);
+            int32 c=(int32)(key/1000000), r=(int32)((key%1000000)/100), l=(int32)(key%100);
             if (l == 0) tileMap->SetWalkable(c, r, true);
         }
     }
@@ -364,15 +382,16 @@ void BlockPlacer::ClearAllBlocks()
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────
 
-bool BlockPlacer::FindNextLayer(int32 col, int32 row, float blockH,
-                                 int32& outLayer, float& outY) const
+bool BlockPlacer::FindNextLayer(int32 col, int32 row, ColliderSize size,
+                                int32& outLayer, float& outY) const
 {
+    float boxH = GetColliderFullHeight(size);
     for (int32 layer = 0; layer < LAYER_MAX; layer++)
     {
         if (!IsCellLayerOccupied(col, row, layer))
         {
             outLayer = layer;
-            outY     = blockH * static_cast<float>(layer);
+            outY     = boxH * static_cast<float>(layer); // 박스 하단 Y
             return true;
         }
     }
