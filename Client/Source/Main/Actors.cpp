@@ -50,7 +50,7 @@ void FloorActor::BuildEntity()
 	auto tileMap = std::make_shared<TileMap>();
 	_entity->AddComponent(tileMap);
 	tileMap->Create(20, 20, 1.f, GET_SINGLE(ResourceManager)->Get<Material>(L"FloorMat"));
-	// 중앙이 (0,0,0)이 되도록 원점 이동
+	
 	_entity->GetTransform()->SetLocalPosition(Vec3(-10.f, 0.f, -10.f));
 }
 
@@ -141,7 +141,6 @@ void CharacterActor::BuildEntity()
 
 void LightActor::BuildEntity()
 {
-	// 카메라와 동일하게 Transform이 있는지 검증
 	assert(_entity != nullptr && "[LightActor] _entity is null before AddComponent");
 	assert(_entity->GetTransform() != nullptr && "[LightActor] Transform not set");
 	::OutputDebugStringW(L"[LightActor] BuildEntity start\n");
@@ -149,7 +148,7 @@ void LightActor::BuildEntity()
 	auto light = std::make_shared<Light>();
 
 	LightDesc desc;
-	desc.ambient  = Color(0.3f, 0.3f, 0.3f, 1.f);
+	desc.ambient  = Color(1.f, 1.f, 1.f, 1.f);
 	desc.diffuse  = Color(1.0f, 0.98f, 0.9f, 1.f);
 	desc.specular = Color(0.5f, 0.5f, 0.5f, 1.f);
 	desc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);
