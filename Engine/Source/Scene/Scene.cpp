@@ -1,9 +1,10 @@
-#include "Framework.h"
+ï»¿#include "Framework.h"
 #include "Graphics/Graphics.h"
 #include "Scene.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Collider/BaseCollider.h"
+#include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Light.h"
 #include "UI/Widget.h"
 #include "UI/UIManager.h"
@@ -65,13 +66,13 @@ void Scene::Render()
 		collider->RenderDebug();
 	}
 
-	// UI: Widget(Entity »ó¼Ó)µé DrawUI ¡æ UIManager µå·Î¿ì¸®½ºÆ® ´©Àû
+	// UI: Widget(Entity ìƒì†)ë“¤ DrawUI â†’ UIManager ë“œë¡œìš°ë¦¬ìŠ¤íŠ¸ ëˆ„ì 
 	for (auto& object : _objects)
 	{
 		if (auto widget = std::dynamic_pointer_cast<Widget>(object))
 			widget->DrawUI();
 	}
-	// IMGUI ¹æ½Ä: 3D ·»´õ ¿Ï·á ÈÄ µ¿ÀÏ DeviceContext·Î UI ÀÏ°ı Á¦Ãâ
+	// IMGUI ë°©ì‹: 3D ë Œë” ì™„ë£Œ í›„ ë™ì¼ DeviceContextë¡œ UI ì¼ê´„ ì œì¶œ
 	GET_SINGLE(UIManager)->Render();
 }
 
@@ -100,7 +101,7 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 {
 	if (!_mainCamera) return nullptr;
 
-	// Viewport Å©±â
+	// Viewport í¬ê¸°
 	float width  = Graphics::Get()->GetViewport().GetWidth();
 	float height = Graphics::Get()->GetViewport().GetHeight();
 
@@ -108,11 +109,11 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 	Matrix viewMatrix = _mainCamera->GetViewMatrix();
 	Matrix viewMatrixInv = viewMatrix.Invert();
 
-	// View Space ÁÂÇ¥ (Âü°í ÄÚµå ¹æ½Ä)
+	// View Space ì¢Œí‘œ (ì°¸ê³  ì½”ë“œ ë°©ì‹)
 	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
 	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
 
-	// View Space Ray ¡æ World Space º¯È¯
+	// View Space Ray â†’ World Space ë³€í™˜
 	Vec4 rayOrigin4 = Vec4(0.f, 0.f, 0.f, 1.f);
 	Vec4 rayDir4    = Vec4(viewX, viewY, 1.f, 0.f);
 
@@ -147,7 +148,7 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 			picked  = entity;
 
 			wchar_t dbgHit[256];
-			swprintf_s(dbgHit, L"[Scene::Pick] ÈÄº¸ È÷Æ®: %s dist=%.2f\n",
+			swprintf_s(dbgHit, L"[Scene::Pick] í›„ë³´ íˆíŠ¸: %s dist=%.2f\n",
 				entity->GetEntityName().c_str(), dist);
 			::OutputDebugStringW(dbgHit);
 		}
@@ -176,13 +177,63 @@ bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, flo
 	Vec3 rayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
 	rayDir.Normalize();
 
-	// Ray-Plane ±³Â÷: Y = groundY ÀÎ ¼öÆò Æò¸é
+	// Ray-Plane êµì°¨: Y = groundY ì¸ ìˆ˜í‰ í‰ë©´
 	// t = (groundY - rayOrigin.y) / rayDir.y
-	if (fabsf(rayDir.y) < 1e-6f) return false; // ÆòÇà (±³Â÷ ¾øÀ½)
+	if (fabsf(rayDir.y) < 1e-6f) return false; // í‰í–‰ (êµì°¨ ì—†ìŒ)
 
 	float t = (groundY - rayOrigin.y) / rayDir.y;
-	if (t < 0.f) return false; // Ä«¸Ş¶ó µÚÂÊ
+	if (t < 0.f) return false; // ì¹´ë©”ë¼ ë’¤ìª½
 
 	outWorldPos = rayOrigin + rayDir * t;
 	return true;
+}
+bool Scene::PickBlock(int32 screenX, int32 screenY,
+                      CollisionChannel queryChan,
+                      std::shared_ptr<Entity>& outEntity,
+                      Vec3& outHitNormal,
+                      float& outDist)
+{
+	if (!_mainCamera) return false;
+
+	float width  = Graphics::Get()->GetViewport().GetWidth();
+	float height = Graphics::Get()->GetViewport().GetHeight();
+
+	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
+	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
+
+	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
+	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
+
+	Vec3 rayOrigin = XMVector3TransformCoord(Vec4(0,0,0,1), viewMatrixInv);
+	Vec3 rayDir    = XMVector3TransformNormal(Vec4(viewX,viewY,1,0), viewMatrixInv);
+	rayDir.Normalize();
+
+	Ray ray(rayOrigin, rayDir);
+
+	outEntity  = nullptr;
+	outDist    = FLT_MAX;
+	outHitNormal = Vec3(0,1,0);
+
+	for (auto& entity : _objects)
+	{
+		if (_mainCamera->IsCulled(entity->GetLayerIndex())) continue;
+
+		auto aabb = entity->GetComponent<AABBCollider>();
+		if (!aabb) continue;
+
+		// ì±„ë„ í•„í„° â€” queryChanì´ ì´ ì½œë¼ì´ë”ì˜ pickableMaskì— ì—†ìœ¼ë©´ ìŠ¤í‚µ
+		if (!aabb->CanBePickedBy(queryChan)) continue;
+
+		float dist = 0.f;
+		Vec3  normal;
+		Ray   r = ray;
+		if (aabb->IntersectsWithNormal(r, dist, normal) && dist < outDist)
+		{
+			outDist     = dist;
+			outEntity   = entity;
+			outHitNormal = normal;
+		}
+	}
+
+	return outEntity != nullptr;
 }

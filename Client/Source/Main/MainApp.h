@@ -22,6 +22,7 @@ private:
 
     std::shared_ptr<Scene>                      _scene;
     std::shared_ptr<Entity>                     _characterEntity;
+    std::shared_ptr<Entity>                     _startBlock;
     std::shared_ptr<IsometricCameraController>  _isoCamCtrl;
     std::shared_ptr<BlockPlacer>                _blockPlacer;
     std::shared_ptr<PaletteWidget>              _palette;

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Entity/Components/Component.h"
+#include "Entity/Components/Collider/CollisionChannel.h"
 
 enum class ColliderType : uint8
 {
@@ -40,6 +41,19 @@ public:
 
 	Matrix GetColliderWorldMatrix() const		{ return _colliderWorld; }
 
+	// ── 콜리전 채널 ────────────────────────────────────────────
+	// ownChannel  : 이 콜라이더가 속한 채널
+	// pickableMask: 이 콜라이더를 피킹/감지할 수 있는 채널 비트마스크
+	CollisionChannel GetOwnChannel()   const  { return _ownChannel; }
+	void SetOwnChannel(CollisionChannel ch)   { _ownChannel = ch; }
+
+	uint32 GetPickableMask()           const  { return _pickableMask; }
+	void SetPickableMask(uint32 mask)         { _pickableMask = mask; }
+
+	// queryChan 채널이 이 콜라이더를 피킹할 수 있는지
+	bool CanBePickedBy(CollisionChannel queryChan) const
+	{ return ChannelInMask(queryChan, _pickableMask); }
+
 	// ── 디버그 시각화 ────────────────────────────────────────────────
 	bool IsShowDebug() const					{ return _showDebug; }
 	void SetShowDebug(bool show)				{ _showDebug = show; }
@@ -57,7 +71,10 @@ protected:
 	// 자식이 오버라이드: Extents/Radius를 반영한 실제 디버그 World 행렬
 	virtual Matrix GetDebugWorldMatrix()		{ return _colliderWorld; }
 
-	ColliderType _colliderType;
+	ColliderType      _colliderType;
+
+	CollisionChannel  _ownChannel    = CollisionChannel::Default;
+	uint32            _pickableMask  = static_cast<uint32>(CollisionChannel::All);
 
 	Vec3   _offsetPosition =	{ 0.f, 0.f, 0.f };
 	Vec3   _offsetRotation =	{ 0.f, 0.f, 0.f };

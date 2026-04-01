@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Entity/Components/Collider/CollisionChannel.h"
 
 class Light;
 class Camera;
@@ -31,6 +32,15 @@ public :
 	void SetMainLight(const std::shared_ptr<Light>& light);
 
 	std::shared_ptr<Entity> Pick(int32 screenX, int32 screenY);
+
+	// 채널 필터링 + 히트 노말 반환 버전
+	// queryChan: 이 채널로 피킹 — target.CanBePickedBy(queryChan) 검사
+	// outHitNormal: 히트된 AABB 면의 노말 벡터 (±X/Y/Z)
+	bool PickBlock(int32 screenX, int32 screenY,
+	               CollisionChannel queryChan,
+	               std::shared_ptr<Entity>& outEntity,
+	               Vec3& outHitNormal,
+	               float& outDist);
 
 	bool PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY = 0.f);
 
