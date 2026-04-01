@@ -4,7 +4,6 @@
 #include "Actors.h"
 
 #include "Resource/Managers/ResourceManager.h"
-#include "Core/Managers/InputManager.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Scene.h"
 #include "Entity/Entity.h"
@@ -20,13 +19,13 @@
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
+#include "Pipeline/Shader.h"
 
 void MainApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
 
     SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_shared<SkySphereActor>(); });
-    // FloorActor 직렬화 등록 제거 (원 블록 챌린지 씬)
     SceneSerializer::RegisterActor(L"CubeActor", [] { return std::make_shared<CubeActor>(); });
     SceneSerializer::RegisterActor(L"SphereActor", [] { return std::make_shared<SphereActor>(); });
     SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_shared<CharacterActor>(); });
@@ -51,8 +50,6 @@ void MainApp::InitScene()
         _actors.push_back(actor);
     };
 
-    // ── 원 블록 챌린지 씬 ─────────────────────────────────────
-    // FloorActor 제거 — 하늘 + 시작 블록 1개로 시작
     spawn(std::make_shared<SkySphereActor>());
 
     // 라이트
@@ -62,8 +59,6 @@ void MainApp::InitScene()
     if (auto lightComp = lightActor->GetEntity()->GetComponent<Light>())
         _scene->SetMainLight(lightComp);
 
-    // 시작 Priming 블록 (1.0x1.0x1.0, Priming 채널)
-    // 캐릭터가 올라설 블록이므로 Y=0에 배치 (상단 Y=1.0)
     {
         auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
         auto model  = std::make_shared<Model>();
@@ -86,7 +81,7 @@ void MainApp::InitScene()
         col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
         col->SetOwnChannel(CollisionChannel::Priming);
         // Priming 채널 쿼리로 피킹 가능 → Priming/Mushroom 모두 위에 배치 가능
-        col->SetPickableMask(CollisionChannel::Priming);
+        col->SetPickableMask(static_cast<uint8>(CollisionChannel::Priming));
         startBlock->AddComponent(col);
 
         _scene->Add(startBlock);

@@ -63,19 +63,19 @@ private:
     // 슬롯별 배치 파라미터
     struct MapModelParams
     {
-        std::wstring      modelName;
-        ColliderSize      collider;
-        Vec3              modelScale;
-        CollisionChannel  ownChannel;    // 이 블록의 채널
-        CollisionChannel  pickableMask;  // 이 블록을 피킹할 수 있는 채널
-        PlaceFace         faceMask;      // 허용 배치 면 (PlaceFace 비트 OR)
+        std::wstring        modelName;
+        ColliderSize        collider;
+        Vec3                modelScale;
+        CollisionChannel    ownChannel;    // 이 블록의 채널
+        uint8               pickableMask;  // 이 블록을 피킹할 수 있는 채널
+        uint8               faceMask;      // 허용 배치 면 (PlaceFace 비트 OR)
     };
+
     MapModelParams GetModelParams(PaletteWidget::SlotType type) const;
 
     std::shared_ptr<Model>    GetOrLoadModel(PaletteWidget::SlotType type);
     std::shared_ptr<Material> GetPreviewMat(bool ok);
 
-    // 피킹 → 배치 가능 여부 + 새 블록 위치 계산
     bool CalcPlacePos(PaletteWidget::SlotType type,
                       const std::shared_ptr<Entity>& hitEntity,
                       const Vec3& hitNormal,

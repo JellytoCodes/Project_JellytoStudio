@@ -47,8 +47,8 @@ public:
 	CollisionChannel GetOwnChannel()   const  { return _ownChannel; }
 	void SetOwnChannel(CollisionChannel ch)   { _ownChannel = ch; }
 
-	uint32 GetPickableMask()           const  { return _pickableMask; }
-	void SetPickableMask(uint32 mask)         { _pickableMask = mask; }
+	uint8 GetPickableMask()           const  { return _pickableMask; }
+	void SetPickableMask(uint8 mask)         { _pickableMask = mask; }
 
 	// queryChan 채널이 이 콜라이더를 피킹할 수 있는지
 	bool CanBePickedBy(CollisionChannel queryChan) const
@@ -74,7 +74,7 @@ protected:
 	ColliderType      _colliderType;
 
 	CollisionChannel  _ownChannel    = CollisionChannel::Default;
-	uint32            _pickableMask  = static_cast<uint32>(CollisionChannel::All);
+	uint8            _pickableMask  = static_cast<uint8>(CollisionChannel::All);
 
 	Vec3   _offsetPosition =	{ 0.f, 0.f, 0.f };
 	Vec3   _offsetRotation =	{ 0.f, 0.f, 0.f };

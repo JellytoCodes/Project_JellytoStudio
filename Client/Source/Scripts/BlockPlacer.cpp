@@ -21,8 +21,6 @@ using CH       = CollisionChannel;
 using PF       = PlaceFace;
 using CS       = BlockPlacer::ColliderSize;
 
-// ── 콜라이더 규격 ─────────────────────────────────────────────────────────
-
 Vec3 BlockPlacer::GetHalfExtents(ColliderSize s)
 {
     switch (s)
@@ -35,57 +33,66 @@ Vec3 BlockPlacer::GetHalfExtents(ColliderSize s)
     }
 }
 
-// ── 슬롯별 파라미터 ───────────────────────────────────────────────────────
-//
-// ownChannel   : 배치된 블록이 속할 채널
-// pickableMask : 어떤 쿼리 채널이 이 블록을 피킹할 수 있는지
-//                Priming → Priming|Floor (어디든 피킹 가능)
-//                Mushroom → Priming만 (Priming 블록 위에서만 피킹 허용)
-// faceMask     : 허용 배치 면
-//                Priming → Top|Side, Mushroom → Top 만
-
 BlockPlacer::MapModelParams BlockPlacer::GetModelParams(SlotType type) const
 {
     switch (type)
     {
     case SlotType::Mushroom1:
-        return { L"Mushroom_01", CS::Small, Vec3(0.01f),
-                 CH::Mushroom,
-                 CH::Priming,                    // Priming 블록을 피킹해야만 배치 가능
-                 PF::Top };                       // 상면만 허용
+        return { L"Mushroom_01",
+        			CS::Small,
+        			Vec3(0.01f),
+        			CH::Mushroom,
+        			static_cast<uint8>(CH::Priming),
+        			static_cast<uint8>(PF::Top) };
     case SlotType::Mushroom2:
-        return { L"Mushroom_02", CS::Small, Vec3(0.01f),
-                 CH::Mushroom,
-                 CH::Priming,
-                 PF::Top };
+        return { L"Mushroom_02", 
+        			CS::Small, 
+        			Vec3(0.01f),
+					CH::Mushroom,
+					static_cast<uint8>(CH::Priming),
+					static_cast<uint8>(PF::Top) };
     case SlotType::Mushroom3:
-        return { L"Mushroom_03", CS::Small, Vec3(0.01f),
-                 CH::Mushroom,
-                 CH::Priming,
-                 PF::Top };
+        return { L"Mushroom_03", 
+        			CS::Small, 
+        			Vec3(0.01f),
+					CH::Mushroom,
+					static_cast<uint8>(CH::Priming),
+					static_cast<uint8>(PF::Top) };
     case SlotType::Priming1:
-        return { L"Priming_01",  CS::Unit,  Vec3(0.01f),
-                 CH::Priming,
-                 CH::Priming | CH::Floor,         // Priming 블록 + Floor 위에 배치 가능
-                 PF::Top | PF::Side };            // 상면/측면 허용
+        return { L"Priming_01",
+					CS::Unit,  
+					Vec3(0.01f),
+					CH::Priming,
+					static_cast<uint8>(CH::Priming | CH::Floor),
+					PF::Top | PF::Side };
     case SlotType::Priming2:
-        return { L"Priming_02",  CS::Unit,  Vec3(0.01f),
-                 CH::Priming,
-                 CH::Priming | CH::Floor,
-                 PF::Top | PF::Side };
+        return {L"Priming_02",
+       		        CS::Unit,
+       		        Vec3(0.01f),
+			        CH::Priming,
+			        static_cast<uint8>(CH::Priming | CH::Floor),
+			        PF::Top | PF::Side };
     case SlotType::Priming3:
-        return { L"Priming_03",  CS::Unit,  Vec3(0.01f),
-                 CH::Priming,
-                 CH::Priming | CH::Floor,
-                 PF::Top | PF::Side };
+        return { L"Priming_03",
+        			CS::Unit,
+				 	Vec3(0.01f),
+					CH::Priming,
+        			static_cast<uint8>(CH::Priming | CH::Floor),
+					PF::Top | PF::Side };
     case SlotType::Bridge:
-        return { L"Bridge",      CS::Unit,  Vec3(0.01f),
-                 CH::Priming,
-                 CH::Priming | CH::Floor,
-                 PF::Top | PF::Side };
+        return { L"Bridge",
+        			CS::Unit,
+					Vec3(0.01f),
+					CH::Priming,
+					static_cast<uint8>(CH::Priming | CH::Floor),
+					PF::Top | PF::Side };
     default:
-        return { L"", CS::Unit, Vec3(1.f), CH::Default,
-                 static_cast<uint32>(CH::All), static_cast<uint8>(PF::All) };
+        return { L"",
+        			CS::Unit,
+        			Vec3(1.f),
+        			CH::Default,
+					static_cast<uint8>(CH::All),
+        			static_cast<uint8>(PF::All) };
     }
 }
 
@@ -427,6 +434,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
 
     // AABBCollider — 채널 설정
     auto col = std::make_shared<AABBCollider>();
+    col->SetShowDebug(false);
     col->SetBoxExtents(halfExt);
     col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f)); // 하단 기준 → 중심 올림
     col->SetOwnChannel(params.ownChannel);

@@ -1,21 +1,6 @@
 ﻿#pragma once
 
-// ── CollisionChannel ──────────────────────────────────────────────────────
-// 언리얼/유니티의 Collision Channel과 동일한 개념
-// 비트 플래그로 복수 채널을 마스크로 조합 가능
-//
-// 사용 예:
-//   collider->SetOwnChannel(CollisionChannel::Priming);
-//   collider->SetPickableMask(Ch::Priming | Ch::Floor);
-//     → Priming 채널 쿼리와 Floor 채널 쿼리에 의해 피킹됨
-//
-// 배치 규칙:
-//   Priming: pickable = Priming | Floor   → 어디든 배치
-//            face     = Top | Side        → 상면/측면
-//   Mushroom: pickable = Priming          → Priming 위에만
-//             face     = Top              → 상면만
-
-enum class CollisionChannel : uint32
+enum class CollisionChannel : uint8
 {
     None      = 0,
     Default   = 1 << 0,   // 기본값 (미지정)
@@ -24,23 +9,23 @@ enum class CollisionChannel : uint32
     Mushroom  = 1 << 3,   // Mushroom 계열 오브젝트
     Floor     = 1 << 4,   // 바닥/Ground plane
 
-    All = 0xFFFFFFFF
+    All = 0xFF
 };
 
 // 비트 OR 연산자 (채널 마스크 조합용)
-inline uint32 operator|(CollisionChannel a, CollisionChannel b)
+inline uint8 operator|(CollisionChannel a, CollisionChannel b)
 {
-    return static_cast<uint32>(a) | static_cast<uint32>(b);
+    return static_cast<uint8>(a) | static_cast<uint8>(b);
 }
-inline uint32 operator|(uint32 a, CollisionChannel b)
+inline uint8 operator|(uint8 a, CollisionChannel b)
 {
-    return a | static_cast<uint32>(b);
+    return a | static_cast<uint8>(b);
 }
 
 // 채널이 마스크에 포함되는지 확인
-inline bool ChannelInMask(CollisionChannel ch, uint32 mask)
+inline bool ChannelInMask(CollisionChannel ch, uint8 mask)
 {
-    return (static_cast<uint32>(ch) & mask) != 0;
+    return (static_cast<uint8>(ch) & mask) != 0;
 }
 
 // 배치 가능 면 플래그
