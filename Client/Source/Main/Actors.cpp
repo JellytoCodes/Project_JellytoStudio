@@ -109,10 +109,10 @@ void CharacterActor::BuildEntity()
 {
 	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
 	auto model = std::make_shared<Model>();
-	model->ReadModel(L"Character/Ch03");
-	model->ReadMaterial(L"Character/Ch03");
-	model->ReadAnimation(L"Character/Idle"); // index 0
-	//model->ReadAnimation(L"Character/Walk"); // index 1
+	model->ReadModel(L"Kaya/Kaya");
+	model->ReadMaterial(L"Kaya/Kaya");
+	model->ReadAnimation(L"Kaya/Idle"); // index 0
+	model->ReadAnimation(L"Kaya/Walking"); // index 1
 
 	_entity->GetTransform()->SetLocalScale(Vec3(0.01f));
 	_entity->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
@@ -132,7 +132,7 @@ void CharacterActor::BuildEntity()
 	// 애니메이션 상태머신
 	auto asm_ = std::make_shared<AnimStateMachine>();
 	asm_->RegisterClip(AnimState::Idle, 0); // Idle = 클립 인덱스 0
-	//asm_->RegisterClip(AnimState::Walk, 1); // Walk = 클립 인덱스 1
+	asm_->RegisterClip(AnimState::Walk, 1); // Walk = 클립 인덱스 1
 	asm_->SetTweenDuration(0.2f);
 	_entity->AddComponent(asm_);
 
