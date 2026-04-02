@@ -8,6 +8,7 @@
 #include "Entity/Components/AnimStateMachine.h"
 #include "Scripts/PointClickController.h"
 #include "Entity/Components/Collider/AABBCollider.h"
+#include "Entity/Components/Collider/CollisionChannel.h"
 #include "Entity/Components/Collider/SphereCollider.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
@@ -123,6 +124,9 @@ void CharacterActor::BuildEntity()
 	auto col = std::make_shared<AABBCollider>();
 	col->SetBoxExtents(Vec3(20.f, 88.f, 20.f));
 	col->SetOffsetPosition(Vec3(0.f, 88.f, 0.f));
+	// 캐릭터 채널 — 블록 배치 대상이 아님(pickableMask=0)
+	col->SetOwnChannel(CollisionChannel::Character);
+	col->SetPickableMask(0);
 	_entity->AddComponent(col);
 
 	// 애니메이션 상태머신
@@ -135,7 +139,8 @@ void CharacterActor::BuildEntity()
 	// 클릭 이동 컨트롤러
 	auto pcc = std::make_shared<PointClickController>();
 	pcc->SetMoveSpeed(3.f);
-	pcc->SetGroundY(0.f);
+	// 캐릭터는 Priming 블록 상면만 이동 가능 (Character 채널로 피킹)
+	pcc->SetWalkChannel(CollisionChannel::Character);
 	_entity->AddComponent(pcc);
 }
 

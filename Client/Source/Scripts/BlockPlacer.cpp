@@ -63,28 +63,28 @@ BlockPlacer::MapModelParams BlockPlacer::GetModelParams(SlotType type) const
 					CS::Unit,  
 					Vec3(0.01f),
 					CH::Priming,
-					static_cast<uint8>(CH::Priming | CH::Floor),
+					static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
 					PF::Top | PF::Side };
     case SlotType::Priming2:
         return {L"Priming_02",
        		        CS::Unit,
        		        Vec3(0.01f),
 			        CH::Priming,
-			        static_cast<uint8>(CH::Priming | CH::Floor),
+			        static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
 			        PF::Top | PF::Side };
     case SlotType::Priming3:
         return { L"Priming_03",
         			CS::Unit,
 				 	Vec3(0.01f),
 					CH::Priming,
-        			static_cast<uint8>(CH::Priming | CH::Floor),
+        			static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
 					PF::Top | PF::Side };
     case SlotType::Bridge:
         return { L"Bridge",
         			CS::Unit,
 					Vec3(0.01f),
 					CH::Priming,
-					static_cast<uint8>(CH::Priming | CH::Floor),
+					static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
 					PF::Top | PF::Side };
     default:
         return { L"",

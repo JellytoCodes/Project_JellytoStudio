@@ -80,8 +80,10 @@ void MainApp::InitScene()
         col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
         col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
         col->SetOwnChannel(CollisionChannel::Priming);
-        // Priming 채널 쿼리로 피킹 가능 → Priming/Mushroom 모두 위에 배치 가능
-        col->SetPickableMask(static_cast<uint8>(CollisionChannel::Priming));
+        // BlockPlacer(Priming) + 캐릭터 이동(Character) 모두 피킹 가능
+        col->SetPickableMask(
+            static_cast<uint8>(CollisionChannel::Priming) |
+            static_cast<uint8>(CollisionChannel::Character));
         startBlock->AddComponent(col);
 
         _scene->Add(startBlock);
