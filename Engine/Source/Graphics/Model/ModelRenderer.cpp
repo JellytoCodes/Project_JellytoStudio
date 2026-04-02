@@ -1,5 +1,4 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "ModelRenderer.h"
 #include "Model.h"
 #include "Resource/Material.h"
@@ -55,25 +54,29 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 	if (std::shared_ptr<Light> lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
 		_shader->PushLightData(lightObj->GetLightDesc());
 
-	// Bones
-	BoneDesc boneDesc;
 	const uint32 boneCount = _model->GetBoneCount();
+	const bool   isSkinned = (boneCount > 0);
 
-	for (uint32 i = 0; i < boneCount; i++)
+	if (isSkinned)
 	{
-		std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(i);
-		boneDesc.transforms[i] = bone->transform;
+		BoneDesc boneDesc;
+		for (uint32 i = 0; i < boneCount; i++)
+		{
+			std::shared_ptr<ModelBone> bone = _model->GetBoneByIndex(i);
+			boneDesc.transforms[i] = bone->transform;
+		}
+		_shader->PushBoneData(boneDesc);
 	}
-	_shader->PushBoneData(boneDesc);
 
 	const auto& meshes = _model->GetMeshes();
 	for (auto& mesh : meshes)
 	{
-		if (mesh->material) 
+		if (mesh->material)
 			mesh->material->Update();
 
-		// BoneIndex
-		_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
+		// BoneIndex — Skinned 경로에서만 설정 (셰이더에 변수가 있을 때만)
+		if (isSkinned)
+			_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
 
 		// IA
 		mesh->vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
@@ -87,5 +90,5 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 
 InstanceID ModelRenderer::GetInstanceID()
 {
-    return std::make_pair((uint64)_model.get(), (uint64)_shader.get());
+	return std::make_pair((uint64)_model.get(), (uint64)_shader.get());
 }

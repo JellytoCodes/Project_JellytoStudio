@@ -105,11 +105,11 @@ void MainApp::CreateCamera()
     cam->AddComponent(std::make_shared<Camera>());
 
     auto isoCtrl = std::make_shared<IsometricCameraController>();
-    isoCtrl->SetDistance(20.f);
+    isoCtrl->SetDistance(10.f);
     isoCtrl->SetPanSpeed(10.f);
-    isoCtrl->SetZoomSpeed(15.f);
+    isoCtrl->SetZoomSpeed(10.f);
     isoCtrl->SetMinDistance(5.f);
-    isoCtrl->SetMaxDistance(60.f);
+    isoCtrl->SetMaxDistance(40.f);
     cam->AddComponent(isoCtrl);
     _isoCamCtrl = isoCtrl;
 

@@ -81,10 +81,8 @@ void Application::Update()
 void Application::UpdateWindowTitle()
 {
 	float fps = GET_SINGLE(TimeManager)->GetFps();
-	float totalTime = GET_SINGLE(TimeManager)->GetTotalTime();
 	wchar_t text[100];
-	swprintf_s(text, L"%s (FPS: %.2f, TotalTime: %.2f s)",
-		_desc.appName.c_str(), fps, totalTime);
+	swprintf_s(text, L"%s (FPS: %.2f)",_desc.appName.c_str(), fps);
 	::SetWindowTextW(_desc.hWnd, text);
 }
 

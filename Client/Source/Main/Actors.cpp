@@ -124,6 +124,7 @@ void CharacterActor::BuildEntity()
 	auto col = std::make_shared<AABBCollider>();
 	col->SetBoxExtents(Vec3(20.f, 88.f, 20.f));
 	col->SetOffsetPosition(Vec3(0.f, 88.f, 0.f));
+	col->SetShowDebug(false);
 	// 캐릭터 채널 — 블록 배치 대상이 아님(pickableMask=0)
 	col->SetOwnChannel(CollisionChannel::Character);
 	col->SetPickableMask(0);
@@ -153,7 +154,7 @@ void LightActor::BuildEntity()
 	auto light = std::make_shared<Light>();
 
 	LightDesc desc;
-	desc.ambient  = Color(1.f, 1.f, 1.f, 1.f);
+	desc.ambient  = Color(5.f, 5.f, 5.f, 1.f);
 	desc.diffuse  = Color(1.0f, 0.98f, 0.9f, 1.f);
 	desc.specular = Color(0.5f, 0.5f, 0.5f, 1.f);
 	desc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);

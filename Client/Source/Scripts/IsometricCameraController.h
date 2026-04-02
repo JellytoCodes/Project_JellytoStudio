@@ -39,14 +39,14 @@ private:
     std::weak_ptr<Entity> _target;
 
     Vec3  _pivot      = Vec3::Zero;
-    float _distance   = 20.f;
+    float _distance   = 10.f;
 
     float _pitchDeg   = 35.264f;
     float _yawDeg     = 45.f;
 
     float _panSpeed   = 10.f;
-    float _zoomSpeed  = 20.f;
+    float _zoomSpeed  = 10.f;
     float _orbitSpeed = 90.f;
     float _minDist    = 5.f;
-    float _maxDist    = 80.f;
+    float _maxDist    = 40.f;
 };

@@ -174,7 +174,6 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Entity\Components\Collider\OBBCollider.cpp" />
     <ClCompile Include="Source\Entity\Components\Collider\SphereCollider.cpp" />
     <ClCompile Include="Source\Entity\Components\Light.cpp" />
-    <ClCompile Include="Source\Entity\Components\Terrain.cpp" />
     <ClCompile Include="Source\Graphics\Managers\InstancingManager.cpp" />
     <ClCompile Include="Source\Graphics\Model\ModelAnimator.cpp" />
     <ClCompile Include="Source\Graphics\Model\ModelRenderer.cpp" />
@@ -248,7 +247,6 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Entity\Components\Collider\OBBCollider.h" />
     <ClInclude Include="Source\Entity\Components\Collider\SphereCollider.h" />
     <ClInclude Include="Source\Entity\Components\Light.h" />
-    <ClInclude Include="Source\Entity\Components\Terrain.h" />
     <ClInclude Include="Source\Graphics\Managers\InstancingManager.h" />
     <ClInclude Include="Source\Graphics\Model\ModelAnimator.h" />
     <ClInclude Include="Source\Graphics\Model\ModelRenderer.h" />

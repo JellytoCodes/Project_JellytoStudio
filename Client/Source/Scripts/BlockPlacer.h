@@ -7,20 +7,6 @@
 class Material;
 class Model;
 
-// ── BlockPlacer ───────────────────────────────────────────────────────────
-// 3D 피킹(RayCast) 기반 오브젝트 배치 시스템
-//
-// 채널 규칙:
-//   Priming : pickableMask = Priming | Floor  →  어떤 면이든 배치 가능 (상/측)
-//   Mushroom: pickableMask = Priming           →  Priming 상면에만 배치 가능
-//
-// 배치 위치 계산:
-//   HitEntity BoundingBox 중심
-//   + HitNormal × (hitExtents 해당축 + newHalfExtents 해당축)
-//   → 새 블록 Collider 중심 = 피킹면 바로 바깥
-//   → Entity Y = Collider 중심 - halfExt.y (하단 기준)
-//
-// TileMap 의존성 없음 — 순수 3D 피킹 기반
 class BlockPlacer : public MonoBehaviour, public IBlockPlacer
 {
 public:

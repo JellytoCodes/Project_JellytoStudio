@@ -12,7 +12,6 @@ enum class ComponentType : int8
 	ModelRenderer,
 	Animator,
 	AnimStateMachine,
-	Terrain,
 	TileMap,
 	UIComponent,
 
