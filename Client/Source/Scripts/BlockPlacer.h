@@ -30,7 +30,7 @@ public:
     virtual void LateUpdate() override {}
     virtual void OnDestroy()  override;
 
-    void SetPalette(std::shared_ptr<PaletteWidget> palette)    { _palette   = palette;   }
+    void SetPalette(std::shared_ptr<PaletteWidget> palette)     { _palette   = palette;   }
     void SetSavePath(const std::wstring& path)                  { _savePath  = path;      }
     void SetCharacterEntity(std::shared_ptr<Entity> character)  { _character = character; }
 

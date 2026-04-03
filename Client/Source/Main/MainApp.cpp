@@ -71,7 +71,7 @@ void MainApp::InitScene()
         startBlock->AddComponent(std::make_shared<Transform>());
         startBlock->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
 
-        auto mr = std::make_shared<ModelRenderer>(shader);
+        auto mr = std::make_shared<ModelRenderer>(shader, false);
         mr->SetModel(model);
         mr->SetModelScale(Vec3(0.01f));
         startBlock->AddComponent(mr);

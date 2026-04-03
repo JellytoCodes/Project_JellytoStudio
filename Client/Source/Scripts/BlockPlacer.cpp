@@ -244,16 +244,6 @@ void BlockPlacer::HandleInput()
             if (hit)
                 TryPlaceOnHit(hitEntity, hitNormal, st);
         }
-        return;
-    }
-
-    if (input->GetButtonDown(KEY_TYPE::RBUTTON))
-    {
-        // 우클릭 제거 — 피킹 가능한 모든 블록 대상
-        std::shared_ptr<Entity> hitEntity; Vec3 hn; float hd;
-        if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming,  hitEntity, hn, hd) ||
-            scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Mushroom, hitEntity, hn, hd))
-            TryRemoveEntity(hitEntity);
     }
 }
 
@@ -427,7 +417,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
 
     // ModelRenderer
     auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-    auto mr     = std::make_shared<ModelRenderer>(shader);
+    auto mr     = std::make_shared<ModelRenderer>(shader, false);
     mr->SetModel(model);
     mr->SetModelScale(params.modelScale);
     blockEntity->AddComponent(mr);
@@ -438,8 +428,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     col->SetBoxExtents(halfExt);
     col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f)); // 하단 기준 → 중심 올림
     col->SetOwnChannel(params.ownChannel);
-    // 이 블록을 피킹할 수 있는 채널: 자신이 배치된 채널
-    // (Priming 블록 위에 Priming이나 Mushroom을 올리려면 Priming 채널로 피킹 가능해야 함)
+
     col->SetPickableMask(params.pickableMask);
     blockEntity->AddComponent(col);
 

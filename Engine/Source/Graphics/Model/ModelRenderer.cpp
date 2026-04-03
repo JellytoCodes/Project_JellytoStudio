@@ -8,8 +8,8 @@
 #include "Entity/Components/Light.h"
 #include "Pipeline/Shader.h"
 
-ModelRenderer::ModelRenderer(std::shared_ptr<Shader> shader)
-	: Super(ComponentType::ModelRenderer), _shader(shader)
+ModelRenderer::ModelRenderer(const std::shared_ptr<Shader>& shader, const bool bIsSkinned /* = true */)
+	: Super(ComponentType::ModelRenderer), _shader(shader), _bIsSkinned(bIsSkinned)
 {
 
 }
@@ -55,9 +55,8 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 		_shader->PushLightData(lightObj->GetLightDesc());
 
 	const uint32 boneCount = _model->GetBoneCount();
-	const bool   isSkinned = (boneCount > 0);
 
-	if (isSkinned)
+	if (_bIsSkinned)
 	{
 		BoneDesc boneDesc;
 		for (uint32 i = 0; i < boneCount; i++)
@@ -74,8 +73,7 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 		if (mesh->material)
 			mesh->material->Update();
 
-		// BoneIndex — Skinned 경로에서만 설정 (셰이더에 변수가 있을 때만)
-		if (isSkinned)
+		if (_bIsSkinned)
 			_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
 
 		// IA

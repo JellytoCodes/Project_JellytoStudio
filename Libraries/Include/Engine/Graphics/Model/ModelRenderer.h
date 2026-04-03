@@ -13,7 +13,7 @@ class ModelRenderer : public Component
 	using Super = Component;
 
 public:
-	ModelRenderer(std::shared_ptr<Shader> shader);
+	ModelRenderer(const std::shared_ptr<Shader>& shader, const bool bIsSkinned = true);
 	virtual ~ModelRenderer();
 
 	void Awake() override;
@@ -36,4 +36,5 @@ private:
 	uint8											_pass = 0;
 	std::shared_ptr<Model>							_model;
 	Vec3											_modelScale = Vec3(1.f, 1.f, 1.f);
+	bool											_bIsSkinned;
 };

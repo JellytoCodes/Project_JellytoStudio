@@ -1,13 +1,6 @@
 ﻿#pragma once
 #include "UI/Widget.h"
 
-// ── PaletteWidget ─────────────────────────────────────────────────────────
-// 배치 모드 ON일 때만 표시되는 화면 하단 오브젝트 팔레트
-//
-// 슬롯 구성: MapModel 기반 (Mushroom_01~03, Priming_01~03, Bridge) + Eraser
-// 조작:
-//   1~7 숫자키 — 슬롯 선택
-//   배치 모드 OFF → 팔레트 완전 숨김
 class PaletteWidget : public Widget
 {
     using Super = Widget;

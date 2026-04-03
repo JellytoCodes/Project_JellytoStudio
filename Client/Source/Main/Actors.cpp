@@ -132,8 +132,8 @@ void CharacterActor::BuildEntity()
 
 	// 애니메이션 상태머신
 	auto asm_ = std::make_shared<AnimStateMachine>();
-	asm_->RegisterClip(AnimState::Idle, 0); // Idle = 클립 인덱스 0
-	asm_->RegisterClip(AnimState::Walk, 1); // Walk = 클립 인덱스 1
+	asm_->RegisterClip(AnimState::Idle, 0);
+	asm_->RegisterClip(AnimState::Walk, 1);
 	asm_->SetTweenDuration(0.2f);
 	_entity->AddComponent(asm_);
 
@@ -159,7 +159,7 @@ void LightActor::BuildEntity()
 	desc.specular = Color(0.5f, 0.5f, 0.5f, 1.f);
 	desc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);
 
-	Vec3 dir = Vec3(1.f, -2.f, 1.f);
+	Vec3 dir = Vec3(5.f, -2.f, 5.f);
 	dir.Normalize();
 	desc.direction = dir;
 	light->SetLightDesc(desc);
