@@ -181,7 +181,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Pipeline\ShaderTechnique.cpp" />
     <ClCompile Include="Source\Scene\BlockPlacerInterface.cpp" />
     <ClCompile Include="Source\Scene\SceneSerializer.cpp" />
-    <ClCompile Include="Source\Types\InstancingBuffer.cpp" />
+    <ClCompile Include="Source\Pipeline\InstancingBuffer.cpp" />
     <ClCompile Include="Source\Types\KeyEnums.cpp" />
     <ClCompile Include="Source\Types\ShaderDesc.cpp" />
     <ClCompile Include="Source\UI\Components\UIButton.cpp" />
@@ -254,7 +254,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Pipeline\ShaderTechnique.h" />
     <ClInclude Include="Source\Scene\BlockPlacerInterface.h" />
     <ClInclude Include="Source\Scene\SceneSerializer.h" />
-    <ClInclude Include="Source\Types\InstancingBuffer.h" />
+    <ClInclude Include="Source\Pipeline\InstancingBuffer.h" />
     <ClInclude Include="Source\Types\KeyEnums.h" />
     <ClInclude Include="Source\Types\ShaderDesc.h" />
     <ClInclude Include="Source\UI\Components\UIButton.h" />

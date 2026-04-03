@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Component.h"
+#include "Pipeline/InstancingBuffer.h"
 
 class Shader;
 class Material;

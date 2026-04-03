@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Entity/Components/Component.h"
+#include "Pipeline/InstancingBuffer.h"
 
 class Shader;
 class Model;

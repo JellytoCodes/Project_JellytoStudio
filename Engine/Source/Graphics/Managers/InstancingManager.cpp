@@ -11,11 +11,38 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 {
 	if (Entities.empty()) return;
 
-	ClearData();
+	if (_bDirty)
+	{
+		ClearData();
+		_meshCache.clear();
+		_modelCache.clear();
+		_animCache.clear();
 
-	RenderMeshRenderer(Entities);
-	RenderModelRenderer(Entities);
-	RenderAnimRenderer(Entities);
+		for (std::shared_ptr<Entity>& entity : Entities)
+		{
+			if (entity->GetComponent<MeshRenderer>() != nullptr)
+			{
+				const InstanceID instanceID = entity->GetComponent<MeshRenderer>()->GetInstanceID();
+				_meshCache[instanceID].push_back(entity);
+			}
+			else if (entity->GetComponent<ModelRenderer>() != nullptr)
+			{
+				const InstanceID instanceID = entity->GetComponent<ModelRenderer>()->GetInstanceID();
+				_modelCache[instanceID].push_back(entity);
+			}
+			else if (entity->GetComponent<ModelAnimator>() != nullptr)
+			{
+				const InstanceID instanceID = entity->GetComponent<ModelAnimator>()->GetInstanceID();
+				_animCache[instanceID].push_back(entity);
+			}
+		}
+
+		_bDirty = false;
+	}
+
+	RenderMeshRenderer();
+	RenderModelRenderer();
+	RenderAnimRenderer();
 }
 
 void InstancingManager::ClearData()
@@ -27,112 +54,84 @@ void InstancingManager::ClearData()
 	}
 }
 
-void InstancingManager::RenderMeshRenderer(std::vector<std::shared_ptr<Entity>>& entities)
+void InstancingManager::RenderMeshRenderer()
 {
-	std::map<InstanceID, std::vector<std::shared_ptr<Entity>>> cache;
-
-	for (std::shared_ptr<Entity>& entity : entities)
+	for (auto& pair : _meshCache)
 	{
-		if (entity->GetComponent<MeshRenderer>() == nullptr) continue;
+		if (pair.second.empty()) continue;
+		const InstanceID id = pair.first;
 
-		const InstanceID instanceID = entity->GetComponent<MeshRenderer>()->GetInstanceID();
-		cache[instanceID].push_back(entity);
-	}
+		// 매프레임 world matrix 갱신 — MeshRenderer도 ModelRenderer와 동일하게 처리
+		// (프리뷰 큐브처럼 동적으로 움직이는 MeshRenderer가 freeze되는 버그 수정)
+		if (_buffers.find(id) != _buffers.end())
+			_buffers[id]->ClearData();
 
-	for (auto& pair : cache)
-	{
-		const std::vector<std::shared_ptr<Entity>>& vec = pair.second;
+		for (const std::shared_ptr<Entity>& entity : pair.second)
 		{
-			const InstanceID id = pair.first;
-
-			for (int32 i = 0; i < vec.size(); i++)
-			{
-				const std::shared_ptr<Entity>& entity = vec[i];
-				InstancingData data;
-				data.world = entity->GetTransform()->GetWorldMatrix();
-
-				AddData(id, data);
-			}
-
-			std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-			vec[0]->GetComponent<MeshRenderer>()->RenderInstancing(buffer);
+			InstancingData data;
+			data.world = entity->GetTransform()->GetWorldMatrix();
+			AddData(id, data);
 		}
+
+		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
+		pair.second[0]->GetComponent<MeshRenderer>()->RenderInstancing(buffer);
 	}
 }
 
-void InstancingManager::RenderModelRenderer(std::vector<std::shared_ptr<Entity>>& entities)
+void InstancingManager::RenderModelRenderer()
 {
-	std::map < InstanceID, std::vector<std::shared_ptr<Entity>> > cache;
-
-	for (std::shared_ptr<Entity>& entity : entities)
+	for (auto& pair : _modelCache)
 	{
-		if (entity->GetComponent<ModelRenderer>() == nullptr) continue;
+		if (pair.second.empty()) continue;
+		const InstanceID id = pair.first;
 
-		const InstanceID instanceID = entity->GetComponent<ModelRenderer>()->GetInstanceID();
-		cache[instanceID].push_back(entity);
-	}
+		if (_buffers.find(id) != _buffers.end())
+			_buffers[id]->ClearData();
 
-	for (auto& pair : cache)
-	{
-		const std::vector<std::shared_ptr<Entity>>& vec = pair.second;
+		for (int32 i = 0; i < pair.second.size(); i++)
 		{
-			const InstanceID id = pair.first;
+			const std::shared_ptr<Entity>& entity = pair.second[i];
+			InstancingData data;
+			auto mr = entity->GetComponent<ModelRenderer>();
+			Matrix scaleMatrix = mr ? mr->GetModelScaleMatrix() : Matrix::Identity;
+			data.world = scaleMatrix * entity->GetTransform()->GetWorldMatrix();
 
-			for (int32 i = 0; i < vec.size(); i++)
-			{
-				const std::shared_ptr<Entity>& entity = vec[i];
-				InstancingData data;
-				auto mr = entity->GetComponent<ModelRenderer>();
-				Matrix scaleMatrix = mr ? mr->GetModelScaleMatrix() : Matrix::Identity;
-				data.world = scaleMatrix * entity->GetTransform()->GetWorldMatrix();
-
-				AddData(id, data);
-			}
-
-			std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-			vec[0]->GetComponent<ModelRenderer>()->RenderInstancing(buffer);
+			AddData(id, data);
 		}
+
+		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
+		pair.second[0]->GetComponent<ModelRenderer>()->RenderInstancing(buffer);
 	}
 }
 
-void InstancingManager::RenderAnimRenderer(std::vector<std::shared_ptr<Entity>>& entities)
+void InstancingManager::RenderAnimRenderer()
 {
-	std::map <InstanceID, std::vector<std::shared_ptr<Entity>> > cache;
-
-	for (std::shared_ptr<Entity>& entity : entities)
+	for (auto& pair : _animCache)
 	{
-		if (entity->GetComponent<ModelAnimator>() == nullptr) continue;
+		if (pair.second.empty()) continue;
+		const InstanceID id = pair.first;
 
-		const InstanceID instanceID = entity->GetComponent<ModelAnimator>()->GetInstanceID();
-		cache[instanceID].push_back(entity);
-	}
+		if (_buffers.find(id) != _buffers.end())
+			_buffers[id]->ClearData();
 
-	for (auto& pair : cache)
-	{
 		std::shared_ptr<InstancedTweenDesc> tweenDesc = std::make_shared<InstancedTweenDesc>();
 
-		const std::vector<std::shared_ptr<Entity>>& vec = pair.second;
+		for (int32 i = 0; i < pair.second.size(); i++)
 		{
-			const InstanceID id = pair.first;
+			const std::shared_ptr<Entity>& entity = pair.second[i];
+			InstancingData data;
+			data.world = entity->GetTransform()->GetWorldMatrix();
 
-			for (int32 i = 0; i < vec.size(); i++)
-			{
-				const std::shared_ptr<Entity>& entity = vec[i];
-				InstancingData data;
-				data.world = entity->GetTransform()->GetWorldMatrix();
+			AddData(id, data);
 
-				AddData(id, data);
-
-				// INSTANCING
-				entity->GetComponent<ModelAnimator>()->UpdateTweenData();
-				tweenDesc->tweens[i] = entity->GetComponent<ModelAnimator>()->GetTweenDesc();
-			}
-
-			vec[0]->GetComponent<ModelAnimator>()->GetShader()->PushTweenData(*tweenDesc.get());
-
-			std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-			vec[0]->GetComponent<ModelAnimator>()->RenderInstancing(buffer);
+			entity->GetComponent<ModelAnimator>()->UpdateTweenData();
+			tweenDesc->tweens[i] = entity->GetComponent<ModelAnimator>()->GetTweenDesc();
 		}
+
+		pair.second[0]->GetComponent<ModelAnimator>()->GetShader()->PushTweenData(*tweenDesc.get());
+
+		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
+		pair.second[0]->GetComponent<ModelAnimator>()->RenderInstancing(buffer);
 	}
 }
 

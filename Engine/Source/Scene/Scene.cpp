@@ -8,6 +8,7 @@
 #include "Entity/Components/Light.h"
 #include "UI/Widget.h"
 #include "UI/UIManager.h"
+#include "Graphics/Managers/InstancingManager.h"
 
 Scene::Scene()
 {
@@ -90,11 +91,13 @@ void Scene::SetMainLight(const std::shared_ptr<Light>& light)
 void Scene::Add(const std::shared_ptr<Entity>& object)
 {
 	_objects.insert(object);
+	GET_SINGLE(InstancingManager)->SetDirty(); // 캐시 무효화
 }
 
 void Scene::Remove(const std::shared_ptr<Entity>& object)
 {
 	_objects.erase(object);
+	GET_SINGLE(InstancingManager)->SetDirty(); // 캐시 무효화
 }
 
 std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)

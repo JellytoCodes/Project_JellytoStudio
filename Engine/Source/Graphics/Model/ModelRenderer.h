@@ -2,7 +2,7 @@
 
 #include "Entity/Components/Component.h"
 #include "Pipeline/ConstantBuffer.h"
-
+#include "Pipeline/InstancingBuffer.h"
 class Model;
 class Shader;
 class Material;

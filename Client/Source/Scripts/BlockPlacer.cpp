@@ -15,6 +15,7 @@
 #include "Resource/Mesh.h"
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
+#include "Graphics/Managers/InstancingManager.h"
 
 using SlotType = PaletteWidget::SlotType;
 using CH       = CollisionChannel;
@@ -435,6 +436,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     scene->Add(blockEntity);
     _blockSet.insert(blockEntity);
 
+    GET_SINGLE(InstancingManager)->SetDirty();
+
     return true;
 }
 
@@ -445,10 +448,16 @@ bool BlockPlacer::TryRemoveEntity(const std::shared_ptr<Entity>& entity)
     if (!entity) return false;
     if (_blockSet.find(entity) == _blockSet.end()) return false; // 우리가 배치한 블록만
 
-    auto scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-    if (scene) scene->Remove(entity);
-    _blockSet.erase(entity);
-    return true;
+    if (auto scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+    	scene->Remove(entity);
+        _blockSet.erase(entity);
+
+    	GET_SINGLE(InstancingManager)->SetDirty();
+
+        return true;
+    }
+    return false;
 }
 
 void BlockPlacer::ClearAllBlocks()
@@ -458,6 +467,8 @@ void BlockPlacer::ClearAllBlocks()
         if (scene) scene->Remove(e);
     _blockSet.clear();
     _placedCells.clear();
+
+    GET_SINGLE(InstancingManager)->SetDirty();
 }
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────
