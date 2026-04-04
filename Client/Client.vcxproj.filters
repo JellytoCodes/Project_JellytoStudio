@@ -11,6 +11,7 @@
     <ClCompile Include="Source\Main\EditorApp.cpp" />
     <ClCompile Include="Source\Scripts\BlockPlacer.cpp" />
     <ClCompile Include="Source\UI\PaletteWidget.cpp" />
+    <ClCompile Include="Source\Scripts\OneBlockScript.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
@@ -22,5 +23,6 @@
     <ClInclude Include="Source\Main\EditorApp.h" />
     <ClInclude Include="Source\Scripts\BlockPlacer.h" />
     <ClInclude Include="Source\UI\PaletteWidget.h" />
+    <ClInclude Include="Source\Scripts\OneBlockScript.h" />
   </ItemGroup>
 </Project>

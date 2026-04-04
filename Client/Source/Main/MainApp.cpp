@@ -20,6 +20,7 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Pipeline/Shader.h"
+#include "Scripts/OneBlockScript.h"
 
 void MainApp::Init()
 {
@@ -96,6 +97,14 @@ void MainApp::InitScene()
     _actors.push_back(charActor);
     _characterEntity = charActor->GetEntity();
     _characterEntity->GetTransform()->SetLocalPosition(Vec3(0.f, 1.0f, 0.f));
+
+    // OneBlockScript를 시작 블록에 부착 — 원블록 챌린지 게임 루프
+    if (_startBlock)
+    {
+        auto oneBlock = std::make_shared<OneBlockScript>();
+        oneBlock->SetCharacterEntity(_characterEntity);
+        _startBlock->AddComponent(oneBlock);
+    }
 }
 
 void MainApp::CreateCamera()
