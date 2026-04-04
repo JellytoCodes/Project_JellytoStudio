@@ -17,7 +17,6 @@
 #include "Resource/Mesh.h"
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
-#include "Scripts/CubeScript.h"
 #include "Entity/Components/Light.h"
 
 void SkySphereActor::BuildEntity()
@@ -76,8 +75,6 @@ void CubeActor::BuildEntity()
 	auto col = std::make_shared<AABBCollider>();
 	col->SetBoxExtents(Vec3(0.5f));
 	_entity->AddComponent(col);
-
-	_entity->AddComponent(std::make_shared<CubeScript>());
 }
 
 void SphereActor::BuildEntity()
@@ -101,8 +98,6 @@ void SphereActor::BuildEntity()
 	auto col = std::make_shared<SphereCollider>();
 	col->SetRadius(0.5f);
 	_entity->AddComponent(col);
-
-	_entity->AddComponent(std::make_shared<CubeScript>());
 }
 
 void CharacterActor::BuildEntity()

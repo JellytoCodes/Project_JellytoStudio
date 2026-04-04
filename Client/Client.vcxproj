@@ -143,7 +143,6 @@
     <ClCompile Include="Source\Scripts\BlockPlacer.cpp" />
     <ClCompile Include="Source\Scripts\IsometricCameraController.cpp" />
     <ClCompile Include="Source\Main\Main.cpp" />
-    <ClCompile Include="Source\Scripts\CubeScript.cpp" />
     <ClCompile Include="Source\Scripts\PointClickController.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -160,7 +159,6 @@
     <ClInclude Include="Source\UI\PaletteWidget.h" />
     <ClInclude Include="Source\Scripts\BlockPlacer.h" />
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
-    <ClInclude Include="Source\Scripts\CubeScript.h" />
     <ClInclude Include="Source\Scripts\PointClickController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
