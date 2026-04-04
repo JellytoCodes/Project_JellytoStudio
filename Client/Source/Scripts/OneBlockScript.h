@@ -66,7 +66,7 @@ private:
     void SpawnDropBlock(const std::wstring& modelName);
 
     // ── 유틸 ─────────────────────────────────────────────────
-    bool IsCharacterNearby() const;
+    bool IsCharacterNearby();
 
     // ── 멤버 ─────────────────────────────────────────────────
     std::weak_ptr<Entity> _character;

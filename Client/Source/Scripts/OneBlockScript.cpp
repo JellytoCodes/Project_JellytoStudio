@@ -47,7 +47,6 @@ OneBlockScript::OneBlockScript()
 
 void OneBlockScript::Start()
 {
-    // 단계 모델 사전 로드 (채굴 시 히치 방지)
     const auto& table = GetPhaseTable();
     _phaseModels.resize(table.size());
     _dropModels.resize(table.size());
@@ -66,7 +65,6 @@ void OneBlockScript::Start()
 
         _phaseModels[i] = loadModel(table[i].modelName);
 
-        // 드랍 모델이 단계 모델과 동일하면 공유
         if (table[i].dropModel == table[i].modelName)
             _dropModels[i] = _phaseModels[i];
         else
@@ -95,7 +93,7 @@ void OneBlockScript::Update()
 void OneBlockScript::TryMine()
 {
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F)) return;
-    //if (!IsCharacterNearby()) return;
+    if (!IsCharacterNearby()) return;
     Mine();
 }
 
@@ -249,20 +247,20 @@ void OneBlockScript::SpawnDropBlock(const std::wstring& modelName)
 
 // ── 근접 판정 ─────────────────────────────────────────────────────────────
 
-bool OneBlockScript::IsCharacterNearby() const
+bool OneBlockScript::IsCharacterNearby()
 {
     auto charEntity = _character.lock();
     if (!charEntity) return false;
 
-    //auto myEntity = GetEntity();
-    //if (!myEntity) return false;
-    //
-    //Vec3 myPos   = myEntity->GetTransform()->GetPosition();
-    //Vec3 charPos = charEntity->GetTransform()->GetPosition();
-    //
-    //Vec3 diff = charPos - myPos;
-    //diff.y    = 0.f; // Y축 무시 (높이 차이는 무관)
-    //return diff.Length() <= MINE_RANGE;
+    auto myEntity = GetEntity();
+    if (!myEntity) return false;
+    
+    Vec3 myPos   = myEntity->GetTransform()->GetPosition();
+    Vec3 charPos = charEntity->GetTransform()->GetPosition();
+    
+    Vec3 diff = charPos - myPos;
+    diff.y    = 0.f; // Y축 무시 (높이 차이는 무관)
+    return diff.Length() <= MINE_RANGE;
 
     return false;
 }
