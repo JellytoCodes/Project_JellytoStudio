@@ -88,6 +88,11 @@ private:
     std::shared_ptr<Material> _previewMatOk;
     std::shared_ptr<Material> _previewMatBad;
 
+    // 프리뷰 마우스 델타 캐시
+    // 마우스가 안 움직이면 PickBlock(O(N)) 재실행 스킵
+    POINT _lastPreviewMouse = { -1, -1 };
+    bool  _previewDirty     = true;
+
     std::array<std::shared_ptr<Model>,
         static_cast<int>(PaletteWidget::SlotType::Count)> _modelCache;
 

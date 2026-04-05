@@ -41,6 +41,9 @@ public:
 	void SortEntities();
 	void RenderForward();
 
+	// Scene::Add/Remove 시 호출 → 다음 프레임 SortEntities 재실행
+	void SetSortDirty() { _sortDirty = true; }
+
 	void SetCullingMaskLayerOnOff(uint8 layer, bool on)
 	{
 		if (on) 
@@ -70,5 +73,5 @@ private:
 
 	uint32									_cullingMask		= 0;
 	std::vector<std::shared_ptr<Entity>>	_vecForward;
+	bool								_sortDirty = true; // 엔티티 추가/제거 시 재정렬 플래그
 };
-

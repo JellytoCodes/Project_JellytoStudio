@@ -154,6 +154,7 @@ void BlockPlacer::SetPlacingMode(bool on)
     _placingMode = on;
     if (!on) HidePreview();
     if (auto p = _palette.lock()) p->SetPlacingMode(on);
+    _previewDirty = true; // 모드 전환 → 프리뷰 즉시 갱신
 }
 
 // ── Update ────────────────────────────────────────────────────────────────
@@ -293,11 +294,24 @@ void BlockPlacer::UpdatePreview()
     auto scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) { HidePreview(); return; }
 
+    POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+
+    // ── 마우스 델타 캐시 ──────────────────────────────────────────
+    // 마우스가 안 움직이면 PickBlock(O(N)) 재실행 스킵
+    // 슬롯 변경 시에는 _previewDirty = true로 강제 갱신
     auto pal   = _palette.lock();
     SlotType st = pal ? pal->GetSelectedSlotType() : SlotType::Priming1;
     bool isErase = (st == SlotType::Eraser);
 
-    POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+    bool mouseMoved = (mp.x != _lastPreviewMouse.x || mp.y != _lastPreviewMouse.y);
+    if (!mouseMoved && !_previewDirty)
+    {
+        // 프리뷰 엔티티는 이미 씬에 있으므로 위치 업데이트만 유지
+        return;
+    }
+    _lastPreviewMouse = mp;
+    _previewDirty     = false;
+
 
     bool canAct = false;
     Vec3 previewPos(0,0,0);
@@ -427,10 +441,11 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     auto col = std::make_shared<AABBCollider>();
     col->SetShowDebug(false);
     col->SetBoxExtents(halfExt);
-    col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f)); // 하단 기준 → 중심 올림
+    col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f));
     col->SetOwnChannel(params.ownChannel);
-
     col->SetPickableMask(params.pickableMask);
+    // 배치 블록은 정적 — 최초 1회만 행렬 연산, 이후 스킵
+    col->SetStatic(true);
     blockEntity->AddComponent(col);
 
     scene->Add(blockEntity);

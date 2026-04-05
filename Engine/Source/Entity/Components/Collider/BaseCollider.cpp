@@ -21,6 +21,11 @@ BaseCollider::~BaseCollider()
 
 void BaseCollider::Update()
 {
+	// ── 정적 콜라이더 조기 탈출 ────────────────────────────────────
+	// _isStatic=true & 이미 계산됨 → 행렬 연산/분해 전부 스킵
+	// 효과: 블록 N개 × (행렬 4회 곱 + XMMatrixDecompose) 절감/프레임
+	if (_isStatic && _boundsReady) return;
+
 	Matrix matScale = Matrix::CreateScale(_offsetScale);
 	Matrix matRotation = Matrix::CreateRotationX(_offsetRotation.x)
 		* Matrix::CreateRotationY(_offsetRotation.y)
@@ -31,6 +36,9 @@ void BaseCollider::Update()
 	_colliderWorld = matOffset * GetTransform()->GetWorldMatrix();
 
 	UpdateBounds();
+
+	// 정적 콜라이더: 최초 계산 완료 표시 → 이후 Update() 즉시 return
+	if (_isStatic) _boundsReady = true;
 }
 
 void BaseCollider::InitDebugShader()

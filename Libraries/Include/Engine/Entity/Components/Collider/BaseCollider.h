@@ -54,6 +54,13 @@ public:
 	bool CanBePickedBy(CollisionChannel queryChan) const
 	{ return ChannelInMask(queryChan, _pickableMask); }
 
+	// ── 정적 콜라이더 최적화 ──────────────────────────────────────────
+	// SetStatic(true) → 최초 1회 계산 후 매프레임 행렬 연산 완전 스킵
+	// 배치된 맵블록처럼 절대 안 움직이는 콜라이더에 사용
+	bool IsStatic() const                   { return _isStatic; }
+	void SetStatic(bool s)                  { _isStatic = s; _boundsReady = false; }
+	void InvalidateBounds()                 { _boundsReady = false; } // 강제 재계산
+
 	// ── 디버그 시각화 ────────────────────────────────────────────────
 	bool IsShowDebug() const					{ return _showDebug; }
 	void SetShowDebug(bool show)				{ _showDebug = show; }
@@ -81,6 +88,9 @@ protected:
 	Vec3   _offsetScale =		{ 1.f, 1.f, 1.f };
 
 	Matrix _colliderWorld = Matrix::Identity;
+
+	bool   _isStatic    = false; // 정적 콜라이더 플래그
+	bool   _boundsReady = false; // 최초 계산 완료 여부
 
 private:
 	void InitDebugShader();

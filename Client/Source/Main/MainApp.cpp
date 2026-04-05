@@ -81,10 +81,10 @@ void MainApp::InitScene()
         col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
         col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
         col->SetOwnChannel(CollisionChannel::Priming);
-        // BlockPlacer(Priming) + 캐릭터 이동(Character) 모두 피킹 가능
         col->SetPickableMask(
             static_cast<uint8>(CollisionChannel::Priming) |
             static_cast<uint8>(CollisionChannel::Character));
+        col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
         startBlock->AddComponent(col);
 
         _scene->Add(startBlock);

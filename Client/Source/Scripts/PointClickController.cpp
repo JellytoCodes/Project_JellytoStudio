@@ -164,10 +164,19 @@ bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
         if (blockAabb->GetOwnChannel() != CollisionChannel::Priming) continue;
 
         const BoundingBox& blockBox = blockAabb->GetBoundingBox();
+
+        // ── XZ 거리 사전 컬링 ───────────────────────────────────────
+        // 2.0f 반경 밖 블록은 AABB 교차 테스트 자체를 스킵
+        // 캐릭터 XZ 반경(~0.2) + 블록 XZ 반경(0.5) + 여유 = 2.0이면 충분
+        {
+            float dx = blockBox.Center.x - nextEntityPos.x;
+            float dz = blockBox.Center.z - nextEntityPos.z;
+            if (dx * dx + dz * dz > 4.0f) continue; // 2.0f^2
+        }
+
         float blockTopY = blockBox.Center.y + blockBox.Extents.y;
 
         // 블록 상단이 캐릭터 발보다 높을 때만 벽 취급
-        // (발 아래 블록 = 바닥이므로 제외, 같은 높이 블록도 제외)
         if (blockTopY <= charFeetY + 0.05f) continue;
 
         if (nextCharBox.Intersects(blockBox))

@@ -60,15 +60,16 @@ void Scene::Render()
 	_mainCamera->SortEntities();
 	_mainCamera->RenderForward();
 
-	for (auto& object : _objects)
+	// 캐시된 콜라이더 목록만 순회 (GetComponent 호출 0회)
+	for (auto& object : _collidableObjects)
 	{
 		auto collider = object->GetComponent<BaseCollider>();
 		if (collider == nullptr) continue;
 		collider->RenderDebug();
 	}
 
-	// UI: Widget(Entity 상속)들 DrawUI → UIManager 드로우리스트 누적
-	for (auto& object : _objects)
+	// 위젯 캐시만 순회 (전체 Entity dynamic_cast 불필요)
+	for (auto& object : _widgetObjects)
 	{
 		if (auto widget = std::dynamic_pointer_cast<Widget>(object))
 			widget->DrawUI();
@@ -91,13 +92,30 @@ void Scene::SetMainLight(const std::shared_ptr<Light>& light)
 void Scene::Add(const std::shared_ptr<Entity>& object)
 {
 	_objects.insert(object);
-	GET_SINGLE(InstancingManager)->SetDirty(); // 캐시 무효화
+
+	// 콜라이더 캐시
+	if (object->GetComponent<BaseCollider>())
+		_collidableObjects.insert(object);
+
+	// 위젯 캐시 (Widget is-a Entity)
+	if (std::dynamic_pointer_cast<Widget>(object))
+		_widgetObjects.push_back(object);
+
+	GET_SINGLE(InstancingManager)->SetDirty();
+	if (_mainCamera) _mainCamera->SetSortDirty();
 }
 
 void Scene::Remove(const std::shared_ptr<Entity>& object)
 {
 	_objects.erase(object);
-	GET_SINGLE(InstancingManager)->SetDirty(); // 캐시 무효화
+	_collidableObjects.erase(object);
+	_widgetObjects.erase(
+		std::remove_if(_widgetObjects.begin(), _widgetObjects.end(),
+			[&object](const auto& w){ return w.get() == object.get(); }),
+		_widgetObjects.end());
+
+	GET_SINGLE(InstancingManager)->SetDirty();
+	if (_mainCamera) _mainCamera->SetSortDirty();
 }
 
 std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)

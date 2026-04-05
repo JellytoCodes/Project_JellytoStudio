@@ -51,4 +51,8 @@ private :
 	std::unordered_set<std::shared_ptr<Entity>>		_objects;
 	std::shared_ptr<Camera>							_mainCamera;
 	std::shared_ptr<Light>							_mainLight;
+
+	// ── Render 루프 캐시 ─────────────────────────────────────────
+	std::unordered_set<std::shared_ptr<Entity>>		_collidableObjects;
+	std::vector<std::shared_ptr<Entity>>			_widgetObjects;
 };

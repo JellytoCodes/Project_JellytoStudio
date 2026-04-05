@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Camera.h"
 
@@ -66,6 +65,11 @@ void Camera::UpdateMatrix()
 
 void Camera::SortEntities()
 {
+	// ── Dirty 플래그 캐시 ──────────────────────────────────────────
+	// Scene::Add/Remove 가 SetSortDirty()를 호출할 때만 재빌드
+	// 효과: 블록 배치/제거 없는 평상시엔 GetComponent 호출 0회/프레임
+	if (!_sortDirty) return;
+
 	std::shared_ptr<Scene> scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 	std::unordered_set<std::shared_ptr<Entity>>& entities = scene->GetEntities();
 
@@ -82,6 +86,8 @@ void Camera::SortEntities()
 
 		_vecForward.push_back(entity);
 	}
+
+	_sortDirty = false;
 }
 
 void Camera::RenderForward()
