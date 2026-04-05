@@ -25,5 +25,9 @@ private:
 	std::map<InstanceID, std::vector<std::shared_ptr<Entity>>> _modelCache;
 	std::map<InstanceID, std::vector<std::shared_ptr<Entity>>> _animCache;
 
+	// dirty 시점에 계산된 world matrix 캐시
+	// 정적 블록은 이후 매프레임 GetComponent + 행렬곱 없이 바로 사용
+	std::map<InstanceID, std::vector<InstancingData>> _modelWorldCache;
+
 	bool _bDirty = true;
 };

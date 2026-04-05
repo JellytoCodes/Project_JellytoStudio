@@ -18,19 +18,19 @@
 #include "Graphics/Managers/InstancingManager.h"
 
 using SlotType = PaletteWidget::SlotType;
-using CH       = CollisionChannel;
-using PF       = PlaceFace;
-using CS       = BlockPlacer::ColliderSize;
+using CH = CollisionChannel;
+using PF = PlaceFace;
+using CS = BlockPlacer::ColliderSize;
 
 Vec3 BlockPlacer::GetHalfExtents(ColliderSize s)
 {
     switch (s)
     {
     case CS::Small: return Vec3(0.25f, 0.25f, 0.25f);
-    case CS::Unit:  return Vec3(0.5f,  0.5f,  0.5f);
-    case CS::Tall:  return Vec3(0.5f,  0.75f, 0.5f);
-    case CS::Wide:  return Vec3(1.0f,  0.25f, 0.5f);
-    default:        return Vec3(0.5f,  0.5f,  0.5f);
+    case CS::Unit:  return Vec3(0.5f, 0.5f, 0.5f);
+    case CS::Tall:  return Vec3(0.5f, 0.75f, 0.5f);
+    case CS::Wide:  return Vec3(1.0f, 0.25f, 0.5f);
+    default:        return Vec3(0.5f, 0.5f, 0.5f);
     }
 }
 
@@ -40,60 +40,60 @@ BlockPlacer::MapModelParams BlockPlacer::GetModelParams(SlotType type) const
     {
     case SlotType::Mushroom1:
         return { L"Mushroom_01",
-        			CS::Small,
-        			Vec3(0.01f),
-        			CH::Mushroom,
-        			static_cast<uint8>(CH::Priming),
-        			static_cast<uint8>(PF::Top) };
+                    CS::Small,
+                    Vec3(0.01f),
+                    CH::Mushroom,
+                    static_cast<uint8>(CH::Priming),
+                    static_cast<uint8>(PF::Top) };
     case SlotType::Mushroom2:
-        return { L"Mushroom_02", 
-        			CS::Small, 
-        			Vec3(0.01f),
-					CH::Mushroom,
-					static_cast<uint8>(CH::Priming),
-					static_cast<uint8>(PF::Top) };
+        return { L"Mushroom_02",
+                    CS::Small,
+                    Vec3(0.01f),
+                    CH::Mushroom,
+                    static_cast<uint8>(CH::Priming),
+                    static_cast<uint8>(PF::Top) };
     case SlotType::Mushroom3:
-        return { L"Mushroom_03", 
-        			CS::Small, 
-        			Vec3(0.01f),
-					CH::Mushroom,
-					static_cast<uint8>(CH::Priming),
-					static_cast<uint8>(PF::Top) };
+        return { L"Mushroom_03",
+                    CS::Small,
+                    Vec3(0.01f),
+                    CH::Mushroom,
+                    static_cast<uint8>(CH::Priming),
+                    static_cast<uint8>(PF::Top) };
     case SlotType::Priming1:
         return { L"Priming_01",
-					CS::Unit,  
-					Vec3(0.01f),
-					CH::Priming,
-					static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
-					PF::Top | PF::Side };
+                    CS::Unit,
+                    Vec3(0.01f),
+                    CH::Priming,
+                    static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
+                    PF::Top | PF::Side };
     case SlotType::Priming2:
-        return {L"Priming_02",
-       		        CS::Unit,
-       		        Vec3(0.01f),
-			        CH::Priming,
-			        static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
-			        PF::Top | PF::Side };
+        return { L"Priming_02",
+                    CS::Unit,
+                    Vec3(0.01f),
+                    CH::Priming,
+                    static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
+                    PF::Top | PF::Side };
     case SlotType::Priming3:
         return { L"Priming_03",
-        			CS::Unit,
-				 	Vec3(0.01f),
-					CH::Priming,
-        			static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
-					PF::Top | PF::Side };
+                    CS::Unit,
+                    Vec3(0.01f),
+                    CH::Priming,
+                    static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
+                    PF::Top | PF::Side };
     case SlotType::Bridge:
         return { L"Bridge",
-        			CS::Unit,
-					Vec3(0.01f),
-					CH::Priming,
-					static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
-					PF::Top | PF::Side };
+                    CS::Unit,
+                    Vec3(0.01f),
+                    CH::Priming,
+                    static_cast<uint8>(CH::Priming | CH::Floor | CH::Character),
+                    PF::Top | PF::Side };
     default:
         return { L"",
-        			CS::Unit,
-        			Vec3(1.f),
-        			CH::Default,
-					static_cast<uint8>(CH::All),
-        			static_cast<uint8>(PF::All) };
+                    CS::Unit,
+                    Vec3(1.f),
+                    CH::Default,
+                    static_cast<uint8>(CH::All),
+                    static_cast<uint8>(PF::All) };
     }
 }
 
@@ -126,8 +126,8 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
     mat = std::make_shared<Material>();
     mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl"));
     auto& d = mat->GetMaterialDesc();
-    d.ambient = d.diffuse = ok ? Vec4(0.2f,0.9f,0.2f,0.5f) : Vec4(0.9f,0.2f,0.2f,0.5f);
-    d.specular = d.emissive = Vec4(0,0,0,0);
+    d.ambient = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f) : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
+    d.specular = d.emissive = Vec4(0, 0, 0, 0);
     return mat;
 }
 
@@ -201,13 +201,13 @@ void BlockPlacer::HandleInput()
             std::shared_ptr<Entity> hitEntity;
             Vec3 hitNormal; float hitDist;
             if (scene->PickBlock((int32)mp.x, (int32)mp.y,
-                                 CH::Priming,     // Priming 채널로 쿼리
-                                 hitEntity, hitNormal, hitDist))
+                CH::Priming,     // Priming 채널로 쿼리
+                hitEntity, hitNormal, hitDist))
                 TryRemoveEntity(hitEntity);
             // Mushroom도 시도
             else if (scene->PickBlock((int32)mp.x, (int32)mp.y,
-                                      CH::Mushroom,
-                                      hitEntity, hitNormal, hitDist))
+                CH::Mushroom,
+                hitEntity, hitNormal, hitDist))
                 TryRemoveEntity(hitEntity);
         }
         else
@@ -224,21 +224,21 @@ void BlockPlacer::HandleInput()
             // Priming 채널 피킹 시도
             if (ChannelInMask(CH::Priming, params.pickableMask))
                 hit = scene->PickBlock((int32)mp.x, (int32)mp.y,
-                                       CH::Priming, hitEntity, hitNormal, hitDist);
+                    CH::Priming, hitEntity, hitNormal, hitDist);
 
             // Floor 채널 피킹 시도 (더 가까우면 교체)
             if (ChannelInMask(CH::Floor, params.pickableMask))
             {
                 std::shared_ptr<Entity> floorHit; Vec3 fn; float fd;
                 if (scene->PickBlock((int32)mp.x, (int32)mp.y,
-                                     CH::Floor, floorHit, fn, fd))
+                    CH::Floor, floorHit, fn, fd))
                 {
                     if (!hit || fd < hitDist)
                     {
                         hit = true;
                         hitEntity = floorHit;
                         hitNormal = fn;
-                        hitDist   = fd;
+                        hitDist = fd;
                     }
                 }
             }
@@ -252,9 +252,9 @@ void BlockPlacer::HandleInput()
 // ── 배치 위치 계산 ────────────────────────────────────────────────────────
 
 bool BlockPlacer::CalcPlacePos(SlotType type,
-                               const std::shared_ptr<Entity>& hitEntity,
-                               const Vec3& hitNormal,
-                               Vec3& outEntityPos) const
+    const std::shared_ptr<Entity>& hitEntity,
+    const Vec3& hitNormal,
+    Vec3& outEntityPos) const
 {
     auto params = GetModelParams(type);
 
@@ -268,7 +268,7 @@ bool BlockPlacer::CalcPlacePos(SlotType type,
 
     const BoundingBox& hitBox = hitAabb->GetBoundingBox();
     Vec3 hitCenter(hitBox.Center.x, hitBox.Center.y, hitBox.Center.z);
-    Vec3 hitExt   (hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z);
+    Vec3 hitExt(hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z);
 
     // 새 블록 half-extents
     Vec3 newHalf = GetHalfExtents(params.collider);
@@ -299,7 +299,7 @@ void BlockPlacer::UpdatePreview()
     // ── 마우스 델타 캐시 ──────────────────────────────────────────
     // 마우스가 안 움직이면 PickBlock(O(N)) 재실행 스킵
     // 슬롯 변경 시에는 _previewDirty = true로 강제 갱신
-    auto pal   = _palette.lock();
+    auto pal = _palette.lock();
     SlotType st = pal ? pal->GetSelectedSlotType() : SlotType::Priming1;
     bool isErase = (st == SlotType::Eraser);
 
@@ -310,26 +310,26 @@ void BlockPlacer::UpdatePreview()
         return;
     }
     _lastPreviewMouse = mp;
-    _previewDirty     = false;
+    _previewDirty = false;
 
 
     bool canAct = false;
-    Vec3 previewPos(0,0,0);
-    Vec3 previewScale(1,0.06f,1);
+    Vec3 previewPos(0, 0, 0);
+    Vec3 previewScale(1, 0.06f, 1);
 
     if (isErase)
     {
         std::shared_ptr<Entity> hit; Vec3 hn; float hd;
         canAct = scene->PickBlock((int32)mp.x, (int32)mp.y,
-                                  CH::Priming, hit, hn, hd) ||
-                 scene->PickBlock((int32)mp.x, (int32)mp.y,
-                                  CH::Mushroom, hit, hn, hd);
+            CH::Priming, hit, hn, hd) ||
+            scene->PickBlock((int32)mp.x, (int32)mp.y,
+                CH::Mushroom, hit, hn, hd);
         if (hit)
         {
             auto aabb = hit->GetComponent<AABBCollider>();
-            auto& bb  = aabb->GetBoundingBox();
-            previewPos   = Vec3(bb.Center.x, bb.Center.y + bb.Extents.y, bb.Center.z);
-            previewScale = Vec3(bb.Extents.x*2.f*0.95f, 0.06f, bb.Extents.z*2.f*0.95f);
+            auto& bb = aabb->GetBoundingBox();
+            previewPos = Vec3(bb.Center.x, bb.Center.y + bb.Extents.y, bb.Center.z);
+            previewScale = Vec3(bb.Extents.x * 2.f * 0.95f, 0.06f, bb.Extents.z * 2.f * 0.95f);
         }
     }
     else
@@ -345,7 +345,9 @@ void BlockPlacer::UpdatePreview()
             std::shared_ptr<Entity> he; Vec3 hn; float hd;
             if (ChannelInMask(CH::Priming, params.pickableMask) &&
                 scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming, he, hn, hd))
-            { hit=true; hitEntity=he; hitNormal=hn; hitDist=hd; }
+            {
+                hit = true; hitEntity = he; hitNormal = hn; hitDist = hd;
+            }
         }
         {
             std::shared_ptr<Entity> he; Vec3 hn; float hd;
@@ -353,7 +355,9 @@ void BlockPlacer::UpdatePreview()
                 scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Floor, he, hn, hd))
             {
                 if (!hit || hd < hitDist)
-                { hit=true; hitEntity=he; hitNormal=hn; hitDist=hd; }
+                {
+                    hit = true; hitEntity = he; hitNormal = hn; hitDist = hd;
+                }
             }
         }
 
@@ -362,9 +366,9 @@ void BlockPlacer::UpdatePreview()
             Vec3 entityPos;
             if (CalcPlacePos(st, hitEntity, hitNormal, entityPos))
             {
-                canAct     = true;
+                canAct = true;
                 previewPos = entityPos; // 박스 하단
-                previewScale = Vec3(newHalf.x*2.f*0.95f, 0.06f, newHalf.z*2.f*0.95f);
+                previewScale = Vec3(newHalf.x * 2.f * 0.95f, 0.06f, newHalf.z * 2.f * 0.95f);
             }
         }
     }
@@ -403,8 +407,8 @@ void BlockPlacer::HidePreview()
 // ── 배치 ─────────────────────────────────────────────────────────────────
 
 bool BlockPlacer::TryPlaceOnHit(const std::shared_ptr<Entity>& hitEntity,
-                                const Vec3& hitNormal,
-                                SlotType type)
+    const Vec3& hitNormal,
+    SlotType type)
 {
     Vec3 entityPos;
     if (!CalcPlacePos(type, hitEntity, hitNormal, entityPos)) return false;
@@ -421,7 +425,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     auto model = GetOrLoadModel(type);
     if (!model) return false;
 
-    auto params  = GetModelParams(type);
+    auto params = GetModelParams(type);
     Vec3 halfExt = GetHalfExtents(params.collider);
 
     // Entity 생성
@@ -430,9 +434,13 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     blockEntity->GetTransform()->SetLocalPosition(entityPos);
     blockEntity->GetTransform()->SetLocalScale(Vec3(1.f));
 
-    // ModelRenderer
-    auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-    auto mr     = std::make_shared<ModelRenderer>(shader, false);
+    // ModelRenderer — 공유 Shader 사용 (핵심 최적화)
+    // 블록마다 new Shader()를 하면 shader.get()이 달라서
+    // InstanceID가 모두 달라짐 → 인스턴싱 0%, 블록 N개 = N번 DrawCall
+    // 한 Shader를 공유하면 같은 모델 블록 전체가 1번 DrawCall
+    if (!_blockShader)
+        _blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+    auto mr = std::make_shared<ModelRenderer>(_blockShader, false);
     mr->SetModel(model);
     mr->SetModelScale(params.modelScale);
     blockEntity->AddComponent(mr);
@@ -465,10 +473,10 @@ bool BlockPlacer::TryRemoveEntity(const std::shared_ptr<Entity>& entity)
 
     if (auto scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
-    	scene->Remove(entity);
+        scene->Remove(entity);
         _blockSet.erase(entity);
 
-    	GET_SINGLE(InstancingManager)->SetDirty();
+        GET_SINGLE(InstancingManager)->SetDirty();
 
         return true;
     }
@@ -496,7 +504,7 @@ bool BlockPlacer::IsOverlappingCharacter(const Vec3& colCenter, const Vec3& half
     if (!charCol) return false;
 
     BoundingBox box;
-    box.Center  = colCenter;
+    box.Center = colCenter;
     box.Extents = halfExt;
     return box.Intersects(charCol->GetBoundingBox());
 }

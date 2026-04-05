@@ -23,32 +23,38 @@ void InstancingBuffer::AddData(const InstancingData& data)
 	_data.push_back(data);
 }
 
-void InstancingBuffer::PushData()
+void InstancingBuffer::UploadData()
 {
-	auto deviceContext = Graphics::Get()->GetDeviceContext();
 	const uint32 dataCount = GetCount();
-
 	if (dataCount == 0) return;
 
-	if (dataCount > _maxCount) 
+	if (dataCount > _maxCount)
 	{
 		uint32 newCount = _maxCount * 2;
-		if (newCount < dataCount) 
-		{
-			newCount = dataCount;
-		}
+		if (newCount < dataCount) newCount = dataCount;
 		CreateBuffer(newCount);
 	}
 
+	// Map → memcpy → Unmap: 1회만 수행해야 GPU stall 최소화
+	auto deviceContext = Graphics::Get()->GetDeviceContext();
 	D3D11_MAPPED_SUBRESOURCE subResource;
-
 	deviceContext->Map(_instanceBuffer->GetComPtr().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &subResource);
-	{
-		::memcpy(subResource.pData, _data.data(), sizeof(InstancingData) * dataCount);
-	}
+	::memcpy(subResource.pData, _data.data(), sizeof(InstancingData) * dataCount);
 	deviceContext->Unmap(_instanceBuffer->GetComPtr().Get(), 0);
+}
 
-	_instanceBuffer->PushData(deviceContext);
+void InstancingBuffer::BindBuffer()
+{
+	if (GetCount() == 0) return;
+	// slot 1에 인스턴스 버퍼 바인딩 (서브메시 루프마다 호출)
+	_instanceBuffer->PushData(Graphics::Get()->GetDeviceContext());
+}
+
+void InstancingBuffer::PushData()
+{
+	// 하위호환 — UploadData + BindBuffer 통합
+	UploadData();
+	BindBuffer();
 }
 
 void InstancingBuffer::CreateBuffer(const uint32 maxCount)

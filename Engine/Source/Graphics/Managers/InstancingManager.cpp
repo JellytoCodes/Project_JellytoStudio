@@ -16,6 +16,7 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 		ClearData();
 		_meshCache.clear();
 		_modelCache.clear();
+		_modelWorldCache.clear();
 		_animCache.clear();
 
 		for (std::shared_ptr<Entity>& entity : Entities)
@@ -27,8 +28,15 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 			}
 			else if (entity->GetComponent<ModelRenderer>() != nullptr)
 			{
-				const InstanceID instanceID = entity->GetComponent<ModelRenderer>()->GetInstanceID();
+				auto mr = entity->GetComponent<ModelRenderer>();
+				const InstanceID instanceID = mr->GetInstanceID();
+				// world matrix를 dirty 시점에 미리 계산해서 캐시
+				// 정적 블록은 이후 매프레임 GetComponent+행렬곱 필요 없음
+				Matrix scaleMatrix = mr->GetModelScaleMatrix();
+				InstancingData data;
+				data.world = scaleMatrix * entity->GetTransform()->GetWorldMatrix();
 				_modelCache[instanceID].push_back(entity);
+				_modelWorldCache[instanceID].push_back(data);
 			}
 			else if (entity->GetComponent<ModelAnimator>() != nullptr)
 			{
@@ -85,19 +93,14 @@ void InstancingManager::RenderModelRenderer()
 		if (pair.second.empty()) continue;
 		const InstanceID id = pair.first;
 
+		// dirty 시 캐시된 world matrix를 버퍼에 적재 (GetComponent 0회)
+		// 정적 블록: dirty 아닐 때는 이미 계산된 _modelWorldCache 사용
 		if (_buffers.find(id) != _buffers.end())
 			_buffers[id]->ClearData();
 
-		for (int32 i = 0; i < pair.second.size(); i++)
-		{
-			const std::shared_ptr<Entity>& entity = pair.second[i];
-			InstancingData data;
-			auto mr = entity->GetComponent<ModelRenderer>();
-			Matrix scaleMatrix = mr ? mr->GetModelScaleMatrix() : Matrix::Identity;
-			data.world = scaleMatrix * entity->GetTransform()->GetWorldMatrix();
-
-			AddData(id, data);
-		}
+		const auto& worldCache = _modelWorldCache[id];
+		for (const InstancingData& data : worldCache)
+			AddData(id, const_cast<InstancingData&>(data));
 
 		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
 		pair.second[0]->GetComponent<ModelRenderer>()->RenderInstancing(buffer);
@@ -137,7 +140,7 @@ void InstancingManager::RenderAnimRenderer()
 
 void InstancingManager::AddData(InstanceID instanceID, InstancingData& data)
 {
-	if (_buffers.find(instanceID) == _buffers.end()) 
+	if (_buffers.find(instanceID) == _buffers.end())
 		_buffers[instanceID] = std::make_shared<InstancingBuffer>();
 
 	_buffers[instanceID]->AddData(data);

@@ -67,6 +67,11 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 		_shader->PushBoneData(boneDesc);
 	}
 
+	// ── 인스턴스 버퍼 업로드: mesh loop 밖에서 1회만 ─────────────
+	// 기존: 서브메시마다 Map→memcpy→Unmap → 서브메시 N개 = N번 GPU stall
+	// 수정: 1회 Upload 후 loop 안에서는 IASetVertexBuffers(Bind)만
+	buffer->UploadData();
+
 	const auto& meshes = _model->GetMeshes();
 	for (auto& mesh : meshes)
 	{
@@ -76,11 +81,10 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 		if (_bIsSkinned)
 			_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
 
-		// IA
+		// IA — VB slot0(메시), VB slot1(인스턴스) 바인딩
 		mesh->vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
 		mesh->indexBuffer->PushData(Graphics::Get()->GetDeviceContext());
-
-		buffer->PushData();
+		buffer->BindBuffer(); // Upload는 이미 완료, Bind만
 
 		_shader->DrawIndexedInstanced(0, _pass, mesh->indexBuffer->GetCount(), buffer->GetCount());
 	}
