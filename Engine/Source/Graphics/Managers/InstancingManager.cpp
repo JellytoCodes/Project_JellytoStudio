@@ -45,6 +45,20 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 			}
 		}
 
+		// worldCache → InstancingBuffer 적재 + GPU 업로드 (dirty 시 1회)
+		// 이후 매프레임 RenderModelRenderer는 BindBuffer + Draw만 실행
+		for (auto& pair : _modelWorldCache)
+		{
+			const InstanceID id = pair.first;
+			if (_buffers.find(id) == _buffers.end())
+				_buffers[id] = std::make_shared<InstancingBuffer>();
+			else
+				_buffers[id]->ClearData();
+			for (const InstancingData& data : pair.second)
+				AddData(id, const_cast<InstancingData&>(data));
+			_buffers[id]->UploadData(); // GPU 업로드 — dirty 시 1회만
+		}
+
 		_bDirty = false;
 	}
 
@@ -88,19 +102,15 @@ void InstancingManager::RenderMeshRenderer()
 
 void InstancingManager::RenderModelRenderer()
 {
+	// ── 매프레임 UploadData / ClearData / AddData 호출 없음 ──────
+	// dirty 시점에 이미 조립+업로드 완료 → 여기서는 BindBuffer+Draw만
 	for (auto& pair : _modelCache)
 	{
 		if (pair.second.empty()) continue;
 		const InstanceID id = pair.first;
 
-		// dirty 시 캐시된 world matrix를 버퍼에 적재 (GetComponent 0회)
-		// 정적 블록: dirty 아닐 때는 이미 계산된 _modelWorldCache 사용
-		if (_buffers.find(id) != _buffers.end())
-			_buffers[id]->ClearData();
-
-		const auto& worldCache = _modelWorldCache[id];
-		for (const InstancingData& data : worldCache)
-			AddData(id, const_cast<InstancingData&>(data));
+		if (_buffers.find(id) == _buffers.end()) continue;
+		if (!_buffers[id]->IsUploaded()) continue; // 아직 업로드 안 됐으면 스킵
 
 		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
 		pair.second[0]->GetComponent<ModelRenderer>()->RenderInstancing(buffer);

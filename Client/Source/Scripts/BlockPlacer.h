@@ -89,10 +89,6 @@ private:
     std::shared_ptr<Material> _previewMatOk;
     std::shared_ptr<Material> _previewMatBad;
 
-    // ── 공유 Shader 캐시 ─────────────────────────────────────────
-    // PlaceBlockAt() 마다 new Shader() 하면 shader.get()이 블록마다 달라
-    // InstanceID = (model, shader) 가 모두 달라져 → 인스턴싱 0%
-    // 한 개 공유하면 같은 모델 블록들이 같은 InstanceID → 1 DrawCall
     std::shared_ptr<Shader> _blockShader;
 
     // 프리뷰 마우스 델타 캐시

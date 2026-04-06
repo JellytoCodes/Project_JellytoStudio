@@ -56,17 +56,7 @@ float4 PS(MeshOutput input) : SV_TARGET
     return finalColor;
 }
 
-RasterizerState NoCull
-{
-    CullMode = None;
-};
-
 technique11 T0
 {
-    pass P0
-    {
-        SetRasterizerState(NoCull);
-        SetVertexShader(CompileShader(vs_5_0, VS()));
-        SetPixelShader(CompileShader(ps_5_0, PS()));
-    }
+    PASS_VP(P0, VS, PS)
 }

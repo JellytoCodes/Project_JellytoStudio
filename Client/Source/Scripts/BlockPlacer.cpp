@@ -143,6 +143,9 @@ void BlockPlacer::Awake()
         if (t != SlotType::Eraser)
             GetOrLoadModel(t);
     }
+
+    if (!_blockShader)
+        _blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 }
 
 void BlockPlacer::OnDestroy() { HidePreview(); }
@@ -434,12 +437,6 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     blockEntity->GetTransform()->SetLocalPosition(entityPos);
     blockEntity->GetTransform()->SetLocalScale(Vec3(1.f));
 
-    // ModelRenderer — 공유 Shader 사용 (핵심 최적화)
-    // 블록마다 new Shader()를 하면 shader.get()이 달라서
-    // InstanceID가 모두 달라짐 → 인스턴싱 0%, 블록 N개 = N번 DrawCall
-    // 한 Shader를 공유하면 같은 모델 블록 전체가 1번 DrawCall
-    if (!_blockShader)
-        _blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
     auto mr = std::make_shared<ModelRenderer>(_blockShader, false);
     mr->SetModel(model);
     mr->SetModelScale(params.modelScale);
