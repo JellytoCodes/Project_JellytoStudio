@@ -149,9 +149,9 @@ void LightActor::BuildEntity()
 	auto light = std::make_shared<Light>();
 
 	LightDesc desc;
-	desc.ambient  = Color(5.f, 5.f, 5.f, 1.f);
+	desc.ambient  = Color(3.f, 3.f, 3.f, 1.f);
 	desc.diffuse  = Color(1.0f, 0.98f, 0.9f, 1.f);
-	desc.specular = Color(0.5f, 0.5f, 0.5f, 1.f);
+	desc.specular = Color(1.f, 1.f, 1.f, 1.f);
 	desc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);
 
 	Vec3 dir = Vec3(5.f, -2.f, 5.f);

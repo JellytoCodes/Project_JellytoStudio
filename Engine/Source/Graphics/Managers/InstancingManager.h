@@ -12,12 +12,19 @@ public:
 
 	void SetDirty() { _bDirty = true; }
 
+	// ── 진단 로그 ─────────────────────────────────────────────
+	// 인스턴싱 상태를 Output Window에 출력
+	// F1 키 등으로 1회 호출해서 실제 DrawCall 수 확인
+	void DumpInstancingStats() const;
+
 private:
 	void RenderMeshRenderer();
 	void RenderModelRenderer();
 	void RenderAnimRenderer();
 
 	void AddData(InstanceID instanceID, InstancingData& data);
+
+	int GetModelCacheSize() const { return _modelCache.size(); }
 
 	std::map<InstanceID, std::shared_ptr<InstancingBuffer>> _buffers;
 

@@ -11,6 +11,14 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 {
 	if (Entities.empty()) return;
 
+	// F1 키: 인스턴싱 상태 즉석 진단 (Output Window 출력)
+	if (::GetAsyncKeyState(VK_F1) & 0x8000)
+	{
+		static bool s_dumped = false;
+		if (!s_dumped) { DumpInstancingStats(); s_dumped = true; }
+	}
+	else { static bool s_dumped = false; s_dumped = false; } // 키 뗌 = 재설정
+
 	if (_bDirty)
 	{
 		ClearData();
@@ -45,8 +53,6 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 			}
 		}
 
-		// worldCache → InstancingBuffer 적재 + GPU 업로드 (dirty 시 1회)
-		// 이후 매프레임 RenderModelRenderer는 BindBuffer + Draw만 실행
 		for (auto& pair : _modelWorldCache)
 		{
 			const InstanceID id = pair.first;
@@ -154,4 +160,61 @@ void InstancingManager::AddData(InstanceID instanceID, InstancingData& data)
 		_buffers[instanceID] = std::make_shared<InstancingBuffer>();
 
 	_buffers[instanceID]->AddData(data);
+}
+void InstancingManager::DumpInstancingStats() const
+{
+	::OutputDebugStringW(L"\n========== [InstancingManager 진단] ==========\n");
+
+	// ModelRenderer 인스턴싱 그룹
+	wchar_t buf[512];
+	swprintf_s(buf, L"ModelRenderer 그룹 수 (= DrawCall 수): %zu\n", _modelCache.size());
+	::OutputDebugStringW(buf);
+
+	int groupIdx = 0;
+	for (const auto& pair : _modelCache)
+	{
+		const InstanceID& id = pair.first;
+		size_t count = pair.second.size();
+
+		// 버퍼 업로드 상태 확인
+		bool uploaded = false;
+		auto bufIt = _buffers.find(id);
+		if (bufIt != _buffers.end())
+			uploaded = bufIt->second->IsUploaded();
+
+		swprintf_s(buf,
+			L"  [그룹 %d] model=%llx shader=%llx | 인스턴스=%zu | 업로드=%s\n",
+			groupIdx++,
+			pair.first.first, pair.first.second,
+			count,
+			uploaded ? L"OK" : L"X (재업로드 필요)");
+		::OutputDebugStringW(buf);
+	}
+
+	// MeshRenderer 그룹
+	swprintf_s(buf, L"MeshRenderer 그룹 수: %zu\n", _meshCache.size());
+	::OutputDebugStringW(buf);
+	for (const auto& pair : _meshCache)
+	{
+		swprintf_s(buf, L"  mesh=%llx mat=%llx | 인스턴스=%zu\n",
+			pair.first.first, pair.first.second, pair.second.size());
+		::OutputDebugStringW(buf);
+	}
+
+	// 총 Entity 수
+	size_t totalModel = 0;
+	for (const auto& p : _modelCache) totalModel += p.second.size();
+	size_t totalMesh = 0;
+	for (const auto& p : _meshCache) totalMesh += p.second.size();
+
+	swprintf_s(buf,
+		L"총 렌더 Entity: ModelRenderer=%zu MeshRenderer=%zu\n"
+		L"총 DrawCall (서브메시 제외): ModelGroup=%zu + MeshGroup=%zu\n"
+		L"인스턴싱 효율: %.1f%% (%zu Entity → %zu 그룹)\n"
+		L"============================================\n",
+		totalModel, totalMesh,
+		_modelCache.size(), _meshCache.size(),
+		(totalModel > 0 ? (1.0 - (double)_modelCache.size() / totalModel) * 100.0 : 0.0),
+		totalModel, _modelCache.size());
+	::OutputDebugStringW(buf);
 }

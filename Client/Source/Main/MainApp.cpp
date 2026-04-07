@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "MainApp.h"
 
+#include <random>
+
 #include "Actors.h"
 
 #include "Resource/Managers/ResourceManager.h"
@@ -68,27 +70,38 @@ void MainApp::InitScene()
         model->ReadModel(L"Priming_01");
         model->ReadMaterial(L"Priming_01");
 
-        auto startBlock = std::make_shared<Entity>(L"StartBlock");
-        startBlock->AddComponent(std::make_shared<Transform>());
-        startBlock->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+        for (int i = 0 ; i < 300 ; i++)
+        {
+            std::random_device rd;
+            std::mt19937 mt(rd());
+            std::uniform_int_distribution<int> dist(-10, 10);
 
-        auto mr = std::make_shared<ModelRenderer>(shader, false);
-        mr->SetModel(model);
-        mr->SetModelScale(Vec3(0.01f));
-        startBlock->AddComponent(mr);
+            auto randX = dist(mt);
+            auto randY = dist(mt);
+            auto randZ = dist(mt) / 2;
 
-        auto col = std::make_shared<AABBCollider>();
-        col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-        col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
-        col->SetOwnChannel(CollisionChannel::Priming);
-        col->SetPickableMask(
-            static_cast<uint8>(CollisionChannel::Priming) |
-            static_cast<uint8>(CollisionChannel::Character));
-        col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
-        startBlock->AddComponent(col);
 
-        _scene->Add(startBlock);
-        _startBlock = startBlock;
+            auto mr = std::make_shared<ModelRenderer>(shader, false);
+            mr->SetModel(model);
+            mr->SetModelScale(Vec3(0.01f));
+
+            //auto col = std::make_shared<AABBCollider>();
+            //col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
+            //col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
+            //col->SetOwnChannel(CollisionChannel::Priming);
+            //col->SetPickableMask(
+            //    static_cast<uint8>(CollisionChannel::Priming) |
+            //    static_cast<uint8>(CollisionChannel::Character));
+            //col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
+
+            auto startBlock = std::make_shared<Entity>(L"StartBlock");
+            startBlock->AddComponent(std::make_shared<Transform>());
+            startBlock->GetTransform()->SetLocalPosition(Vec3(randX, randY, randZ));
+            startBlock->AddComponent(mr);
+            //startBlock->AddComponent(col);
+            _scene->Add(startBlock);
+        }
+        // _startBlock = startBlock;
     }
 
     // 캐릭터 — 시작 블록 상단에 배치 (Y=1.0)

@@ -10,19 +10,11 @@
 
 ModelRenderer::ModelRenderer(const std::shared_ptr<Shader>& shader, const bool bIsSkinned /* = true */)
 	: Super(ComponentType::ModelRenderer), _shader(shader), _bIsSkinned(bIsSkinned)
-{
+{ }
 
-}
+ModelRenderer::~ModelRenderer() { }
 
-ModelRenderer::~ModelRenderer()
-{
-
-}
-
-void ModelRenderer::Awake()
-{
-
-}
+void ModelRenderer::Awake() { }
 
 void ModelRenderer::Start()
 {
@@ -36,10 +28,16 @@ void ModelRenderer::SetModel(std::shared_ptr<Model> model)
 {
 	_model = model;
 
+	// ── Material 공유 안전 처리 ──────────────────────────────
+	// model은 여러 ModelRenderer가 공유 → model._materials도 공유
+	// 여기서 material->SetShader()를 호출하면 마지막 호출이 덮어씀
+	// → 렌더 시점(RenderInstancing)에 shader를 Push하므로 여기선 스킵
+	// 단, 처음 로드 시 shader가 null이면 최초 1회만 설정
 	const auto& materials = _model->GetMaterials();
 	for (auto& material : materials)
 	{
-		material->SetShader(_shader);
+		if (material->GetShader() == nullptr)
+			material->SetShader(_shader);
 	}
 }
 
@@ -71,7 +69,12 @@ void ModelRenderer::RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer)
 	for (auto& mesh : meshes)
 	{
 		if (mesh->material)
+		{
+			// 공유 material에 이 렌더러의 shader를 바인딩 후 Update
+			// (SetModel 시점에 덮어쓰지 않으므로 여기서 주입)
+			mesh->material->SetShader(_shader);
 			mesh->material->Update();
+		}
 
 		if (_bIsSkinned)
 			_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
