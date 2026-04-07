@@ -388,8 +388,6 @@ void DetailWindow::ApplyTransform()
 	tf->SetLocalPosition(pos);
 	tf->SetLocalRotation(rot);
 	tf->SetLocalScale(scl);
-
-	::OutputDebugStringW(L"[DetailWindow] Transform 적용\n");
 }
 
 // ── SelectEntity ──────────────────────────────────────────────────────────

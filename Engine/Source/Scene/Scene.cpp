@@ -12,7 +12,7 @@
 
 Scene::Scene()
 {
-	
+
 }
 
 Scene::~Scene()
@@ -111,7 +111,7 @@ void Scene::Remove(const std::shared_ptr<Entity>& object)
 	_collidableObjects.erase(object);
 	_widgetObjects.erase(
 		std::remove_if(_widgetObjects.begin(), _widgetObjects.end(),
-			[&object](const auto& w){ return w.get() == object.get(); }),
+			[&object](const auto& w) { return w.get() == object.get(); }),
 		_widgetObjects.end());
 
 	GET_SINGLE(InstancingManager)->SetDirty();
@@ -123,7 +123,7 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 	if (!_mainCamera) return nullptr;
 
 	// Viewport 크기
-	float width  = Graphics::Get()->GetViewport().GetWidth();
+	float width = Graphics::Get()->GetViewport().GetWidth();
 	float height = Graphics::Get()->GetViewport().GetHeight();
 
 	Matrix projMatrix = _mainCamera->GetProjectionMatrix();
@@ -131,23 +131,16 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 	Matrix viewMatrixInv = viewMatrix.Invert();
 
 	// View Space 좌표 (참고 코드 방식)
-	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
+	float viewX = (+2.f * screenX / width - 1.f) / projMatrix(0, 0);
 	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
 
 	// View Space Ray → World Space 변환
 	Vec4 rayOrigin4 = Vec4(0.f, 0.f, 0.f, 1.f);
-	Vec4 rayDir4    = Vec4(viewX, viewY, 1.f, 0.f);
+	Vec4 rayDir4 = Vec4(viewX, viewY, 1.f, 0.f);
 
 	Vec3 worldRayOrigin = XMVector3TransformCoord(rayOrigin4, viewMatrixInv);
-	Vec3 worldRayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
+	Vec3 worldRayDir = XMVector3TransformNormal(rayDir4, viewMatrixInv);
 	worldRayDir.Normalize();
-
-	// [DEBUG]
-	wchar_t dbg[256];
-	swprintf_s(dbg, L"[Scene::Pick] origin=(%.2f,%.2f,%.2f) dir=(%.3f,%.3f,%.3f)\n",
-		worldRayOrigin.x, worldRayOrigin.y, worldRayOrigin.z,
-		worldRayDir.x, worldRayDir.y, worldRayDir.z);
-	::OutputDebugStringW(dbg);
 
 	Ray ray = Ray(worldRayOrigin, worldRayDir);
 
@@ -166,12 +159,7 @@ std::shared_ptr<Entity> Scene::Pick(int32 screenX, int32 screenY)
 		if (collider->Intersects(r, dist) && dist < minDist)
 		{
 			minDist = dist;
-			picked  = entity;
-
-			wchar_t dbgHit[256];
-			swprintf_s(dbgHit, L"[Scene::Pick] 후보 히트: %s dist=%.2f\n",
-				entity->GetEntityName().c_str(), dist);
-			::OutputDebugStringW(dbgHit);
+			picked = entity;
 		}
 	}
 
@@ -182,20 +170,20 @@ bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, flo
 {
 	if (!_mainCamera) return false;
 
-	float width  = Graphics::Get()->GetViewport().GetWidth();
+	float width = Graphics::Get()->GetViewport().GetWidth();
 	float height = Graphics::Get()->GetViewport().GetHeight();
 
-	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
+	Matrix projMatrix = _mainCamera->GetProjectionMatrix();
 	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
 
-	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
+	float viewX = (+2.f * screenX / width - 1.f) / projMatrix(0, 0);
 	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
 
 	Vec4 rayOrigin4 = Vec4(0.f, 0.f, 0.f, 1.f);
-	Vec4 rayDir4    = Vec4(viewX, viewY, 1.f, 0.f);
+	Vec4 rayDir4 = Vec4(viewX, viewY, 1.f, 0.f);
 
 	Vec3 rayOrigin = XMVector3TransformCoord(rayOrigin4, viewMatrixInv);
-	Vec3 rayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
+	Vec3 rayDir = XMVector3TransformNormal(rayDir4, viewMatrixInv);
 	rayDir.Normalize();
 
 	// Ray-Plane 교차: Y = groundY 인 수평 평면
@@ -209,31 +197,31 @@ bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, flo
 	return true;
 }
 bool Scene::PickBlock(int32 screenX, int32 screenY,
-                      CollisionChannel queryChan,
-                      std::shared_ptr<Entity>& outEntity,
-                      Vec3& outHitNormal,
-                      float& outDist)
+	CollisionChannel queryChan,
+	std::shared_ptr<Entity>& outEntity,
+	Vec3& outHitNormal,
+	float& outDist)
 {
 	if (!_mainCamera) return false;
 
-	float width  = Graphics::Get()->GetViewport().GetWidth();
+	float width = Graphics::Get()->GetViewport().GetWidth();
 	float height = Graphics::Get()->GetViewport().GetHeight();
 
-	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
+	Matrix projMatrix = _mainCamera->GetProjectionMatrix();
 	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
 
-	float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
+	float viewX = (+2.f * screenX / width - 1.f) / projMatrix(0, 0);
 	float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
 
-	Vec3 rayOrigin = XMVector3TransformCoord(Vec4(0,0,0,1), viewMatrixInv);
-	Vec3 rayDir    = XMVector3TransformNormal(Vec4(viewX,viewY,1,0), viewMatrixInv);
+	Vec3 rayOrigin = XMVector3TransformCoord(Vec4(0, 0, 0, 1), viewMatrixInv);
+	Vec3 rayDir = XMVector3TransformNormal(Vec4(viewX, viewY, 1, 0), viewMatrixInv);
 	rayDir.Normalize();
 
 	Ray ray(rayOrigin, rayDir);
 
-	outEntity  = nullptr;
-	outDist    = FLT_MAX;
-	outHitNormal = Vec3(0,1,0);
+	outEntity = nullptr;
+	outDist = FLT_MAX;
+	outHitNormal = Vec3(0, 1, 0);
 
 	for (auto& entity : _objects)
 	{
@@ -250,8 +238,8 @@ bool Scene::PickBlock(int32 screenX, int32 screenY,
 		Ray   r = ray;
 		if (aabb->IntersectsWithNormal(r, dist, normal) && dist < outDist)
 		{
-			outDist     = dist;
-			outEntity   = entity;
+			outDist = dist;
+			outEntity = entity;
 			outHitNormal = normal;
 		}
 	}

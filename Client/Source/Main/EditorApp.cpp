@@ -193,10 +193,6 @@ void EditorApp::UpdatePicking()
         auto selected = _detailWindow ? _detailWindow->GetSelectedEntity() : nullptr;
         if (selected && _scene)
         {
-            wchar_t buf[256];
-            swprintf_s(buf, L"[Delete] 씬에서 제거: %s\n", selected->GetEntityName().c_str());
-            ::OutputDebugStringW(buf);
-
             _scene->Remove(selected);
             _pickedEntity = nullptr;
             if (_detailWindow)
@@ -205,10 +201,6 @@ void EditorApp::UpdatePicking()
                 _detailWindow->MarkDirty();
                 _detailWindow->RefreshEntityList();
             }
-        }
-        else
-        {
-            ::OutputDebugStringW(L"[Delete] 선택된 Entity 없음\n");
         }
     }
 
@@ -219,23 +211,14 @@ void EditorApp::UpdatePicking()
 
     POINT mp = GET_SINGLE(InputManager)->GetMousePos();
 
-    wchar_t dbgClick[128];
-    swprintf_s(dbgClick, L"[Picking] 좌클릭 감지 - 스크린 좌표: (%d, %d)\n", mp.x, mp.y);
-    ::OutputDebugStringW(dbgClick);
-
     auto picked = _scene->Pick((int32)mp.x, (int32)mp.y);
     _pickedEntity = picked;
 
     if (!picked)
     {
-        ::OutputDebugStringW(L"[Picking] 히트 없음\n");
         if (_detailWindow) _detailWindow->ClearDetail();
         return;
     }
-
-    wchar_t dbgHit[256];
-    swprintf_s(dbgHit, L"[Picking] 히트! Entity: %s\n", picked->GetEntityName().c_str());
-    ::OutputDebugStringW(dbgHit);
 
     if (!_detailWindow) return;
     DetailInfo info;

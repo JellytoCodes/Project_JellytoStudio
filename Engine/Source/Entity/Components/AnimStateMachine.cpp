@@ -31,11 +31,6 @@ void AnimStateMachine::SetState(AnimState state)
 
     _currentState = state;
     ApplyClip(state);
-
-    const wchar_t* names[] = { L"Idle", L"Walk", L"Attack", L"Die" };
-    wchar_t dbg[64];
-    swprintf_s(dbg, L"[AnimSM] → %s\n", names[static_cast<int>(state)]);
-    ::OutputDebugStringW(dbg);
 }
 
 void AnimStateMachine::ApplyClip(AnimState state)

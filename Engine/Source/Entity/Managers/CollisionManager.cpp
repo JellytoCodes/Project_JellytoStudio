@@ -1,5 +1,4 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "CollisionManager.h"
 #include "Scene/Scene.h"
 #include "Entity/Entity.h"
@@ -8,18 +7,18 @@
 
 void CollisionManager::CheckCollision(std::shared_ptr<Scene>& scene)
 {
-	std::vector<std::shared_ptr<Entity>> entities(
-		scene->GetEntities().begin(),
-		scene->GetEntities().end()
-	);
+	auto& collidables = scene->GetCollidableEntities();
+	if (collidables.empty()) return;
 
-	for (int32 i = 0; i < entities.size(); i++)
+	// unordered_set → random access 불가 → vector로 변환 (C가 작으므로 비용 미미)
+	std::vector<std::shared_ptr<Entity>> entities(collidables.begin(), collidables.end());
+
+	for (int32 i = 0; i < (int32)entities.size(); i++)
 	{
-		for (int32 j = i + 1; j < entities.size(); j++)
+		for (int32 j = i + 1; j < (int32)entities.size(); j++)
 		{
 			if (Intersects(entities[i], entities[j]))
 			{
-				// 충돌 시 양쪽 Entity의 모든 Script에 OnCollision 호출
 				entities[i]->OnCollision(entities[j]);
 				entities[j]->OnCollision(entities[i]);
 			}

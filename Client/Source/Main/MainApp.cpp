@@ -70,15 +70,16 @@ void MainApp::InitScene()
         model->ReadModel(L"Priming_01");
         model->ReadMaterial(L"Priming_01");
 
-        for (int i = 0 ; i < 300 ; i++)
+        for (int i = 0 ; i < 2000 ; i++)
         {
             std::random_device rd;
             std::mt19937 mt(rd());
-            std::uniform_int_distribution<int> dist(-10, 10);
+            std::uniform_int_distribution<int> distXZ(-20, 20);
+            std::uniform_int_distribution<int> distY(-10, 10);
 
-            auto randX = dist(mt);
-            auto randY = dist(mt);
-            auto randZ = dist(mt) / 2;
+            auto randX = distXZ(mt);
+            auto randY = distY(mt);
+            auto randZ = distXZ(mt);
 
 
             auto mr = std::make_shared<ModelRenderer>(shader, false);

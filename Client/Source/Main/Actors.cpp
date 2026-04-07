@@ -144,7 +144,6 @@ void LightActor::BuildEntity()
 {
 	assert(_entity != nullptr && "[LightActor] _entity is null before AddComponent");
 	assert(_entity->GetTransform() != nullptr && "[LightActor] Transform not set");
-	::OutputDebugStringW(L"[LightActor] BuildEntity start\n");
 
 	auto light = std::make_shared<Light>();
 
@@ -164,5 +163,4 @@ void LightActor::BuildEntity()
 	// 컴포넌트가 정상 등록됐는지 즉시 검증
 	auto check = _entity->GetComponent<Light>();
 	assert(check != nullptr && "[LightActor] GetComponent<Light>() returned null after AddComponent");
-	::OutputDebugStringW(L"[LightActor] BuildEntity OK - Light component registered\n");
 }

@@ -7,12 +7,12 @@ class Entity;
 
 class Scene
 {
-public :
+public:
 	Scene();
 	virtual ~Scene();
 
 	void SetName(const std::wstring& name) { _name = name; }
-	const std::wstring& GetName() const    { return _name; }
+	const std::wstring& GetName() const { return _name; }
 
 	virtual void Awake();
 	virtual void Start();
@@ -25,8 +25,8 @@ public :
 	virtual void Add(const std::shared_ptr<Entity>& object);
 	virtual void Remove(const std::shared_ptr<Entity>& object);
 
-	void											SetMainCamera(const std::shared_ptr<Camera>& mainCamera)	{ _mainCamera = mainCamera; }
-	std::shared_ptr<Camera>							GetMainCamera()												{ return _mainCamera; }
+	void											SetMainCamera(const std::shared_ptr<Camera>& mainCamera) { _mainCamera = mainCamera; }
+	std::shared_ptr<Camera>							GetMainCamera() { return _mainCamera; }
 
 	std::shared_ptr<Light> GetLight();
 	void SetMainLight(const std::shared_ptr<Light>& light);
@@ -37,16 +37,19 @@ public :
 	// queryChan: 이 채널로 피킹 — target.CanBePickedBy(queryChan) 검사
 	// outHitNormal: 히트된 AABB 면의 노말 벡터 (±X/Y/Z)
 	bool PickBlock(int32 screenX, int32 screenY,
-	               CollisionChannel queryChan,
-	               std::shared_ptr<Entity>& outEntity,
-	               Vec3& outHitNormal,
-	               float& outDist);
+		CollisionChannel queryChan,
+		std::shared_ptr<Entity>& outEntity,
+		Vec3& outHitNormal,
+		float& outDist);
 
 	bool PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY = 0.f);
 
-	std::unordered_set<std::shared_ptr<Entity>>&	GetEntities()												{ return _objects; }
+	std::unordered_set<std::shared_ptr<Entity>>& GetEntities() { return _objects; }
 
-private :
+	// 콜라이더 보유 Entity 캐시 — CollisionManager가 O(N²)→O(C²)에 활용
+	std::unordered_set<std::shared_ptr<Entity>>& GetCollidableEntities() { return _collidableObjects; }
+
+private:
 	std::wstring									_name = L"Unnamed Scene";
 	std::unordered_set<std::shared_ptr<Entity>>		_objects;
 	std::shared_ptr<Camera>							_mainCamera;
