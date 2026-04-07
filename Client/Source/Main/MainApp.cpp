@@ -70,49 +70,35 @@ void MainApp::InitScene()
         model->ReadModel(L"Priming_01");
         model->ReadMaterial(L"Priming_01");
 
-        for (int i = 0 ; i < 2000 ; i++)
-        {
-            std::random_device rd;
-            std::mt19937 mt(rd());
-            std::uniform_int_distribution<int> distXZ(-20, 20);
-            std::uniform_int_distribution<int> distY(-10, 10);
+        auto mr = std::make_shared<ModelRenderer>(shader, false);
+        mr->SetModel(model);
+        mr->SetModelScale(Vec3(0.01f));
 
-            auto randX = distXZ(mt);
-            auto randY = distY(mt);
-            auto randZ = distXZ(mt);
+        auto col = std::make_shared<AABBCollider>();
+        col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
+        col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
+        col->SetOwnChannel(CollisionChannel::Priming);
+        col->SetPickableMask(
+            static_cast<uint8>(CollisionChannel::Priming) |
+            static_cast<uint8>(CollisionChannel::Character));
+        col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
 
+        auto startBlock = std::make_shared<Entity>(L"StartBlock");
+        startBlock->AddComponent(std::make_shared<Transform>());
+        startBlock->GetTransform()->SetLocalPosition(Vec3(0, 0, 0));
+        startBlock->AddComponent(mr);
+        startBlock->AddComponent(col);
+        _scene->Add(startBlock);
 
-            auto mr = std::make_shared<ModelRenderer>(shader, false);
-            mr->SetModel(model);
-            mr->SetModelScale(Vec3(0.01f));
-
-            //auto col = std::make_shared<AABBCollider>();
-            //col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-            //col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
-            //col->SetOwnChannel(CollisionChannel::Priming);
-            //col->SetPickableMask(
-            //    static_cast<uint8>(CollisionChannel::Priming) |
-            //    static_cast<uint8>(CollisionChannel::Character));
-            //col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
-
-            auto startBlock = std::make_shared<Entity>(L"StartBlock");
-            startBlock->AddComponent(std::make_shared<Transform>());
-            startBlock->GetTransform()->SetLocalPosition(Vec3(randX, randY, randZ));
-            startBlock->AddComponent(mr);
-            //startBlock->AddComponent(col);
-            _scene->Add(startBlock);
-        }
-        // _startBlock = startBlock;
+        _startBlock = startBlock;
     }
 
-    // 캐릭터 — 시작 블록 상단에 배치 (Y=1.0)
     auto charActor = std::make_shared<CharacterActor>();
     charActor->Spawn(_scene);
     _actors.push_back(charActor);
     _characterEntity = charActor->GetEntity();
     _characterEntity->GetTransform()->SetLocalPosition(Vec3(0.f, 1.0f, 0.f));
 
-    // OneBlockScript를 시작 블록에 부착 — 원블록 챌린지 게임 루프
     if (_startBlock)
     {
         auto oneBlock = std::make_shared<OneBlockScript>();
@@ -165,7 +151,7 @@ void MainApp::CreatePlacementSystem()
 
 void MainApp::Update()
 {
-    CollisionManager::CheckCollision(_scene);
+    //CollisionManager::CheckCollision(_scene);
 }
 
 void MainApp::Render() {}
