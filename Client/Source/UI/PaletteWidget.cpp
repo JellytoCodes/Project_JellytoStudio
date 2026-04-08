@@ -38,17 +38,6 @@ void PaletteWidget::HandleInput()
         KEY_TYPE::KEY_1, KEY_TYPE::KEY_2, KEY_TYPE::KEY_3, KEY_TYPE::KEY_4,
         KEY_TYPE::KEY_5, KEY_TYPE::KEY_6, KEY_TYPE::KEY_7, KEY_TYPE::KEY_8
     };
-    for (int32 i = 0; i < SLOT_COUNT; i++)
-    {
-        if (input->GetButtonDown(numKeys[i]))
-        {
-            _selectedSlot = i;
-            wchar_t dbg[64];
-            swprintf_s(dbg, L"[Palette] 슬롯 %d: %s\n", i+1, _slots[i].label.c_str());
-            ::OutputDebugStringW(dbg);
-            return;
-        }
-    }
 }
 
 // 배치 모드 ON일 때만 렌더

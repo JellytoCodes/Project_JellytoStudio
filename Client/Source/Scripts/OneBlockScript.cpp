@@ -117,15 +117,6 @@ void OneBlockScript::Mine()
     const auto& table = GetPhaseTable();
     int32 clampedPhase = std::min(_currentPhase, (int32)table.size() - 1);
     SpawnDropBlock(table[clampedPhase].dropModel);
-
-    // 디버그 로그
-    wchar_t dbg[256];
-    swprintf_s(dbg,
-        L"[OneBlock] 채굴 %d회 | Phase %d (%s) | 재생성까지 %.1f초\n",
-        _totalBreaks, _currentPhase,
-        table[clampedPhase].phaseName.c_str(),
-        RESPAWN_DELAY);
-    ::OutputDebugStringW(dbg);
 }
 
 // ── 재생성 ────────────────────────────────────────────────────────────────
@@ -144,11 +135,6 @@ void OneBlockScript::Respawn()
     const auto& table = GetPhaseTable();
     int32 clampedPhase = std::min(_currentPhase, (int32)table.size() - 1);
     ApplyPhaseModel(table[clampedPhase].modelName);
-
-    wchar_t dbg[128];
-    swprintf_s(dbg, L"[OneBlock] 재생성 완료 — %s\n",
-        table[clampedPhase].phaseName.c_str());
-    ::OutputDebugStringW(dbg);
 }
 
 // ── 단계 갱신 ─────────────────────────────────────────────────────────────
@@ -261,6 +247,4 @@ bool OneBlockScript::IsCharacterNearby()
     Vec3 diff = charPos - myPos;
     diff.y    = 0.f; // Y축 무시 (높이 차이는 무관)
     return diff.Length() <= MINE_RANGE;
-
-    return false;
 }

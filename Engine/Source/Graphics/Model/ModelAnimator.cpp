@@ -172,17 +172,6 @@ void ModelAnimator::PressedKeyForCheckFrame()
 		_tweenDesc.curr.sumTime = 0.0f;
 		isFrameChanged = true;
 	}
-
-	if (isFrameChanged)
-	{
-		std::wstring debugLog = L"[Animation Debug] Current Frame : "
-			+ std::to_wstring(_tweenDesc.curr.currFrame)
-			+ L" / "
-			+ std::to_wstring(currentAnim->frameCount)
-			+ L"\n";
-
-		::OutputDebugStringW(debugLog.c_str());
-	}
 }
 
 void ModelAnimator::CreateTexture()
