@@ -3,7 +3,7 @@
 
 class MonoBehaviour;
 
-class Entity : public std::enable_shared_from_this<Entity>
+class Entity
 {
 
 public:
@@ -18,23 +18,19 @@ public:
 
 	void OnCollision(Entity* other);
 
-	std::shared_ptr<Transform> GetTransform();
-
-	void AddComponent(const std::shared_ptr<Component>& component);
+	void AddComponent(std::unique_ptr<Component> component);
 
 	template<typename T>
-	std::shared_ptr<T> GetComponent();
+	T* GetComponent();
 
 	void SetLayerIndex(const uint8 layer) { _layerIndex = layer; }
 	uint8 GetLayerIndex() const { return _layerIndex; }
 
 	std::wstring GetEntityName() const { return _entityName; }
 
-protected:
-	std::shared_ptr<Transform> _transform;
-	std::array<std::shared_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
-
-	std::vector<std::shared_ptr<MonoBehaviour>> _scripts;
+protected :
+	std::array<std::unique_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
+	std::vector<std::unique_ptr<MonoBehaviour>> _scripts;
 
 	uint8 _layerIndex = 0;
 
@@ -42,13 +38,13 @@ protected:
 };
 
 template <typename T>
-std::shared_ptr<T> Entity::GetComponent()
+T* Entity::GetComponent()
 {
 	for (auto& component : _components)
 	{
 		if (component == nullptr) continue;
 
-		std::shared_ptr<T> target = std::dynamic_pointer_cast<T>(component);
+		T* target = dynamic_cast<T>(component);
 		if (target != nullptr)
 			return target;
 	}

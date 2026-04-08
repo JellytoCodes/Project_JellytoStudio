@@ -35,11 +35,11 @@ void AnimStateMachine::SetState(AnimState state)
 
 void AnimStateMachine::ApplyClip(AnimState state)
 {
-    auto entity = _entity.lock();
-    if (!entity) return;
+    Entity* entity = _entity;
+    if (entity == nullptr) return;
 
-    auto animator = entity->GetComponent<ModelAnimator>();
-    if (!animator) return;
+    ModelAnimator* animator = entity->GetComponent<ModelAnimator>();
+    if (animator == nullptr) return;
 
     int32 clipIdx = _clipMap[static_cast<int>(state)];
     if (clipIdx < 0) return; // 미등록

@@ -40,20 +40,20 @@ void Component::OnDestroy()
 
 }
 
-std::shared_ptr<Transform> Component::GetTransform()
+Transform* Component::GetTransform()
 {
 	return _transform;
 }
 
-std::shared_ptr<Entity> Component::GetEntity()
+Entity* Component::GetEntity()
 {
-	return _entity.lock();
+	return _entity;
 }
 
-void Component::SetEntity(const std::shared_ptr<Entity>& entity)
+void Component::SetEntity(Entity* entity)
 {
 	_entity = entity;
 
-	if (entity)
-		_transform = entity->GetTransform();
+	if (_entity)
+		_transform = entity->GetComponent<Transform>();
 }

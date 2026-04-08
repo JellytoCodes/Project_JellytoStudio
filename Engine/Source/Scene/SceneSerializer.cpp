@@ -105,9 +105,7 @@ bool SceneSerializer::Save(const std::shared_ptr<Scene>& scene,
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────
-bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene,
-    const std::wstring& path,
-    IBlockPlacer* placer)
+bool SceneSerializer::Load(const std::shared_ptr<Scene>& scene, const std::wstring& path, IBlockPlacer* placer)
 {
     if (!scene) return false;
 

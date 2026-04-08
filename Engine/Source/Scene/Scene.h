@@ -22,25 +22,19 @@ public:
 
 	virtual void Render();
 
-	virtual void Add(const std::shared_ptr<Entity>& object);
-	virtual void Remove(const std::shared_ptr<Entity>& object);
+	virtual void Add(std::unique_ptr<Entity> object);
+	virtual void Remove(Entity* object);
 
-	void											SetMainCamera(const std::shared_ptr<Camera>& mainCamera) { _mainCamera = mainCamera; }
-	std::shared_ptr<Camera>							GetMainCamera() { return _mainCamera; }
+	void							SetMainCamera(Camera* mainCamera) { _mainCamera = mainCamera; }
+	Camera*							GetMainCamera() { return _mainCamera; }
 
-	std::shared_ptr<Light> GetLight();
-	void SetMainLight(const std::shared_ptr<Light>& light);
+	Light* GetLight() { return _mainLight; }
+	void SetMainLight(Light* light) { _mainLight = light; }
 
 	std::shared_ptr<Entity> Pick(int32 screenX, int32 screenY);
 
-	// 채널 필터링 + 히트 노말 반환 버전
-	// queryChan: 이 채널로 피킹 — target.CanBePickedBy(queryChan) 검사
-	// outHitNormal: 히트된 AABB 면의 노말 벡터 (±X/Y/Z)
-	bool PickBlock(int32 screenX, int32 screenY,
-		CollisionChannel queryChan,
-		std::shared_ptr<Entity>& outEntity,
-		Vec3& outHitNormal,
-		float& outDist);
+	bool PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan,
+		Entity* outEntity,Vec3& outHitNormal,float& outDist);
 
 	bool PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY = 0.f);
 
@@ -51,11 +45,11 @@ public:
 
 private:
 	std::wstring									_name = L"Unnamed Scene";
-	std::unordered_set<std::shared_ptr<Entity>>		_objects;
-	std::shared_ptr<Camera>							_mainCamera;
-	std::shared_ptr<Light>							_mainLight;
+	std::unordered_set<std::unique_ptr<Entity>>		_objects;
+	Camera*											_mainCamera;
+	Light*											_mainLight;
 
 	// ── Render 루프 캐시 ─────────────────────────────────────────
-	std::unordered_set<std::shared_ptr<Entity>>		_collidableObjects;
-	std::vector<std::shared_ptr<Entity>>			_widgetObjects;
+	std::unordered_set<Entity*>		_collidableObjects;
+	std::vector<Entity*>			_widgetObjects;
 };

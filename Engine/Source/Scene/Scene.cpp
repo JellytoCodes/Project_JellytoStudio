@@ -61,7 +61,6 @@ void Scene::Render()
 	_mainCamera->SortEntities();
 	_mainCamera->RenderForward();
 
-	// 캐시된 콜라이더 목록만 순회 (GetComponent 호출 0회)
 	for (auto& object : _collidableObjects)
 	{
 		auto collider = object->GetComponent<BaseCollider>();
@@ -69,55 +68,39 @@ void Scene::Render()
 		collider->RenderDebug();
 	}
 
-	// 위젯 캐시만 순회 (전체 Entity dynamic_cast 불필요)
 	for (auto& object : _widgetObjects)
 	{
 		if (auto widget = std::dynamic_pointer_cast<Widget>(object))
 			widget->DrawUI();
 	}
-	// IMGUI 방식: 3D 렌더 완료 후 동일 DeviceContext로 UI 일괄 제출
 	GET_SINGLE(UIManager)->Render();
 }
 
-std::shared_ptr<Light> Scene::GetLight()
+void Scene::Add(std::unique_ptr<Entity> object)
 {
-	return _mainLight;
-}
-
-void Scene::SetMainLight(const std::shared_ptr<Light>& light)
-{
-	assert(light != nullptr && "[Scene::SetMainLight] light is null");
-	_mainLight = light;
-}
-
-void Scene::Add(const std::shared_ptr<Entity>& object)
-{
-    _objects.insert(object);
-
     // 콜라이더 캐시 + CollisionManager 등록
-    auto collider = object->GetComponent<BaseCollider>();
-    if (collider)
+
+    if (BaseCollider* collider = object->GetComponent<BaseCollider>())
     {
-        _collidableObjects.insert(object);
-        CollisionManager::RegisterCollider(collider.get(), collider->IsStatic());
+        _collidableObjects.insert(object.get());
+        CollisionManager::RegisterCollider(collider, collider->IsStatic());
     }
 
-    // 위젯 캐시 (Widget is-a Entity)
     if (std::dynamic_pointer_cast<Widget>(object))
         _widgetObjects.push_back(object);
+
+	_objects.insert(std::move(object));
 
     GET_SINGLE(InstancingManager)->SetDirty();
     if (_mainCamera) _mainCamera->SetSortDirty();
 }
 
-void Scene::Remove(const std::shared_ptr<Entity>& object)
+void Scene::Remove(Entity* object)
 {
     _objects.erase(object);
 
-    // CollisionManager 해제 후 캐시 제거
-    auto collider = object->GetComponent<BaseCollider>();
-    if (collider)
-        CollisionManager::UnregisterCollider(collider.get());
+    if (auto collider = object->GetComponent<BaseCollider>())
+        CollisionManager::UnregisterCollider(collider);
 
     _collidableObjects.erase(object);
     _widgetObjects.erase(
@@ -241,7 +224,6 @@ bool Scene::PickBlock(int32 screenX, int32 screenY,
 		auto aabb = entity->GetComponent<AABBCollider>();
 		if (!aabb) continue;
 
-		// 채널 필터 — queryChan이 이 콜라이더의 pickableMask에 없으면 스킵
 		if (!aabb->CanBePickedBy(queryChan)) continue;
 
 		float dist = 0.f;
