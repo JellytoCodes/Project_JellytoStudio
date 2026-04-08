@@ -44,7 +44,7 @@ void TileMap::Create(int32 cols, int32 rows, float tileSize, std::shared_ptr<Mat
     // Extents = (cols*tileSize/2, 얇은두께, rows*tileSize/2)
     // Center offset은 그리드 메시가 (0,0)~(cols,rows) 범위라
     // 중심이 (cols/2, 0, rows/2)에 있으므로 offset으로 보정
-    if (!entity->GetComponent<AABBCollider>())
+    if (entity->GetComponent<AABBCollider>() == nullptr)
     {
         auto col = std::make_shared<AABBCollider>();
         float hw = cols * tileSize * 0.5f;

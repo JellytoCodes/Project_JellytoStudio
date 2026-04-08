@@ -16,7 +16,7 @@ public:
 	virtual void LateUpdate();
 	virtual void OnDestroy();
 
-	void OnCollision(std::shared_ptr<Entity>& other);
+	void OnCollision(Entity* other);
 
 	std::shared_ptr<Transform> GetTransform();
 

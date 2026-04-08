@@ -87,7 +87,7 @@ void Entity::OnDestroy()
 	}
 }
 
-void Entity::OnCollision(std::shared_ptr<Entity>& other)
+void Entity::OnCollision(Entity* other)
 {
 	for (auto& script : _scripts)
 	{

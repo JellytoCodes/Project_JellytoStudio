@@ -3,7 +3,6 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Collider/BaseCollider.h"
 
-// 정적 멤버 정의
 std::vector<BaseCollider*> CollisionManager::s_DynamicColliders;
 std::vector<BaseCollider*> CollisionManager::s_StaticColliders;
 
@@ -43,8 +42,8 @@ void CollisionManager::CheckCollision()
             BaseCollider* b = s_DynamicColliders[j];
             if (Intersects(a, b))
             {
-                auto entityA = a->GetEntity();
-                auto entityB = b->GetEntity();
+                Entity* entityA = a->GetEntity().get();
+                Entity* entityB = b->GetEntity().get();
                 entityA->OnCollision(entityB);
                 entityB->OnCollision(entityA);
             }
@@ -60,8 +59,8 @@ void CollisionManager::CheckCollision()
             BaseCollider* b = s_StaticColliders[j];
             if (Intersects(a, b))
             {
-                auto entityA = a->GetEntity();
-                auto entityB = b->GetEntity();
+                Entity* entityA = a->GetEntity().get();
+                Entity* entityB = b->GetEntity().get();
                 entityA->OnCollision(entityB);
                 entityB->OnCollision(entityA);
             }
