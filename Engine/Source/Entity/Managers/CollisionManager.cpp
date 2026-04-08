@@ -1,38 +1,77 @@
 ﻿#include "Framework.h"
 #include "CollisionManager.h"
-#include "Scene/Scene.h"
 #include "Entity/Entity.h"
-#include "Entity/Components/MonoBehaviour.h"
 #include "Entity/Components/Collider/BaseCollider.h"
 
-void CollisionManager::CheckCollision(std::shared_ptr<Scene>& scene)
+// 정적 멤버 정의
+std::vector<BaseCollider*> CollisionManager::s_DynamicColliders;
+std::vector<BaseCollider*> CollisionManager::s_StaticColliders;
+
+void CollisionManager::RegisterCollider(BaseCollider* collider, bool isStatic)
 {
-	auto& collidables = scene->GetCollidableEntities();
-	if (collidables.empty()) return;
-
-	// unordered_set → random access 불가 → vector로 변환 (C가 작으므로 비용 미미)
-	std::vector<std::shared_ptr<Entity>> entities(collidables.begin(), collidables.end());
-
-	for (int32 i = 0; i < (int32)entities.size(); i++)
-	{
-		for (int32 j = i + 1; j < (int32)entities.size(); j++)
-		{
-			if (Intersects(entities[i], entities[j]))
-			{
-				entities[i]->OnCollision(entities[j]);
-				entities[j]->OnCollision(entities[i]);
-			}
-		}
-	}
+    if (collider == nullptr) return;
+    auto& list = isStatic ? s_StaticColliders : s_DynamicColliders;
+    list.push_back(collider);
 }
 
-bool CollisionManager::Intersects(const std::shared_ptr<Entity>& instigator, const std::shared_ptr<Entity>& target)
+void CollisionManager::UnregisterCollider(BaseCollider* collider)
 {
-	auto colliderA = instigator->GetComponent<BaseCollider>();
-	auto colliderB = target->GetComponent<BaseCollider>();
+    if (collider == nullptr) return;
 
-	if (colliderA == nullptr || colliderB == nullptr)
-		return false;
+    auto eraseFrom = [&](std::vector<BaseCollider*>& list)
+    {
+        auto it = std::find(list.begin(), list.end(), collider);
+        if (it != list.end())
+        {
+            *it = list.back();
+            list.pop_back();
+        }
+    };
 
-	return colliderA->Intersects(colliderB);
+    eraseFrom(s_DynamicColliders);
+    eraseFrom(s_StaticColliders);
+}
+
+void CollisionManager::CheckCollision()
+{
+    const int32 dynCount = static_cast<int32>(s_DynamicColliders.size());
+    for (int32 i = 0; i < dynCount; ++i)
+    {
+        BaseCollider* a = s_DynamicColliders[i];
+        for (int32 j = i + 1; j < dynCount; ++j)
+        {
+            BaseCollider* b = s_DynamicColliders[j];
+            if (Intersects(a, b))
+            {
+                auto entityA = a->GetEntity();
+                auto entityB = b->GetEntity();
+                entityA->OnCollision(entityB);
+                entityB->OnCollision(entityA);
+            }
+        }
+    }
+
+    const int32 statCount = static_cast<int32>(s_StaticColliders.size());
+    for (int32 i = 0; i < dynCount; ++i)
+    {
+        BaseCollider* a = s_DynamicColliders[i];
+        for (int32 j = 0; j < statCount; ++j)
+        {
+            BaseCollider* b = s_StaticColliders[j];
+            if (Intersects(a, b))
+            {
+                auto entityA = a->GetEntity();
+                auto entityB = b->GetEntity();
+                entityA->OnCollision(entityB);
+                entityB->OnCollision(entityA);
+            }
+        }
+    }
+}
+
+bool CollisionManager::Intersects(BaseCollider* a, BaseCollider* b)
+{
+    if (a == nullptr || b == nullptr) return false;
+
+    return a->Intersects(b);
 }

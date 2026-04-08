@@ -143,9 +143,12 @@ void BlockPlacer::Awake()
         if (t != SlotType::Eraser)
             GetOrLoadModel(t);
     }
+}
 
-    if (!_blockShader)
-        _blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+void BlockPlacer::Start()
+{
+	if (!_blockShader)
+		_blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 }
 
 void BlockPlacer::OnDestroy() { HidePreview(); }
@@ -200,14 +203,13 @@ void BlockPlacer::HandleInput()
     {
         if (st == SlotType::Eraser)
         {
-            // Eraser: 어떤 채널의 블록이든 제거
             std::shared_ptr<Entity> hitEntity;
             Vec3 hitNormal; float hitDist;
             if (scene->PickBlock((int32)mp.x, (int32)mp.y,
-                CH::Priming,     // Priming 채널로 쿼리
+                CH::Priming,     
                 hitEntity, hitNormal, hitDist))
                 TryRemoveEntity(hitEntity);
-            // Mushroom도 시도
+
             else if (scene->PickBlock((int32)mp.x, (int32)mp.y,
                 CH::Mushroom,
                 hitEntity, hitNormal, hitDist))
@@ -216,20 +218,15 @@ void BlockPlacer::HandleInput()
         else
         {
             auto params = GetModelParams(st);
-            // 배치 슬롯의 pickableMask 기준으로 블록 피킹
-            // pickableMask에 있는 채널 중 하나로 쿼리
             std::shared_ptr<Entity> hitEntity;
             Vec3 hitNormal; float hitDist;
 
-            // Floor 포함 여부 확인: Floor 채널 블록(Ground)을 먼저 시도
             bool hit = false;
 
-            // Priming 채널 피킹 시도
             if (ChannelInMask(CH::Priming, params.pickableMask))
                 hit = scene->PickBlock((int32)mp.x, (int32)mp.y,
                     CH::Priming, hitEntity, hitNormal, hitDist);
 
-            // Floor 채널 피킹 시도 (더 가까우면 교체)
             if (ChannelInMask(CH::Floor, params.pickableMask))
             {
                 std::shared_ptr<Entity> floorHit; Vec3 fn; float fd;

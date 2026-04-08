@@ -6,6 +6,7 @@
 #include "Entity/Components/Collider/BaseCollider.h"
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Light.h"
+#include "Entity/Managers/CollisionManager.h"
 #include "UI/Widget.h"
 #include "UI/UIManager.h"
 #include "Graphics/Managers/InstancingManager.h"
@@ -91,28 +92,38 @@ void Scene::SetMainLight(const std::shared_ptr<Light>& light)
 
 void Scene::Add(const std::shared_ptr<Entity>& object)
 {
-	_objects.insert(object);
+    _objects.insert(object);
 
-	// 콜라이더 캐시
-	if (object->GetComponent<BaseCollider>())
-		_collidableObjects.insert(object);
+    // 콜라이더 캐시 + CollisionManager 등록
+    auto collider = object->GetComponent<BaseCollider>();
+    if (collider)
+    {
+        _collidableObjects.insert(object);
+        CollisionManager::RegisterCollider(collider.get(), collider->IsStatic());
+    }
 
-	// 위젯 캐시 (Widget is-a Entity)
-	if (std::dynamic_pointer_cast<Widget>(object))
-		_widgetObjects.push_back(object);
+    // 위젯 캐시 (Widget is-a Entity)
+    if (std::dynamic_pointer_cast<Widget>(object))
+        _widgetObjects.push_back(object);
 
-	GET_SINGLE(InstancingManager)->SetDirty();
-	if (_mainCamera) _mainCamera->SetSortDirty();
+    GET_SINGLE(InstancingManager)->SetDirty();
+    if (_mainCamera) _mainCamera->SetSortDirty();
 }
 
 void Scene::Remove(const std::shared_ptr<Entity>& object)
 {
-	_objects.erase(object);
-	_collidableObjects.erase(object);
-	_widgetObjects.erase(
-		std::remove_if(_widgetObjects.begin(), _widgetObjects.end(),
-			[&object](const auto& w) { return w.get() == object.get(); }),
-		_widgetObjects.end());
+    _objects.erase(object);
+
+    // CollisionManager 해제 후 캐시 제거
+    auto collider = object->GetComponent<BaseCollider>();
+    if (collider)
+        CollisionManager::UnregisterCollider(collider.get());
+
+    _collidableObjects.erase(object);
+    _widgetObjects.erase(
+        std::remove_if(_widgetObjects.begin(), _widgetObjects.end(),
+            [&object](const auto& w) { return w.get() == object.get(); }),
+        _widgetObjects.end());
 
 	GET_SINGLE(InstancingManager)->SetDirty();
 	if (_mainCamera) _mainCamera->SetSortDirty();

@@ -10,7 +10,7 @@ public:
 	virtual ~SphereCollider();
 
 	virtual bool Intersects(Ray& ray, float& distance) override;
-	virtual bool Intersects(std::shared_ptr<BaseCollider>& other) override;
+	virtual bool Intersects(BaseCollider* other) override;
 
 	BoundingSphere& GetBoundingSphere()				{ return _boundingSphere; }
 

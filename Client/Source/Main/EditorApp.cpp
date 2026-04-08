@@ -149,7 +149,7 @@ void EditorApp::CreateCamera()
 // ── Update ────────────────────────────────────────────────────────────────
 void EditorApp::Update()
 {
-    CollisionManager::CheckCollision(_scene);
+    CollisionManager::CheckCollision();
     UpdatePicking();
 
     // Entity 수 변화 감지 → 목록 Dirty

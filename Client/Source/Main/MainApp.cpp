@@ -62,36 +62,34 @@ void MainApp::InitScene()
     if (auto lightComp = lightActor->GetEntity()->GetComponent<Light>())
         _scene->SetMainLight(lightComp);
 
-    {
-        auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-        auto model  = std::make_shared<Model>();
-        model->SetModelPath(L"../Resources/Models/MapModel/");
-        model->SetTexturePath(L"../Resources/Textures/MapModel/");
-        model->ReadModel(L"Priming_01");
-        model->ReadMaterial(L"Priming_01");
+    auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+    auto model  = std::make_shared<Model>();
+    model->SetModelPath(L"../Resources/Models/MapModel/");
+    model->SetTexturePath(L"../Resources/Textures/MapModel/");
+    model->ReadModel(L"Priming_01");
+    model->ReadMaterial(L"Priming_01");
 
-        auto mr = std::make_shared<ModelRenderer>(shader, false);
-        mr->SetModel(model);
-        mr->SetModelScale(Vec3(0.01f));
+    auto mr = std::make_shared<ModelRenderer>(shader, false);
+    mr->SetModel(model);
+    mr->SetModelScale(Vec3(0.01f));
 
-        auto col = std::make_shared<AABBCollider>();
-        col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-        col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
-        col->SetOwnChannel(CollisionChannel::Priming);
-        col->SetPickableMask(
-            static_cast<uint8>(CollisionChannel::Priming) |
-            static_cast<uint8>(CollisionChannel::Character));
-        col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
+    auto col = std::make_shared<AABBCollider>();
+    col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
+    col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
+    col->SetOwnChannel(CollisionChannel::Priming);
+    col->SetPickableMask(
+        static_cast<uint8>(CollisionChannel::Priming) |
+        static_cast<uint8>(CollisionChannel::Character));
+    col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
 
-        auto startBlock = std::make_shared<Entity>(L"StartBlock");
-        startBlock->AddComponent(std::make_shared<Transform>());
-        startBlock->GetTransform()->SetLocalPosition(Vec3(0, 0, 0));
-        startBlock->AddComponent(mr);
-        startBlock->AddComponent(col);
-        _scene->Add(startBlock);
+    auto startBlock = std::make_shared<Entity>(L"StartBlock");
+    startBlock->AddComponent(std::make_shared<Transform>());
+    startBlock->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+    startBlock->AddComponent(mr);
+    startBlock->AddComponent(col);
+    _scene->Add(startBlock);
 
-        _startBlock = startBlock;
-    }
+    _startBlock = startBlock;
 
     auto charActor = std::make_shared<CharacterActor>();
     charActor->Spawn(_scene);
@@ -151,7 +149,7 @@ void MainApp::CreatePlacementSystem()
 
 void MainApp::Update()
 {
-    //CollisionManager::CheckCollision(_scene);
+    CollisionManager::CheckCollision();
 }
 
 void MainApp::Render() {}

@@ -25,7 +25,7 @@ public:
 	virtual void Update() override;
 
 	virtual bool Intersects(Ray& ray, OUT float& distance) = 0;
-	virtual bool Intersects(std::shared_ptr<BaseCollider>& other) = 0;
+	virtual bool Intersects(BaseCollider* other) = 0;
 
 	ColliderType GetColliderType() const { return _colliderType; }
 

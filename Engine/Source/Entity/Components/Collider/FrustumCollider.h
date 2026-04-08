@@ -10,7 +10,7 @@ public:
 	virtual ~FrustumCollider();
 
 	virtual bool Intersects(Ray& ray, float& distance) override;
-	virtual bool Intersects(std::shared_ptr<BaseCollider>& other) override;
+	virtual bool Intersects(BaseCollider* other) override;
 
 	BoundingFrustum& GetBoundingFrustum() { return _boundingFrustum; }
 

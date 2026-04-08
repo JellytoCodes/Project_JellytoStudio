@@ -47,18 +47,18 @@ bool SphereCollider::Intersects(Ray& ray, float& distance)
 	return _boundingSphere.Intersects(ray.position, ray.direction, OUT distance);
 }
 
-bool SphereCollider::Intersects(std::shared_ptr<BaseCollider>& other)
+bool SphereCollider::Intersects(BaseCollider* other)
 {
 	switch (other->GetColliderType())
 	{
 	case ColliderType::Sphere:
-		return _boundingSphere.Intersects(dynamic_pointer_cast<SphereCollider>(other)->GetBoundingSphere());
+		return _boundingSphere.Intersects(static_cast<SphereCollider*>(other)->GetBoundingSphere());
 	case ColliderType::AABB:
-		return _boundingSphere.Intersects(dynamic_pointer_cast<AABBCollider>(other)->GetBoundingBox());
+		return _boundingSphere.Intersects(static_cast<AABBCollider*>(other)->GetBoundingBox());
 	case ColliderType::OBB:
-		return _boundingSphere.Intersects(dynamic_pointer_cast<OBBCollider>(other)->GetBoundingBox());
+		return _boundingSphere.Intersects(static_cast<OBBCollider*>(other)->GetBoundingBox());
 	case ColliderType::Frustum:
-		return _boundingSphere.Intersects(dynamic_pointer_cast<FrustumCollider>(other)->GetBoundingFrustum());
+		return _boundingSphere.Intersects(static_cast<FrustumCollider*>(other)->GetBoundingFrustum());
 	}
 	return false;
 }
