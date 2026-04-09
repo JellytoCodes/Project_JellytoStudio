@@ -27,7 +27,7 @@ enum { FIXED_COMPONENT_COUNT = static_cast<uint8>(ComponentType::End) - 1 };
 class Component
 {
 	friend class Entity;
-	void SetEntity(const std::shared_ptr<Entity>& entity);
+	void SetEntity(Entity* entity);
 
 public :
 	Component(ComponentType type);
@@ -41,12 +41,12 @@ public :
 
 	ComponentType					GetType() const		{ return _type; }
 
-	std::shared_ptr<Transform>		GetTransform();
-	std::shared_ptr<Entity>			GetEntity();
+	Entity*			GetEntity();
+	Transform*		GetTransform();
 
 protected :
-	ComponentType				_type;
+	ComponentType	_type;
 
-	std::weak_ptr<Entity>		_entity;
-	std::shared_ptr<Transform>	_transform;
+	Entity*			_entity;
+	Transform*		_transform;
 };

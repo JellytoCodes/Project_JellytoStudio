@@ -6,19 +6,19 @@ class SceneManager
 {
 	DECLARE_SINGLE(SceneManager)
 
-public :
+public:
 	void Update();
 	void Render();
 
 	template<typename T>
-	void ChangeScene(std::shared_ptr<T> scene)
+	void ChangeScene(std::unique_ptr<T> scene)
 	{
-		_currentScene = scene;
-		scene->Start();
+		_currentScene = std::move(scene);
+		_currentScene->Start();
 	}
 
-	std::shared_ptr<Scene> GetCurrentScene() { return _currentScene; }
+	Scene* GetCurrentScene() { return _currentScene.get(); }
 
-private :
-	std::shared_ptr<Scene> _currentScene = std::make_shared<Scene>();
+private:
+	std::unique_ptr<Scene> _currentScene = std::make_unique<Scene>();
 };

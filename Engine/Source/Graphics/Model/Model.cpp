@@ -1,4 +1,4 @@
-#include "Framework.h"
+ï»¿#include "Framework.h"
 #include "Model.h"
 #include "Utils/Utils.h"
 #include "Utils/FileUtils.h"
@@ -8,35 +8,26 @@
 #include "Resource/Managers/ResourceManager.h"
 #include "Graphics/Model/ModelAnimation.h"
 
-Model::Model()
-{
-
-}
-
-Model::~Model()
-{
-
-}
+Model::Model()  {}
+Model::~Model() {}
 
 void Model::ReadMaterial(const std::wstring& filename)
 {
 	std::wstring fullPath = _texturePath + filename + L".xml";
 	auto parentPath = std::filesystem::path(fullPath).parent_path();
 
-	tinyxml2::XMLDocument* document = new tinyxml2::XMLDocument();
-	tinyxml2::XMLError error = document->LoadFile(Utils::ToString(fullPath).c_str());
+	tinyxml2::XMLDocument document;
+	tinyxml2::XMLError error = document.LoadFile(Utils::ToString(fullPath).c_str());
 	assert(error == tinyxml2::XML_SUCCESS);
 
-	tinyxml2::XMLElement* root = document->FirstChildElement();
+	tinyxml2::XMLElement* root         = document.FirstChildElement();
 	tinyxml2::XMLElement* materialNode = root->FirstChildElement();
 
 	while (materialNode)
 	{
-		std::shared_ptr<Material> material = std::make_shared<Material>();
+		auto material = std::make_unique<Material>();
 
-		tinyxml2::XMLElement* node = nullptr;
-
-		node = materialNode->FirstChildElement();
+		tinyxml2::XMLElement* node = materialNode->FirstChildElement();
 		material->SetName(Utils::ToWString(node->GetText()));
 
 		// Diffuse Texture
@@ -44,27 +35,19 @@ void Model::ReadMaterial(const std::wstring& filename)
 		if (node->GetText())
 		{
 			std::wstring textureStr = Utils::ToWString(node->GetText());
-			if (textureStr.length() > 0)
-			{
-				auto texture = GET_SINGLE(ResourceManager)->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
-				material->SetDiffuseMap(texture);
-			}
+			if (!textureStr.empty())
+				material->SetDiffuseMap(GET_SINGLE(ResourceManager)->GetOrAddTexture(
+					textureStr, (parentPath / textureStr).wstring()));
 		}
 
 		// Specular Texture
 		node = node->NextSiblingElement();
 		if (node->GetText())
 		{
-			std::wstring texture = Utils::ToWString(node->GetText());
-			if (texture.length() > 0)
-			{
-				std::wstring textureStr = Utils::ToWString(node->GetText());
-				if (textureStr.length() > 0)
-				{
-					auto texture = GET_SINGLE(ResourceManager)->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
-					material->SetSpecularMap(texture);
-				}
-			}
+			std::wstring textureStr = Utils::ToWString(node->GetText());
+			if (!textureStr.empty())
+				material->SetSpecularMap(GET_SINGLE(ResourceManager)->GetOrAddTexture(
+					textureStr, (parentPath / textureStr).wstring()));
 		}
 
 		// Normal Texture
@@ -72,64 +55,28 @@ void Model::ReadMaterial(const std::wstring& filename)
 		if (node->GetText())
 		{
 			std::wstring textureStr = Utils::ToWString(node->GetText());
-			if (textureStr.length() > 0)
-			{
-				auto texture = GET_SINGLE(ResourceManager)->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
-				material->SetNormalMap(texture);
-			}
+			if (!textureStr.empty())
+				material->SetNormalMap(GET_SINGLE(ResourceManager)->GetOrAddTexture(
+					textureStr, (parentPath / textureStr).wstring()));
 		}
 
 		// Ambient
-		{
-			node = node->NextSiblingElement();
-
-			Color color;
-			color.x = node->FloatAttribute("R");
-			color.y = node->FloatAttribute("G");
-			color.z = node->FloatAttribute("B");
-			color.w = node->FloatAttribute("A");
-			material->GetMaterialDesc().ambient = color;
-		}
+		node = node->NextSiblingElement();
+		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().ambient = c; }
 
 		// Diffuse
-		{
-			node = node->NextSiblingElement();
-
-			Color color;
-			color.x = node->FloatAttribute("R");
-			color.y = node->FloatAttribute("G");
-			color.z = node->FloatAttribute("B");
-			color.w = node->FloatAttribute("A");
-			material->GetMaterialDesc().diffuse = color;
-		}
+		node = node->NextSiblingElement();
+		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().diffuse = c; }
 
 		// Specular
-		{
-			node = node->NextSiblingElement();
-
-			Color color;
-			color.x = node->FloatAttribute("R");
-			color.y = node->FloatAttribute("G");
-			color.z = node->FloatAttribute("B");
-			color.w = node->FloatAttribute("A");
-			material->GetMaterialDesc().specular = color;
-		}
+		node = node->NextSiblingElement();
+		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().specular = c; }
 
 		// Emissive
-		{
-			node = node->NextSiblingElement();
+		node = node->NextSiblingElement();
+		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().emissive = c; }
 
-			Color color;
-			color.x = node->FloatAttribute("R");
-			color.y = node->FloatAttribute("G");
-			color.z = node->FloatAttribute("B");
-			color.w = node->FloatAttribute("A");
-			material->GetMaterialDesc().emissive = color;
-		}
-
-		_materials.push_back(material);
-
-		// Next Material
+		_materials.push_back(std::move(material));
 		materialNode = materialNode->NextSiblingElement();
 	}
 
@@ -140,65 +87,53 @@ void Model::ReadModel(const std::wstring& filename)
 {
 	std::wstring fullPath = _modelPath + filename + L".mesh";
 
-	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();
-	file->Open(fullPath, FileMode::Read);
+	FileUtils file;
+	file.Open(fullPath, FileMode::Read);
 
-	// Bones
 	{
-		const uint32 count = file->Read<uint32>();
-
+		const uint32 count = file.Read<uint32>();
+		_bones.reserve(count);
 		for (uint32 i = 0; i < count; i++)
 		{
-			std::shared_ptr<ModelBone> bone = std::make_shared<ModelBone>();
-			bone->index = file->Read<int32>();
-			bone->name = Utils::ToWString(file->Read<std::string>());
-			bone->parentIndex = file->Read<int32>();
-			bone->transform = file->Read<Matrix>();
-
-			_bones.push_back(bone);
+			auto bone       = std::make_unique<ModelBone>();
+			bone->index       = file.Read<int32>();
+			bone->name        = Utils::ToWString(file.Read<std::string>());
+			bone->parentIndex = file.Read<int32>();
+			bone->transform   = file.Read<Matrix>();
+			_bones.push_back(std::move(bone));
 		}
 	}
 
-	// Mesh
 	{
-		const uint32 count = file->Read<uint32>();
-
+		const uint32 count = file.Read<uint32>();
+		_meshes.reserve(count);
 		for (uint32 i = 0; i < count; i++)
 		{
-			std::shared_ptr<ModelMesh> mesh = std::make_shared<ModelMesh>();
+			auto mesh         = std::make_unique<ModelMesh>();
+			mesh->name        = Utils::ToWString(file.Read<std::string>());
+			mesh->boneIndex   = file.Read<int32>();
+			mesh->materialName = Utils::ToWString(file.Read<std::string>());
 
-			mesh->name = Utils::ToWString(file->Read<std::string>());
-			mesh->boneIndex = file->Read<int32>();
-
-			// Material
-			mesh->materialName = Utils::ToWString(file->Read<std::string>());
-
-			//VertexData
+			// VertexData
 			{
-				const uint32 count = file->Read<uint32>();
-				std::vector<VertexTextureNormalTangentBlendData> vertices;
-				vertices.resize(count);
-
+				const uint32 vCount = file.Read<uint32>();
+				std::vector<VertexTextureNormalTangentBlendData> vertices(vCount);
 				void* data = vertices.data();
-				file->Read(&data, sizeof(VertexTextureNormalTangentBlendData) * count);
+				file.Read(&data, sizeof(VertexTextureNormalTangentBlendData) * vCount);
 				mesh->geometry->AddVertices(vertices);
 			}
 
-			//IndexData
+			// IndexData
 			{
-				const uint32 count = file->Read<uint32>();
-
-				std::vector<uint32> indices;
-				indices.resize(count);
-
+				const uint32 iCount = file.Read<uint32>();
+				std::vector<uint32> indices(iCount);
 				void* data = indices.data();
-				file->Read(&data, sizeof(uint32) * count);
+				file.Read(&data, sizeof(uint32) * iCount);
 				mesh->geometry->AddIndices(indices);
 			}
 
 			mesh->CreateBuffers();
-
-			_meshes.push_back(mesh);
+			_meshes.push_back(std::move(mesh));
 		}
 	}
 
@@ -209,111 +144,89 @@ void Model::ReadAnimation(const std::wstring& filename)
 {
 	std::wstring fullPath = _modelPath + filename + L".clip";
 
-	std::shared_ptr<FileUtils> file = std::make_shared<FileUtils>();
-	file->Open(fullPath, FileMode::Read);
+	FileUtils file;
+	file.Open(fullPath, FileMode::Read);
 
-	std::shared_ptr<ModelAnimation> animation = std::make_shared<ModelAnimation>();
+	auto animation         = std::make_unique<ModelAnimation>();
+	animation->name        = Utils::ToWString(file.Read<std::string>());
+	animation->duration    = file.Read<float>();
+	animation->frameRate   = file.Read<float>();
+	animation->frameCount  = file.Read<uint32>();
 
-	animation->name = Utils::ToWString(file->Read<std::string>());
-	animation->duration = file->Read<float>();
-	animation->frameRate = file->Read<float>();
-	animation->frameCount = file->Read<uint32>();
-
-	uint32 keyframesCount = file->Read<uint32>();
+	const uint32 keyframesCount = file.Read<uint32>();
 
 	for (uint32 i = 0; i < keyframesCount; i++)
 	{
-		std::shared_ptr<ModelKeyframe> keyframe = std::make_shared<ModelKeyframe>();
-		keyframe->boneName = Utils::ToWString(file->Read<std::string>());
+		auto keyframe      = std::make_unique<ModelKeyframe>();
+		keyframe->boneName = Utils::ToWString(file.Read<std::string>());
 
-		uint32 size = file->Read<uint32>();
-
+		const uint32 size = file.Read<uint32>();
 		if (size > 0)
 		{
 			keyframe->transforms.resize(size);
-
-			void* ptr = &keyframe->transforms[0];
-			file->Read(&ptr, sizeof(ModelKeyframeData) * size);
+			void* ptr = keyframe->transforms.data();
+			file.Read(&ptr, sizeof(ModelKeyframeData) * size);
 		}
-		animation->keyframes[keyframe->boneName] = keyframe;
+
+		animation->keyframes[keyframe->boneName] = std::move(keyframe);
 	}
 
-	_animations.push_back(animation);
+	_animations.push_back(std::move(animation));
 }
 
-
+// â”€â”€ ì´ë¦„ ê²€ìƒ‰ (ì›ì‹œ í¬ì¸í„° ë°˜í™˜) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 std::shared_ptr<Material> Model::GetMaterialByName(const std::wstring& name)
 {
 	for (auto& material : _materials)
-	{
 		if (material->GetName() == name) return material;
-	}
-
 	return nullptr;
 }
 
-std::shared_ptr<ModelMesh> Model::GetMeshByName(const std::wstring& name)
+ModelMesh* Model::GetMeshByName(const std::wstring& name)
 {
 	for (auto& mesh : _meshes)
-	{
-		if (mesh->name == name) return mesh;
-	}
-
+		if (mesh->name == name) return mesh.get();
 	return nullptr;
 }
 
-std::shared_ptr<ModelBone> Model::GetBoneByName(const std::wstring& name)
+ModelBone* Model::GetBoneByName(const std::wstring& name)
 {
 	for (auto& bone : _bones)
-	{
-		if (bone->name == name) return bone;
-	}
-
+		if (bone->name == name) return bone.get();
 	return nullptr;
 }
 
-std::shared_ptr<ModelAnimation> Model::GetAnimationByName(const std::wstring& name)
+ModelAnimation* Model::GetAnimationByName(const std::wstring& name)
 {
 	for (auto& animation : _animations)
-	{
-		if (animation->name == name)
-			return animation;
-	}
-
+		if (animation->name == name) return animation.get();
 	return nullptr;
 }
 
 void Model::BindCacheInfo()
 {
-	// Mesh¿¡ Material Ä³½Ì
 	for (const auto& mesh : _meshes)
 	{
-		// ÀÌ¹Ì Ã£¾ÒÀ¸¸é ½ºÅµ
 		if (mesh->material != nullptr) continue;
-
 		mesh->material = GetMaterialByName(mesh->materialName);
 	}
 
-	// Mesh¿¡ Bone Ä³½Ì
 	for (const auto& mesh : _meshes)
 	{
-		// ÀÌ¹Ì Ã£¾ÒÀ¸¸é ½ºÅµ
 		if (mesh->bone != nullptr) continue;
-
 		mesh->bone = GetBoneByIndex(mesh->boneIndex);
 	}
 
-	// Bone °èÃş Á¤º¸ Ã¤¿ì±â
-	if (_root == nullptr && _bones.size() > 0)
+	if (_root == nullptr && !_bones.empty())
 	{
-		_root = _bones[0];
+		_root = _bones[0].get();
 
 		for (const auto& bone : _bones)
 		{
 			if (bone->parentIndex >= 0)
 			{
-				bone->parent = _bones[bone->parentIndex];
-				bone->parent->children.push_back(bone);
+				bone->parent = _bones[bone->parentIndex].get();
+				bone->parent->children.push_back(bone.get());
 			}
 			else
 			{

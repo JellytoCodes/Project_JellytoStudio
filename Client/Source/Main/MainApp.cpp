@@ -1,10 +1,7 @@
 ﻿#include "pch.h"
 #include "MainApp.h"
 
-#include <random>
-
 #include "Actors.h"
-
 #include "Resource/Managers/ResourceManager.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Scene.h"
@@ -26,130 +23,142 @@
 
 void MainApp::Init()
 {
-    GET_SINGLE(ResourceManager)->Init();
+	GET_SINGLE(ResourceManager)->Init();
 
-    SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_shared<SkySphereActor>(); });
-    SceneSerializer::RegisterActor(L"CubeActor", [] { return std::make_shared<CubeActor>(); });
-    SceneSerializer::RegisterActor(L"SphereActor", [] { return std::make_shared<SphereActor>(); });
-    SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_shared<CharacterActor>(); });
-    SceneSerializer::RegisterActor(L"LightActor", [] { return std::make_shared<LightActor>(); });
+	SceneSerializer::RegisterActor(L"SkySphereActor",  [] { return std::make_unique<SkySphereActor>(); });
+	SceneSerializer::RegisterActor(L"CubeActor",       [] { return std::make_unique<CubeActor>(); });
+	SceneSerializer::RegisterActor(L"SphereActor",     [] { return std::make_unique<SphereActor>(); });
+	SceneSerializer::RegisterActor(L"CharacterActor",  [] { return std::make_unique<CharacterActor>(); });
+	SceneSerializer::RegisterActor(L"LightActor",      [] { return std::make_unique<LightActor>(); });
 
-    _scene = std::make_shared<Scene>();
-    _scene->SetName(L"Main Scene");
+	_scene = std::make_unique<Scene>();
+	_scene->SetName(L"Main Scene");
 
-    InitScene();
-    CreateCamera();
-    CreatePlacementSystem();
+	InitScene();
+	CreateCamera();
+	CreatePlacementSystem();
 
-    GET_SINGLE(SceneManager)->ChangeScene(_scene);
+	// SceneManager로 소유권 이전 — 이후 _scene은 nullptr
+	GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 }
 
 void MainApp::InitScene()
 {
-    auto spawn = 
-    [&](std::shared_ptr<Actor> actor)
-    {
-        actor->Spawn(_scene);
-        _actors.push_back(actor);
-    };
+	Scene* scene = _scene.get();
 
-    spawn(std::make_shared<SkySphereActor>());
+	auto spawn = [&](std::unique_ptr<Actor> actor) -> Actor*
+	{
+		actor->Spawn(scene);
+		Actor* raw = actor.get();
+		_actors.push_back(std::move(actor));
+		return raw;
+	};
 
-    // 라이트
-    auto lightActor = std::make_shared<LightActor>();
-    lightActor->Spawn(_scene);
-    _actors.push_back(lightActor);
-    if (auto lightComp = lightActor->GetEntity()->GetComponent<Light>())
-        _scene->SetMainLight(lightComp);
+	spawn(std::make_unique<SkySphereActor>());
 
-    auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-    auto model  = std::make_shared<Model>();
-    model->SetModelPath(L"../Resources/Models/MapModel/");
-    model->SetTexturePath(L"../Resources/Textures/MapModel/");
-    model->ReadModel(L"Priming_01");
-    model->ReadMaterial(L"Priming_01");
+	Actor* lightActor = spawn(std::make_unique<LightActor>());
+	if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
+		scene->SetMainLight(lightComp);
 
-    auto mr = std::make_shared<ModelRenderer>(shader, false);
-    mr->SetModel(model);
-    mr->SetModelScale(Vec3(0.01f));
+	// ── 시작 블록 (ModelRenderer + AABBCollider) ───────────────────────
+	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	GET_SINGLE(ResourceManager)->Add(L"StartBlockShader", shader);
 
-    auto col = std::make_shared<AABBCollider>();
-    col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-    col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));       // 하단 기준
-    col->SetOwnChannel(CollisionChannel::Priming);
-    col->SetPickableMask(
-        static_cast<uint8>(CollisionChannel::Priming) |
-        static_cast<uint8>(CollisionChannel::Character));
-    col->SetStatic(true); // 시작 블록도 정적 — 매프레임 행렬 연산 스킵
+	auto model = std::make_shared<Model>();
+	model->SetModelPath(L"../Resources/Models/MapModel/");
+	model->SetTexturePath(L"../Resources/Textures/MapModel/");
+	model->ReadModel(L"Priming_01");
+	model->ReadMaterial(L"Priming_01");
 
-    auto startBlock = std::make_shared<Entity>(L"StartBlock");
-    startBlock->AddComponent(std::make_shared<Transform>());
-    startBlock->GetTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-    startBlock->AddComponent(mr);
-    startBlock->AddComponent(col);
-    _scene->Add(startBlock);
+	auto mr = std::make_unique<ModelRenderer>(shader, false);
+	mr->SetModel(model);
+	mr->SetModelScale(Vec3(0.01f));
 
-    _startBlock = startBlock;
+	auto col = std::make_unique<AABBCollider>();
+	col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
+	col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
+	col->SetOwnChannel(CollisionChannel::Priming);
+	col->SetPickableMask(
+		static_cast<uint8>(CollisionChannel::Priming) |
+		static_cast<uint8>(CollisionChannel::Character));
+	col->SetStatic(true);
 
-    auto charActor = std::make_shared<CharacterActor>();
-    charActor->Spawn(_scene);
-    _actors.push_back(charActor);
-    _characterEntity = charActor->GetEntity();
-    _characterEntity->GetTransform()->SetLocalPosition(Vec3(0.f, 1.0f, 0.f));
+	auto startBlock = std::make_unique<Entity>(L"StartBlock");
+	startBlock->AddComponent(std::make_unique<Transform>());
+	startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+	startBlock->AddComponent(std::move(mr));
+	startBlock->AddComponent(std::move(col));
 
-    if (_startBlock)
-    {
-        auto oneBlock = std::make_shared<OneBlockScript>();
-        oneBlock->SetCharacterEntity(_characterEntity);
-        _startBlock->AddComponent(oneBlock);
-    }
+	_startBlock = startBlock.get();
+	scene->Add(std::move(startBlock));
+
+	// ── 캐릭터 ─────────────────────────────────────────────────────────
+	Actor* charActor = spawn(std::make_unique<CharacterActor>());
+	_characterEntity = charActor->GetEntity();
+	_characterEntity->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 1.0f, 0.f));
+
+	// ── OneBlockScript ─────────────────────────────────────────────────
+	if (_startBlock)
+	{
+		auto oneBlock = std::make_unique<OneBlockScript>();
+		oneBlock->SetCharacterEntity(_characterEntity);
+		_startBlock->AddComponent(std::move(oneBlock));
+	}
 }
 
 void MainApp::CreateCamera()
 {
-    auto cam = std::make_shared<Entity>(L"Camera");
-    cam->AddComponent(std::make_shared<Transform>());
-    cam->AddComponent(std::make_shared<Camera>());
+	Scene* scene = _scene.get();
 
-    auto isoCtrl = std::make_shared<IsometricCameraController>();
-    isoCtrl->SetDistance(10.f);
-    isoCtrl->SetPanSpeed(10.f);
-    isoCtrl->SetZoomSpeed(10.f);
-    isoCtrl->SetMinDistance(5.f);
-    isoCtrl->SetMaxDistance(40.f);
-    cam->AddComponent(isoCtrl);
-    _isoCamCtrl = isoCtrl;
+	auto cam = std::make_unique<Entity>(L"Camera");
+	cam->AddComponent(std::make_unique<Transform>());
+	cam->AddComponent(std::make_unique<Camera>());
 
-    _scene->Add(cam);
-    _scene->SetMainCamera(cam->GetComponent<Camera>());
+	auto isoCtrl = std::make_unique<IsometricCameraController>();
+	isoCtrl->SetDistance(10.f);
+	isoCtrl->SetPanSpeed(10.f);
+	isoCtrl->SetZoomSpeed(10.f);
+	isoCtrl->SetMinDistance(5.f);
+	isoCtrl->SetMaxDistance(40.f);
 
-    if (_characterEntity)
-        isoCtrl->SetTarget(_characterEntity);
+	_isoCamCtrl = isoCtrl.get();
+	Camera* camComp = cam->GetComponent<Camera>();
+
+	cam->AddComponent(std::move(isoCtrl));
+
+	scene->SetMainCamera(camComp);
+	scene->Add(std::move(cam));
+
+	if (_characterEntity)
+		_isoCamCtrl->SetTarget(_characterEntity);
 }
 
 void MainApp::CreatePlacementSystem()
 {
-    _palette = std::make_shared<PaletteWidget>(L"Palette");
-    _scene->Add(_palette);
+	Scene* scene = _scene.get();
 
-    auto placerEntity = std::make_shared<Entity>(L"BlockPlacer");
-    placerEntity->AddComponent(std::make_shared<Transform>());
+	auto palette = std::make_unique<PaletteWidget>(L"Palette");
+	_palette = palette.get();
+	scene->Add(std::move(palette));
 
-    auto placer = std::make_shared<BlockPlacer>();
-    placer->SetPalette(_palette);
-    placer->SetSavePath(L"../Saved/scene.xml");
+	auto placerEntity = std::make_unique<Entity>(L"BlockPlacer");
+	placerEntity->AddComponent(std::make_unique<Transform>());
 
-    placerEntity->AddComponent(placer);
-    _blockPlacer = placer;
-    _scene->Add(placerEntity);
+	auto placer = std::make_unique<BlockPlacer>();
+	placer->SetPalette(_palette);
+	placer->SetSavePath(L"../Saved/scene.xml");
 
-    if (_characterEntity)
-        placer->SetCharacterEntity(_characterEntity);
+	_blockPlacer = placer.get();
+	placerEntity->AddComponent(std::move(placer));
+	scene->Add(std::move(placerEntity));
+
+	if (_characterEntity)
+		_blockPlacer->SetCharacterEntity(_characterEntity);
 }
 
 void MainApp::Update()
 {
-    CollisionManager::CheckCollision();
+	CollisionManager::CheckCollision();
 }
 
 void MainApp::Render() {}

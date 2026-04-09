@@ -2,22 +2,23 @@
 #include "InstancingManager.h"
 
 #include "Entity/Entity.h"
+#include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Pipeline/Shader.h"
 
-void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
+// ── Render ────────────────────────────────────────────────────────────────
+void InstancingManager::Render(std::vector<Entity*>& entities)
 {
-	if (Entities.empty()) return;
+	if (entities.empty()) return;
 
-	// F1 키: 인스턴싱 상태 즉석 진단 (Output Window 출력)
 	if (::GetAsyncKeyState(VK_F1) & 0x8000)
 	{
 		static bool s_dumped = false;
 		if (!s_dumped) { DumpInstancingStats(); s_dumped = true; }
 	}
-	else { static bool s_dumped = false; s_dumped = false; } // 키 뗌 = 재설정
+	else { static bool s_dumped = false; s_dumped = false; }
 
 	if (_bDirty)
 	{
@@ -27,42 +28,44 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 		_modelWorldCache.clear();
 		_animCache.clear();
 
-		for (std::shared_ptr<Entity>& entity : Entities)
+		for (Entity* entity : entities)
 		{
-			if (entity->GetComponent<MeshRenderer>() != nullptr)
+			if (auto* mr = entity->GetComponent<MeshRenderer>())
 			{
-				const InstanceID instanceID = entity->GetComponent<MeshRenderer>()->GetInstanceID();
+				const InstanceID instanceID = mr->GetInstanceID();
 				_meshCache[instanceID].push_back(entity);
 			}
-			else if (entity->GetComponent<ModelRenderer>() != nullptr)
+			else if (auto* modelR = entity->GetComponent<ModelRenderer>())
 			{
-				auto mr = entity->GetComponent<ModelRenderer>();
-				const InstanceID instanceID = mr->GetInstanceID();
-				// world matrix를 dirty 시점에 미리 계산해서 캐시
-				// 정적 블록은 이후 매프레임 GetComponent+행렬곱 필요 없음
-				Matrix scaleMatrix = mr->GetModelScaleMatrix();
+				const InstanceID instanceID = modelR->GetInstanceID();
+				Matrix scaleMatrix = modelR->GetModelScaleMatrix();
 				InstancingData data;
-				data.world = scaleMatrix * entity->GetTransform()->GetWorldMatrix();
+				data.world = scaleMatrix * entity->GetComponent<Transform>()->GetWorldMatrix();
 				_modelCache[instanceID].push_back(entity);
 				_modelWorldCache[instanceID].push_back(data);
 			}
-			else if (entity->GetComponent<ModelAnimator>() != nullptr)
+			else if (auto* anim = entity->GetComponent<ModelAnimator>())
 			{
-				const InstanceID instanceID = entity->GetComponent<ModelAnimator>()->GetInstanceID();
+				const InstanceID instanceID = anim->GetInstanceID();
 				_animCache[instanceID].push_back(entity);
 			}
 		}
 
-		for (auto& pair : _modelWorldCache)
+		for (auto& [id, dataVec] : _modelWorldCache)
 		{
-			const InstanceID id = pair.first;
-			if (_buffers.find(id) == _buffers.end())
-				_buffers[id] = std::make_shared<InstancingBuffer>();
+			auto it = _buffers.find(id);
+			if (it == _buffers.end())
+			{
+				_buffers[id] = std::make_unique<InstancingBuffer>();
+				it = _buffers.find(id);
+			}
 			else
-				_buffers[id]->ClearData();
-			for (const InstancingData& data : pair.second)
-				AddData(id, const_cast<InstancingData&>(data));
-			_buffers[id]->UploadData(); // GPU 업로드 — dirty 시 1회만
+			{
+				it->second->ClearData();
+			}
+			for (const InstancingData& d : dataVec)
+				AddData(id, d);
+			it->second->UploadData();
 		}
 
 		_bDirty = false;
@@ -75,108 +78,99 @@ void InstancingManager::Render(std::vector<std::shared_ptr<Entity>>& Entities)
 
 void InstancingManager::ClearData()
 {
-	for (auto& pair : _buffers)
-	{
-		std::shared_ptr<InstancingBuffer>& buffer = pair.second;
+	for (auto& [id, buffer] : _buffers)
 		buffer->ClearData();
-	}
 }
 
 void InstancingManager::RenderMeshRenderer()
 {
-	for (auto& pair : _meshCache)
+	for (auto& [id, entityVec] : _meshCache)
 	{
-		if (pair.second.empty()) continue;
-		const InstanceID id = pair.first;
+		if (entityVec.empty()) continue;
 
-		// 매프레임 world matrix 갱신 — MeshRenderer도 ModelRenderer와 동일하게 처리
-		// (프리뷰 큐브처럼 동적으로 움직이는 MeshRenderer가 freeze되는 버그 수정)
-		if (_buffers.find(id) != _buffers.end())
-			_buffers[id]->ClearData();
+		auto it = _buffers.find(id);
+		if (it != _buffers.end())
+			it->second->ClearData();
 
-		for (const std::shared_ptr<Entity>& entity : pair.second)
+		for (Entity* entity : entityVec)
 		{
 			InstancingData data;
-			data.world = entity->GetTransform()->GetWorldMatrix();
+			data.world = entity->GetComponent<Transform>()->GetWorldMatrix();
 			AddData(id, data);
 		}
 
-		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-		pair.second[0]->GetComponent<MeshRenderer>()->RenderInstancing(buffer);
+		InstancingBuffer* buffer = _buffers[id].get();
+		entityVec[0]->GetComponent<MeshRenderer>()->RenderInstancing(buffer);
 	}
 }
 
 void InstancingManager::RenderModelRenderer()
 {
-	// ── 매프레임 UploadData / ClearData / AddData 호출 없음 ──────
-	// dirty 시점에 이미 조립+업로드 완료 → 여기서는 BindBuffer+Draw만
-	for (auto& pair : _modelCache)
+	for (auto& [id, entityVec] : _modelCache)
 	{
-		if (pair.second.empty()) continue;
-		const InstanceID id = pair.first;
+		if (entityVec.empty()) continue;
 
-		if (_buffers.find(id) == _buffers.end()) continue;
-		if (!_buffers[id]->IsUploaded()) continue; // 아직 업로드 안 됐으면 스킵
+		auto it = _buffers.find(id);
+		if (it == _buffers.end()) continue;
+		if (!it->second->IsUploaded()) continue;
 
-		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-		pair.second[0]->GetComponent<ModelRenderer>()->RenderInstancing(buffer);
+		InstancingBuffer* buffer = it->second.get();
+		entityVec[0]->GetComponent<ModelRenderer>()->RenderInstancing(buffer);
 	}
 }
 
 void InstancingManager::RenderAnimRenderer()
 {
-	for (auto& pair : _animCache)
+	for (auto& [id, entityVec] : _animCache)
 	{
-		if (pair.second.empty()) continue;
-		const InstanceID id = pair.first;
+		if (entityVec.empty()) continue;
 
-		if (_buffers.find(id) != _buffers.end())
-			_buffers[id]->ClearData();
+		auto it = _buffers.find(id);
+		if (it != _buffers.end())
+			it->second->ClearData();
 
-		std::shared_ptr<InstancedTweenDesc> tweenDesc = std::make_shared<InstancedTweenDesc>();
+		InstancedTweenDesc tweenDesc;
 
-		for (int32 i = 0; i < pair.second.size(); i++)
+		for (int32 i = 0; i < static_cast<int32>(entityVec.size()); i++)
 		{
-			const std::shared_ptr<Entity>& entity = pair.second[i];
+			Entity* entity = entityVec[i];
 			InstancingData data;
-			data.world = entity->GetTransform()->GetWorldMatrix();
-
+			data.world = entity->GetComponent<Transform>()->GetWorldMatrix();
 			AddData(id, data);
 
 			entity->GetComponent<ModelAnimator>()->UpdateTweenData();
-			tweenDesc->tweens[i] = entity->GetComponent<ModelAnimator>()->GetTweenDesc();
+			tweenDesc.tweens[i] = entity->GetComponent<ModelAnimator>()->GetTweenDesc();
 		}
 
-		pair.second[0]->GetComponent<ModelAnimator>()->GetShader()->PushTweenData(*tweenDesc.get());
+		entityVec[0]->GetComponent<ModelAnimator>()->GetShader()->PushTweenData(tweenDesc);
 
-		std::shared_ptr<InstancingBuffer>& buffer = _buffers[id];
-		pair.second[0]->GetComponent<ModelAnimator>()->RenderInstancing(buffer);
+		InstancingBuffer* buffer = _buffers[id].get();
+		entityVec[0]->GetComponent<ModelAnimator>()->RenderInstancing(buffer);
 	}
 }
 
-void InstancingManager::AddData(InstanceID instanceID, InstancingData& data)
+void InstancingManager::AddData(InstanceID instanceID, const InstancingData& data)
 {
-	if (_buffers.find(instanceID) == _buffers.end())
-		_buffers[instanceID] = std::make_shared<InstancingBuffer>();
-
-	_buffers[instanceID]->AddData(data);
+	auto it = _buffers.find(instanceID);
+	if (it == _buffers.end())
+	{
+		_buffers[instanceID] = std::make_unique<InstancingBuffer>();
+		it = _buffers.find(instanceID);
+	}
+	it->second->AddData(data);
 }
+
 void InstancingManager::DumpInstancingStats() const
 {
 	::OutputDebugStringW(L"\n========== [InstancingManager 진단] ==========\n");
 
-	// ModelRenderer 인스턴싱 그룹
 	wchar_t buf[512];
 	swprintf_s(buf, L"ModelRenderer 그룹 수 (= DrawCall 수): %zu\n", _modelCache.size());
 	::OutputDebugStringW(buf);
 
 	int groupIdx = 0;
-	for (const auto& pair : _modelCache)
+	for (const auto& [id, entityVec] : _modelCache)
 	{
-		const InstanceID& id = pair.first;
-		size_t count = pair.second.size();
-
-		// 버퍼 업로드 상태 확인
 		bool uploaded = false;
 		auto bufIt = _buffers.find(id);
 		if (bufIt != _buffers.end())
@@ -184,28 +178,25 @@ void InstancingManager::DumpInstancingStats() const
 
 		swprintf_s(buf,
 			L"  [그룹 %d] model=%llx shader=%llx | 인스턴스=%zu | 업로드=%s\n",
-			groupIdx++,
-			pair.first.first, pair.first.second,
-			count,
-			uploaded ? L"OK" : L"X (재업로드 필요)");
+			groupIdx++, id.first, id.second,
+			entityVec.size(),
+			uploaded ? L"OK" : L"X");
 		::OutputDebugStringW(buf);
 	}
 
-	// MeshRenderer 그룹
 	swprintf_s(buf, L"MeshRenderer 그룹 수: %zu\n", _meshCache.size());
 	::OutputDebugStringW(buf);
-	for (const auto& pair : _meshCache)
+	for (const auto& [id, entityVec] : _meshCache)
 	{
 		swprintf_s(buf, L"  mesh=%llx mat=%llx | 인스턴스=%zu\n",
-			pair.first.first, pair.first.second, pair.second.size());
+			id.first, id.second, entityVec.size());
 		::OutputDebugStringW(buf);
 	}
 
-	// 총 Entity 수
 	size_t totalModel = 0;
-	for (const auto& p : _modelCache) totalModel += p.second.size();
+	for (const auto& [id, v] : _modelCache) totalModel += v.size();
 	size_t totalMesh = 0;
-	for (const auto& p : _meshCache) totalMesh += p.second.size();
+	for (const auto& [id, v] : _meshCache) totalMesh += v.size();
 
 	swprintf_s(buf,
 		L"총 렌더 Entity: ModelRenderer=%zu MeshRenderer=%zu\n"

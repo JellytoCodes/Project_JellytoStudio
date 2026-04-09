@@ -2,27 +2,27 @@
 
 struct StateBlock
 {
-	ComPtr<ID3D11RasterizerState>		RSRasterizerState;
-	ComPtr<ID3D11BlendState>			OMBlendState;
-	FLOAT								OMBlendFactor[4];
-	UINT								OMSampleMask;
-	ComPtr<ID3D11DepthStencilState>		OMDepthStencilState;
-	UINT								OMStencilRef;
+	ComPtr<ID3D11RasterizerState>   RSRasterizerState;
+	ComPtr<ID3D11BlendState>        OMBlendState;
+	FLOAT                           OMBlendFactor[4];
+	UINT                            OMSampleMask;
+	ComPtr<ID3D11DepthStencilState> OMDepthStencilState;
+	UINT                            OMStencilRef;
 };
 
 struct ShaderPass
 {
-	std::wstring									name;
-	ID3DX11EffectPass*								pass;
-	D3DX11_PASS_DESC								desc;
+	std::wstring      name;
+	ID3DX11EffectPass* pass;
+	D3DX11_PASS_DESC  desc;
 
-	ComPtr<ID3D11InputLayout>						inputLayout;
-	D3DX11_PASS_SHADER_DESC							passVsDesc;
-	D3DX11_EFFECT_SHADER_DESC						effectVsDesc;
-	std::vector<D3D11_SIGNATURE_PARAMETER_DESC>		signatureDescs;
+	ComPtr<ID3D11InputLayout>                inputLayout;
+	D3DX11_PASS_SHADER_DESC                  passVsDesc;
+	D3DX11_EFFECT_SHADER_DESC                effectVsDesc;
+	std::vector<D3D11_SIGNATURE_PARAMETER_DESC> signatureDescs;
 
-	D3DX11_STATE_BLOCK_MASK							stateBlockMask;
-	std::shared_ptr<StateBlock>						stateBlock;
+	D3DX11_STATE_BLOCK_MASK stateBlockMask;
+	StateBlock* stateBlock = nullptr;
 
 	void Draw(UINT vertexCount, UINT startVertexLocation = 0);
 	void DrawIndexed(UINT indexCount, UINT startIndexLocation = 0, INT baseVertexLocation = 0);

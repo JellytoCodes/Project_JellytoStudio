@@ -310,7 +310,7 @@ void ItemWindow::OnPlace()
 		return;
 	}
 
-	auto scene = _scene.lock();
+	auto scene = _scene;
 	if (!scene)
 	{
 		::MessageBoxW(_hWnd,
@@ -329,9 +329,9 @@ void ItemWindow::OnPlace()
 
 	// Transform 적용
 	auto entity = actor->GetEntity();
-	if (entity && entity->GetTransform())
+	if (entity && entity->GetComponent<Transform>())
 	{
-		auto tf = entity->GetTransform();
+		auto tf = entity->GetComponent<Transform>();
 		Vec3 pos(ReadFloat(_hPX), ReadFloat(_hPY), ReadFloat(_hPZ));
 		Vec3 rot(
 			XMConvertToRadians(ReadFloat(_hRX)),
@@ -344,7 +344,7 @@ void ItemWindow::OnPlace()
 		tf->SetLocalScale(scl);
 	}
 
-	_placedActors.push_back(actor); // 배치 목록에 보관
+	_placedActors.push_back(std::move(actor)); // 배치 목록에 보관
 }
 
 float ItemWindow::ReadFloat(HWND hEdit, float fallback)

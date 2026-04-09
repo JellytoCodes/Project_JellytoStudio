@@ -21,41 +21,36 @@ public:
 	virtual void OnDestroy();
 
 	virtual void Render();
+	virtual void Add(std::unique_ptr<Entity> object);
+	virtual void Remove(Entity* object);
 
-	virtual void Add(const std::shared_ptr<Entity>& object);
-	virtual void Remove(const std::shared_ptr<Entity>& object);
+	void	SetMainCamera(Camera* mainCamera) { _mainCamera = mainCamera; }
+	Camera* GetMainCamera() { return _mainCamera; }
 
-	void											SetMainCamera(const std::shared_ptr<Camera>& mainCamera) { _mainCamera = mainCamera; }
-	std::shared_ptr<Camera>							GetMainCamera() { return _mainCamera; }
+	Light* GetLight() { return _mainLight; }
+	void SetMainLight(Light* light) { _mainLight = light; }
 
-	std::shared_ptr<Light> GetLight();
-	void SetMainLight(const std::shared_ptr<Light>& light);
+	Entity* Pick(int32 screenX, int32 screenY);
 
-	std::shared_ptr<Entity> Pick(int32 screenX, int32 screenY);
-
-	// 채널 필터링 + 히트 노말 반환 버전
-	// queryChan: 이 채널로 피킹 — target.CanBePickedBy(queryChan) 검사
-	// outHitNormal: 히트된 AABB 면의 노말 벡터 (±X/Y/Z)
-	bool PickBlock(int32 screenX, int32 screenY,
-		CollisionChannel queryChan,
-		std::shared_ptr<Entity>& outEntity,
-		Vec3& outHitNormal,
-		float& outDist);
+	bool PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan,
+		Entity*& outEntity, Vec3& outHitNormal, float& outDist);
 
 	bool PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY = 0.f);
 
-	std::unordered_set<std::shared_ptr<Entity>>& GetEntities() { return _objects; }
+	const std::unordered_set<std::unique_ptr<Entity>>& GetEntities() const { return _objects; }
+	std::unordered_set<std::unique_ptr<Entity>>& GetEntities() { return _objects; }
 
-	// 콜라이더 보유 Entity 캐시 — CollisionManager가 O(N²)→O(C²)에 활용
-	std::unordered_set<std::shared_ptr<Entity>>& GetCollidableEntities() { return _collidableObjects; }
+	const std::unordered_set<Entity*>& GetCollidableEntities() const { return _collidableObjects; }
+	std::unordered_set<Entity*>& GetCollidableEntities() { return _collidableObjects; }
 
 private:
-	std::wstring									_name = L"Unnamed Scene";
-	std::unordered_set<std::shared_ptr<Entity>>		_objects;
-	std::shared_ptr<Camera>							_mainCamera;
-	std::shared_ptr<Light>							_mainLight;
+	std::wstring _name = L"Unnamed Scene";
 
-	// ── Render 루프 캐시 ─────────────────────────────────────────
-	std::unordered_set<std::shared_ptr<Entity>>		_collidableObjects;
-	std::vector<std::shared_ptr<Entity>>			_widgetObjects;
+	std::unordered_set<std::unique_ptr<Entity>> _objects;
+
+	Camera* _mainCamera = nullptr;
+	Light*  _mainLight  = nullptr;
+
+	std::unordered_set<Entity*> _collidableObjects;
+	std::vector<Entity*>        _widgetObjects;
 };

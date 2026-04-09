@@ -6,69 +6,40 @@
 #include "Resource/Material.h"
 #include "Resource/Mesh.h"
 #include "Graphics/Graphics.h"
-
 #include "Pipeline/Shader.h"
 #include "Scene/SceneManager.h"
+#include "Scene/Scene.h"
 
 MeshRenderer::MeshRenderer()
 	: Super(ComponentType::MeshRenderer)
 {
-
 }
 
-MeshRenderer::~MeshRenderer()
-{
+MeshRenderer::~MeshRenderer() {}
 
-}
+void MeshRenderer::Awake()     {}
+void MeshRenderer::Start()     {}
+void MeshRenderer::Update()    {}
+void MeshRenderer::LateUpdate(){}
+void MeshRenderer::OnDestroy() {}
 
-void MeshRenderer::Awake()
-{
-
-}
-
-void MeshRenderer::Start()
-{
-	
-}
-
-void MeshRenderer::Update()
-{
-
-}
-
-void MeshRenderer::LateUpdate()
-{
-	
-}
-
-void MeshRenderer::OnDestroy()
-{
-	
-}
-
-void MeshRenderer::RenderInstancing(const std::shared_ptr<InstancingBuffer>& buffer)
+void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
 {
 	if (_mesh == nullptr || _material == nullptr) return;
 
-	std::shared_ptr<Shader> shader = _material->GetShader();
+	auto shader = _material->GetShader();
 	if (shader == nullptr) return;
 
-	// GlobalData
 	shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
-	// Light
-	if (std::shared_ptr<Light> lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
-	{
-		assert(lightObj.get() != nullptr && "[MeshRenderer] lightObj is null");
+	if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
 		shader->PushLightData(lightObj->GetLightDesc());
-	}
 
-	// Light
 	_material->Update();
 
-	// IA
-	_mesh->GetVertexBuffer()->PushData(Graphics::Get()->GetDeviceContext());
-	_mesh->GetIndexBuffer()->PushData(Graphics::Get()->GetDeviceContext());
+	auto dc = Graphics::Get()->GetDeviceContext();
+	_mesh->GetVertexBuffer()->PushData(dc);
+	_mesh->GetIndexBuffer()->PushData(dc);
 
 	buffer->PushData();
 
@@ -77,5 +48,5 @@ void MeshRenderer::RenderInstancing(const std::shared_ptr<InstancingBuffer>& buf
 
 InstanceID MeshRenderer::GetInstanceID()
 {
-	return std::make_pair((uint64)_mesh.get(), (uint64)_material.get());
+	return std::make_pair(reinterpret_cast<uint64>(_mesh.get()), reinterpret_cast<uint64>(_material.get()));
 }

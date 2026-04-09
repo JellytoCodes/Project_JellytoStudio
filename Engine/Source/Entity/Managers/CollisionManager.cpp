@@ -42,8 +42,8 @@ void CollisionManager::CheckCollision()
             BaseCollider* b = s_DynamicColliders[j];
             if (Intersects(a, b))
             {
-                Entity* entityA = a->GetEntity().get();
-                Entity* entityB = b->GetEntity().get();
+                Entity* entityA = a->GetEntity();
+                Entity* entityB = b->GetEntity();
                 entityA->OnCollision(entityB);
                 entityB->OnCollision(entityA);
             }
@@ -59,8 +59,8 @@ void CollisionManager::CheckCollision()
             BaseCollider* b = s_StaticColliders[j];
             if (Intersects(a, b))
             {
-                Entity* entityA = a->GetEntity().get();
-                Entity* entityB = b->GetEntity().get();
+                Entity* entityA = a->GetEntity();
+                Entity* entityB = b->GetEntity();
                 entityA->OnCollision(entityB);
                 entityB->OnCollision(entityA);
             }

@@ -149,7 +149,7 @@ void DetailWindow::BuildUI()
 
 // ── 씬 / Dirty 관리 ───────────────────────────────────────────────────────
 
-void DetailWindow::SetScene(std::shared_ptr<Scene> scene)
+void DetailWindow::SetScene(Scene* scene)
 {
 	_scene = scene;
 	if (_hSceneName)
@@ -163,8 +163,6 @@ void DetailWindow::MarkDirty()
 	_listDirty = true;
 }
 
-// ── RefreshEntityList ─────────────────────────────────────────────────────
-// Dirty일 때만 목록 재구성 + 스크롤/선택 위치 보존
 void DetailWindow::RefreshEntityList()
 {
 	if (!_hEntityList) return;
@@ -175,12 +173,12 @@ void DetailWindow::RefreshEntityList()
 	// 스크롤 top 위치 + 선택 index 기억
 	int prevTop = (int)::SendMessage(_hEntityList, LB_GETTOPINDEX, 0, 0);
 	int prevSel = (int)::SendMessage(_hEntityList, LB_GETCURSEL, 0, 0);
-	std::shared_ptr<Entity> prevSelected = _selectedEntity;
+	Entity* prevSelected = _selectedEntity;
 
 	::SendMessage(_hEntityList, LB_RESETCONTENT, 0, 0);
 	_entitySnapshot.clear();
 
-	auto scene = _scene.lock();
+	auto scene = _scene;
 	if (!scene)
 	{
 		::SetWindowTextW(_hEntityCount, L"오브젝트 [씬 없음]");
@@ -214,11 +212,10 @@ void DetailWindow::RefreshEntityList()
 		label += hasCollider ? L"  ✔" : L"  ✕";
 		::SendMessage(_hEntityList, LB_ADDSTRING, 0, (LPARAM)label.c_str());
 
-		// 이전 선택 Entity를 새 snapshot에서 찾아둠
-		if (entity == prevSelected)
+		if (entity.get() == prevSelected)
 			newSelIdx = idx;
 
-		_entitySnapshot.push_back(entity);
+		_entitySnapshot.push_back(entity.get());
 		idx++;
 	}
 
@@ -252,7 +249,7 @@ void DetailWindow::OnEntityListClicked()
 	FillDetailFromEntity(_selectedEntity);
 }
 
-void DetailWindow::FillDetailFromEntity(std::shared_ptr<Entity> entity)
+void DetailWindow::FillDetailFromEntity(Entity* entity)
 {
 	if (!entity) { ClearDetail(); return; }
 
@@ -280,7 +277,7 @@ void DetailWindow::FillDetailFromEntity(std::shared_ptr<Entity> entity)
 		info.entityLabel = entity->GetEntityName();
 	}
 
-	if (auto tf = entity->GetTransform())
+	if (auto tf = entity->GetComponent<Transform>())
 	{
 		Vec3 pos = tf->GetLocalPosition();
 		Vec3 rot = tf->GetLocalRotation();
@@ -372,7 +369,7 @@ float DetailWindow::GetEditFloat(HWND hEdit, float fallback)
 void DetailWindow::ApplyTransform()
 {
 	if (!_selectedEntity) return;
-	auto tf = _selectedEntity->GetTransform();
+	auto tf = _selectedEntity->GetComponent<Transform>();
 	if (!tf) return;
 
 	Vec3 pos(GetEditFloat(_hPosX), GetEditFloat(_hPosY), GetEditFloat(_hPosZ));
@@ -392,7 +389,7 @@ void DetailWindow::ApplyTransform()
 
 // ── SelectEntity ──────────────────────────────────────────────────────────
 
-void DetailWindow::SelectEntity(std::shared_ptr<Entity> entity)
+void DetailWindow::SelectEntity(Entity* entity)
 {
 	_selectedEntity = entity;
 	if (!_hEntityList || !entity) return;

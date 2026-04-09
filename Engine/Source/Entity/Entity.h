@@ -8,7 +8,7 @@ class Entity
 
 public:
 	Entity(const std::wstring& name);
-	~Entity();
+	virtual ~Entity();
 
 	virtual void Awake();
 	virtual void Start();
@@ -44,7 +44,7 @@ T* Entity::GetComponent()
 	{
 		if (component == nullptr) continue;
 
-		T* target = dynamic_cast<T>(component);
+		T* target = dynamic_cast<T*>(component.get());
 		if (target != nullptr)
 			return target;
 	}

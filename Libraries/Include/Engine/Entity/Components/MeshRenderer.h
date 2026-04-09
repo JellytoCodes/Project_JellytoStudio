@@ -21,7 +21,7 @@ public :
 	virtual void LateUpdate() override;
 	virtual void OnDestroy() override;
 
-	void RenderInstancing(const std::shared_ptr<InstancingBuffer>& buffer);
+	void RenderInstancing(InstancingBuffer* buffer);
 	InstanceID GetInstanceID();
 
 	void SetMesh(const std::shared_ptr<Mesh>& mesh)					{ _mesh = mesh; }

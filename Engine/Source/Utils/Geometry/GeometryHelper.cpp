@@ -2,7 +2,7 @@
 #include "Framework.h"
 #include "GeometryHelper.h"
 
-void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexColorData>>& geometry, Color color)
+void GeometryHelper::CreateQuad(Geometry<VertexColorData>* geometry, Color color)
 {
 	std::vector<VertexColorData> vtx;
 	vtx.resize(4);
@@ -21,7 +21,7 @@ void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexColorData>>
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexColorData>>& geometry)
+void GeometryHelper::CreateCube(Geometry<VertexColorData>* geometry)
 {
 	float w2 = 0.5f;
 	float h2 = 0.5f;
@@ -87,7 +87,7 @@ void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexColorData>>
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexTextureData>>& geometry)
+void GeometryHelper::CreateQuad(Geometry<VertexTextureData>* geometry)
 {
 	std::vector<VertexTextureData> vtx;
 	vtx.resize(4);
@@ -106,7 +106,7 @@ void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexTextureData
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexTextureData>>& geometry)
+void GeometryHelper::CreateCube(Geometry<VertexTextureData>* geometry)
 {
 	float w2 = 0.5f;
 	float h2 = 0.5f;
@@ -171,7 +171,7 @@ void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexTextureData
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateSphere(const std::shared_ptr<Geometry<VertexTextureData>>& geometry, uint32 stackCount, uint32 sliceCount)
+void GeometryHelper::CreateSphere(Geometry<VertexTextureData>* geometry, uint32 stackCount, uint32 sliceCount)
 {
 	float radius = 0.5f; // 구의 반지름
 
@@ -267,7 +267,7 @@ void GeometryHelper::CreateSphere(const std::shared_ptr<Geometry<VertexTextureDa
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateGrid(const std::shared_ptr<Geometry<VertexTextureData>>& geometry, int32 sizeX, int32 sizeZ)
+void GeometryHelper::CreateGrid(Geometry<VertexTextureData>* geometry, int32 sizeX, int32 sizeZ)
 {
 	std::vector<VertexTextureData> vtx;
 
@@ -309,7 +309,7 @@ void GeometryHelper::CreateGrid(const std::shared_ptr<Geometry<VertexTextureData
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexTextureNormalData>>& geometry)
+void GeometryHelper::CreateQuad(Geometry<VertexTextureNormalData>* geometry)
 {
 	std::vector<VertexTextureNormalData> vtx;
 	vtx.resize(4);
@@ -332,7 +332,7 @@ void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexTextureNorm
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexTextureNormalData>>& geometry)
+void GeometryHelper::CreateCube(Geometry<VertexTextureNormalData>* geometry)
 {
 	float w2 = 0.5f;
 	float h2 = 0.5f;
@@ -397,7 +397,7 @@ void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexTextureNorm
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateGrid(const std::shared_ptr<Geometry<VertexTextureNormalData>>& geometry, int32 sizeX, int32 sizeZ)
+void GeometryHelper::CreateGrid(Geometry<VertexTextureNormalData>* geometry, int32 sizeX, int32 sizeZ)
 {
 	std::vector<VertexTextureNormalData> vtx;
 
@@ -440,7 +440,7 @@ void GeometryHelper::CreateGrid(const std::shared_ptr<Geometry<VertexTextureNorm
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateSphere(const std::shared_ptr<Geometry<VertexTextureNormalData>>& geometry)
+void GeometryHelper::CreateSphere(Geometry<VertexTextureNormalData>* geometry)
 {
 	float radius = 0.5f; // 구의 반지름
 	uint32 stackCount = 20; // 가로 분할
@@ -545,7 +545,7 @@ void GeometryHelper::CreateSphere(const std::shared_ptr<Geometry<VertexTextureNo
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexTextureNormalTangentData>>& geometry)
+void GeometryHelper::CreateQuad(Geometry<VertexTextureNormalTangentData>* geometry)
 {
 	std::vector<VertexTextureNormalTangentData> vtx;
 	vtx.resize(4);
@@ -572,7 +572,7 @@ void GeometryHelper::CreateQuad(const std::shared_ptr<Geometry<VertexTextureNorm
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexTextureNormalTangentData>>& geometry)
+void GeometryHelper::CreateCube(Geometry<VertexTextureNormalTangentData>* geometry)
 {
 	float w2 = 0.5f;
 	float h2 = 0.5f;
@@ -637,7 +637,7 @@ void GeometryHelper::CreateCube(const std::shared_ptr<Geometry<VertexTextureNorm
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateGrid(const std::shared_ptr<Geometry<VertexTextureNormalTangentData>>& geometry, int32 sizeX, int32 sizeZ)
+void GeometryHelper::CreateGrid(Geometry<VertexTextureNormalTangentData>* geometry, int32 sizeX, int32 sizeZ)
 {
 	std::vector<VertexTextureNormalTangentData> vtx;
 
@@ -681,7 +681,7 @@ void GeometryHelper::CreateGrid(const std::shared_ptr<Geometry<VertexTextureNorm
 	geometry->SetIndices(idx);
 }
 
-void GeometryHelper::CreateSphere(const std::shared_ptr<Geometry<VertexTextureNormalTangentData>>& geometry)
+void GeometryHelper::CreateSphere(Geometry<VertexTextureNormalTangentData>* geometry)
 {
 	float radius = 0.5f; // 구의 반지름
 	uint32 stackCount = 20; // 가로 분할

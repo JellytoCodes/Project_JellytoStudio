@@ -21,13 +21,14 @@ public:
 
 	void SetModel(std::shared_ptr<Model> model);
 	void SetPass(uint8 pass) { _pass = pass; }
+
 	std::shared_ptr<Shader> GetShader() { return _shader; }
 	std::shared_ptr<Model>  GetModel()  { return _model;  }
 
 	virtual void Update() override;
 	void UpdateTweenData();
 
-	void RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer);
+	void RenderInstancing(InstancingBuffer* buffer);
 	InstanceID GetInstanceID();
 	TweenDesc& GetTweenDesc() { return _tweenDesc; }
 
@@ -40,8 +41,8 @@ private:
 	ComPtr<ID3D11Texture2D>				_texture;
 	ComPtr<ID3D11ShaderResourceView>	_srv;
 
+	uint8								_pass   = 0;
 	std::shared_ptr<Shader>				_shader;
-	uint8								_pass = 0;
 	std::shared_ptr<Model>				_model;
 
 	TweenDesc							_tweenDesc;

@@ -37,7 +37,7 @@ public:
 	virtual bool IsVisible() const override { return _visible; }
 	virtual HWND GetHWnd()   const override { return _hWnd; }
 
-	void SetScene(std::shared_ptr<Scene> scene);
+	void SetScene(Scene* scene);
 
 	// Entity 추가/삭제 등 씬 구조가 변경됐을 때만 호출
 	// (매 프레임 틱 호출 X)
@@ -47,19 +47,19 @@ public:
 	void UpdateDetail(const DetailInfo& info);
 	void ClearDetail();
 
-	std::shared_ptr<Entity> GetSelectedEntity() const { return _selectedEntity; }
-	const std::vector<std::shared_ptr<Entity>>& GetEntitySnapshot() const { return _entitySnapshot; }
-	void SelectEntity(std::shared_ptr<Entity> entity);
+	Entity* GetSelectedEntity() const { return _selectedEntity; }
+	const std::vector<Entity*>& GetEntitySnapshot() const { return _entitySnapshot; }
+
+	void SelectEntity(Entity* entity);
 
 private:
 	void BuildUI();
 	void OnEntityListClicked();
-	void FillDetailFromEntity(std::shared_ptr<Entity> entity);
+	void FillDetailFromEntity(Entity* entity);
 
-	// Transform 편집
 	void    ApplyTransform();
 	float   GetEditFloat(HWND hEdit, float fallback = 0.f);
-	bool    IsTransformEditFocused() const;   // 9개 Edit 컨트롤 중 하나가 포커스 중인지
+	bool    IsTransformEditFocused() const;
 
 	void RegisterWindowClass(HINSTANCE hInstance);
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -69,21 +69,18 @@ private:
 	bool      _visible = false;
 	bool      _created = false;
 
-	// Dirty 플래그 — 씬 구조 변경 시 true, Refresh 후 false
 	bool      _listDirty = false;
 
-	std::weak_ptr<Scene>    _scene;
-	std::shared_ptr<Entity> _selectedEntity;
-	std::vector<std::shared_ptr<Entity>> _entitySnapshot;
+	Scene*  _scene          = nullptr;
+	Entity* _selectedEntity = nullptr;
 
-	// [1] 씬
+	std::vector<Entity*> _entitySnapshot;
+
 	HWND _hSceneName = nullptr;
 
-	// [2] Entity 목록
 	HWND _hEntityCount = nullptr;
 	HWND _hEntityList = nullptr;
 
-	// [3] 오브젝트 정보 (읽기전용)
 	HWND _hPickedLabel = nullptr;
 	HWND _hModelName = nullptr;
 	HWND _hBoneCount = nullptr;
@@ -93,12 +90,10 @@ private:
 	HWND _hFrameRate = nullptr;
 	HWND _hDuration = nullptr;
 
-	// [4] Transform Edit 컨트롤 (읽기/쓰기)
 	HWND _hPosX = nullptr, _hPosY = nullptr, _hPosZ = nullptr;
 	HWND _hRotX = nullptr, _hRotY = nullptr, _hRotZ = nullptr;
 	HWND _hSclX = nullptr, _hSclY = nullptr, _hSclZ = nullptr;
 
-	// Apply 버튼
 	HWND _hApplyBtn = nullptr;
 
 	static constexpr wchar_t CLASS_NAME[] = L"JellytoDetailPanel";

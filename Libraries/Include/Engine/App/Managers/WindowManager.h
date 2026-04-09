@@ -11,7 +11,7 @@ public:
 	void Init(HINSTANCE hInstance, HWND hMainWnd)
 	{
 		_hInstance = hInstance;
-		_hMainWnd = hMainWnd;
+		_hMainWnd  = hMainWnd;
 	}
 
 	void ToggleWindow(const std::wstring& name)
@@ -22,34 +22,33 @@ public:
 	}
 
 	template<typename T>
-	std::shared_ptr<T> RegisterWindow(const std::wstring& name);
+	T* RegisterWindow(const std::wstring& name);
 
 	template<typename T>
-	std::shared_ptr<T> GetWindow(const std::wstring& name);
+	T* GetWindow(const std::wstring& name);
 
-private :
+private:
 	HINSTANCE _hInstance = nullptr;
-	HWND _hMainWnd = nullptr;
+	HWND      _hMainWnd  = nullptr;
 
-	std::unordered_map<std::wstring, std::shared_ptr<IWindow>> _windows;
+	std::unordered_map<std::wstring, std::unique_ptr<IWindow>> _windows;
 };
 
-template <typename T>
-std::shared_ptr<T> WindowManager::RegisterWindow(const std::wstring& name)
+template<typename T>
+T* WindowManager::RegisterWindow(const std::wstring& name)
 {
-	auto window = std::make_shared<T>();
+	auto window = std::make_unique<T>();
+	T* raw = window.get();
 	if (window->Create(_hInstance, _hMainWnd))
-	{
-		_windows[name] = window;
-	}
-	return window;
+		_windows[name] = std::move(window);
+	return raw;
 }
 
-template <typename T>
-std::shared_ptr<T> WindowManager::GetWindow(const std::wstring& name)
+template<typename T>
+T* WindowManager::GetWindow(const std::wstring& name)
 {
 	auto it = _windows.find(name);
 	if (it != _windows.end())
-		return std::static_pointer_cast<T>(it->second);
+		return static_cast<T*>(it->second.get());
 	return nullptr;
 }

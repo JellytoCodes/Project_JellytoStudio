@@ -385,8 +385,8 @@ void BlockPlacer::UpdatePreview()
         scene->Add(_previewEntity);
     }
 
-    _previewEntity->GetTransform()->SetLocalPosition(previewPos);
-    _previewEntity->GetTransform()->SetLocalScale(previewScale);
+    _previewEntity->GetComponent<Transform>()->SetLocalPosition(previewPos);
+    _previewEntity->GetComponent<Transform>()->SetLocalScale(previewScale);
 
     if (auto mr = _previewEntity->GetComponent<MeshRenderer>())
     {
@@ -430,9 +430,9 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
 
     // Entity 생성
     auto blockEntity = std::make_shared<Entity>(L"MapBlock");
-    blockEntity->AddComponent(std::make_shared<Transform>());
-    blockEntity->GetTransform()->SetLocalPosition(entityPos);
-    blockEntity->GetTransform()->SetLocalScale(Vec3(1.f));
+    blockEntity->AddComponent(std::make_unique<Transform>());
+    blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
+    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
 
     auto mr = std::make_shared<ModelRenderer>(_blockShader, false);
     mr->SetModel(model);

@@ -2,7 +2,6 @@
 
 #include "Pipeline/IndexBuffer.h"
 #include "Pipeline/VertexBuffer.h"
-
 #include "Resource.h"
 
 class Mesh : public Resource
@@ -10,8 +9,8 @@ class Mesh : public Resource
 	using Super = Resource;
 
 public:
-    Mesh();
-    virtual ~Mesh();
+	Mesh();
+	virtual ~Mesh();
 
 	void CreateQuad(const ComPtr<ID3D11Device>& device);
 	void CreateCube(const ComPtr<ID3D11Device>& device);
@@ -20,17 +19,15 @@ public:
 
 	void Bind(const ComPtr<ID3D11DeviceContext>& deviceContext);
 
-	std::shared_ptr<Geometry<VertexTextureNormalTangentData>> GetGeometry() { return _geometry; }
-	std::shared_ptr<VertexBuffer> GetVertexBuffer()		{ return _vertexBuffer; }
-	std::shared_ptr<IndexBuffer> GetIndexBuffer()		{ return _indexBuffer; }
+	Geometry<VertexTextureNormalTangentData>* GetGeometry()    { return _geometry.get(); }
+	VertexBuffer* GetVertexBuffer() { return _vertexBuffer.get(); }
+	IndexBuffer*  GetIndexBuffer()  { return _indexBuffer.get(); }
 
 private:
 	void CreateBuffers(const ComPtr<ID3D11Device>& device);
 
-private:
-	
-	std::shared_ptr<Geometry<VertexTextureNormalTangentData>>	_geometry;
-	std::shared_ptr<VertexBuffer>								_vertexBuffer;
-	std::shared_ptr<IndexBuffer>								_indexBuffer;
+	// Mesh가 유일한 소유자 → unique_ptr
+	std::unique_ptr<Geometry<VertexTextureNormalTangentData>> _geometry;
+	std::unique_ptr<VertexBuffer>                             _vertexBuffer;
+	std::unique_ptr<IndexBuffer>                              _indexBuffer;
 };
-

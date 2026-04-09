@@ -11,21 +11,22 @@ class PaletteWidget;
 class MainApp : public IExecute
 {
 public:
-    virtual void Init()   override;
-    virtual void Update() override;
-    virtual void Render() override;
+	virtual void Init()   override;
+	virtual void Update() override;
+	virtual void Render() override;
 
 private:
-    void InitScene();
-    void CreateCamera();
-    void CreatePlacementSystem();
+	void InitScene();
+	void CreateCamera();
+	void CreatePlacementSystem();
 
-    std::shared_ptr<Scene>                      _scene;
-    std::shared_ptr<Entity>                     _characterEntity;
-    std::shared_ptr<Entity>                     _startBlock;
-    std::shared_ptr<IsometricCameraController>  _isoCamCtrl;
-    std::shared_ptr<BlockPlacer>                _blockPlacer;
-    std::shared_ptr<PaletteWidget>              _palette;
+	std::unique_ptr<Scene> _scene;
 
-    std::vector<std::shared_ptr<Actor>>         _actors;
+	Entity*                    _characterEntity = nullptr;
+	Entity*                    _startBlock      = nullptr;
+	IsometricCameraController* _isoCamCtrl      = nullptr;
+	BlockPlacer*               _blockPlacer     = nullptr;
+	PaletteWidget*             _palette         = nullptr;
+
+	std::vector<std::unique_ptr<Actor>> _actors;
 };

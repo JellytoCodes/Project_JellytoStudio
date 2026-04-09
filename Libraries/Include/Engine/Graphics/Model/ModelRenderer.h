@@ -3,6 +3,7 @@
 #include "Entity/Components/Component.h"
 #include "Pipeline/ConstantBuffer.h"
 #include "Pipeline/InstancingBuffer.h"
+
 class Model;
 class Shader;
 class Material;
@@ -13,7 +14,7 @@ class ModelRenderer : public Component
 	using Super = Component;
 
 public:
-	ModelRenderer(const std::shared_ptr<Shader>& shader, const bool bIsSkinned = true);
+	ModelRenderer(std::shared_ptr<Shader> shader, bool bIsSkinned = true);
 	virtual ~ModelRenderer();
 
 	void Awake() override;
@@ -22,19 +23,20 @@ public:
 	void SetModel(std::shared_ptr<Model> model);
 	void SetPass(uint8 pass) { _pass = pass; }
 
-	void SetModelScale(const Vec3& scale) { _modelScale = scale; }
-	Vec3 GetModelScale() const { return _modelScale; }
-	Matrix GetModelScaleMatrix() const { return Matrix::CreateScale(_modelScale); }
+	void SetModelScale(const Vec3& scale)	{ _modelScale = scale; }
+	Vec3   GetModelScale()      const		{ return _modelScale; }
+	Matrix GetModelScaleMatrix()const		{ return Matrix::CreateScale(_modelScale); }
 
-	void RenderInstancing(std::shared_ptr<InstancingBuffer>& buffer);
+	void RenderInstancing(InstancingBuffer* buffer);
 	InstanceID GetInstanceID();
 
 private:
-	std::shared_ptr<ConstantBuffer<TransformData>>	_constantBuffer;
+	std::unique_ptr<ConstantBuffer<TransformData>>	_constantBuffer;
 
 	std::shared_ptr<Shader>							_shader;
-	uint8											_pass = 0;
 	std::shared_ptr<Model>							_model;
+	uint8											_pass    = 0;
+	
 	Vec3											_modelScale = Vec3(1.f, 1.f, 1.f);
 	bool											_bIsSkinned;
 };

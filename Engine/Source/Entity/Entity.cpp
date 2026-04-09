@@ -1,5 +1,7 @@
+
 #include "Framework.h"
 #include "Entity/Entity.h"
+#include "Components/Component.h"
 #include "Entity/Components/MonoBehaviour.h"
 
 Entity::Entity(const std::wstring& name)
