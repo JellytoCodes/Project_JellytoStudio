@@ -11,6 +11,9 @@ class PaletteWidget;
 class MainApp : public IExecute
 {
 public:
+	MainApp();
+	~MainApp();
+
 	virtual void Init()   override;
 	virtual void Update() override;
 	virtual void Render() override;

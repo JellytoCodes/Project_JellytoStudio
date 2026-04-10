@@ -27,11 +27,10 @@ public:
 	virtual void LateUpdate() override {}
 	virtual void OnDestroy()  override;
 
-	// 이전: shared_ptr<PaletteWidget> / shared_ptr<Entity>
-	// 변경: raw pointer — 씬이 수명 관리, BlockPlacer는 관찰자
-	void SetPalette(PaletteWidget* palette)   { _palette   = palette; }
-	void SetSavePath(const std::wstring& path){ _savePath  = path; }
-	void SetCharacterEntity(Entity* character){ _character = character; }
+	// Scene이 Entity 수명 관리 → raw pointer (observer)
+	void SetPalette(PaletteWidget* palette) { _palette = palette; }
+	void SetSavePath(const std::wstring& path) { _savePath = path; }
+	void SetCharacterEntity(Entity* character) { _character = character; }
 
 	bool IsPlacingMode() const { return _placingMode; }
 	void SetPlacingMode(bool on);
@@ -56,11 +55,15 @@ private:
 
 	MapModelParams GetModelParams(PaletteWidget::SlotType type) const;
 
-	// 이전: shared_ptr<Model/Material> 반환 → 매 호출마다 refcount 증감
-	// 변경: Model*/Material* — ResourceManager 또는 로컬 캐시가 소유
-	Model*    GetOrLoadModel(PaletteWidget::SlotType type);
-	Material* GetPreviewMat(bool ok);
+	// ── 리소스 API 정합성 ─────────────────────────────────────────────────
+	// ModelRenderer::SetModel(shared_ptr<Model>),
+	// MeshRenderer::SetMaterial(shared_ptr<Material>),
+	// ModelRenderer(shared_ptr<Shader>, bool) 모두 shared_ptr 요구 →
+	// 리소스 타입은 shared_ptr 유지.  Entity/Component 참조만 raw ptr.
+	std::shared_ptr<Model>    GetOrLoadModel(PaletteWidget::SlotType type);
+	std::shared_ptr<Material> GetPreviewMat(bool ok);
 
+	// Entity/Component 참조: Scene 소유, BlockPlacer는 observer
 	bool CalcPlacePos(PaletteWidget::SlotType type,
 		Entity* hitEntity,
 		const Vec3& hitNormal,
@@ -74,42 +77,34 @@ private:
 	bool TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
 	bool TryRemoveEntity(Entity* entity);
 
-	// 이전: weak_ptr → lock() 필요
-	// 변경: raw ptr 관찰자 — 씬이 수명 관리
-	PaletteWidget* _palette   = nullptr;
-	Entity*        _character = nullptr;
+	// ── Entity/Component 참조 (raw pointer, observer) ─────────────────────
+	PaletteWidget* _palette = nullptr;   // Scene 소유
+	Entity* _character = nullptr;   // Scene 소유
+	Entity* _previewEntity = nullptr; // Scene 소유, 관찰자
 
-	bool         _placingMode  = false;
+	bool         _placingMode = false;
 	bool         _previewValid = false;
-	std::wstring _savePath     = L"../Saved/scene.xml";
+	std::wstring _savePath = L"../Saved/scene.xml";
 
-	// 프리뷰 Entity: 씬이 소유, BlockPlacer는 관찰자
-	Entity* _previewEntity = nullptr;
+	// ── 리소스 (shared_ptr) ───────────────────────────────────────────────
+	// Material: 이중소유(raw ptr + unique_ptr) 패턴 제거 → shared_ptr로 통일.
+	// unique_ptr<Material>은 forward-declare와 함께 쓰면
+	// static_assert "can't delete an incomplete type" 발생.
+	std::shared_ptr<Material> _previewMatOk;
+	std::shared_ptr<Material> _previewMatBad;
 
-	// 이전: shared_ptr<Material> _previewMatOk/_previewMatBad
-	// 변경: raw ptr — ResourceManager 또는 로컬 unique_ptr이 소유
-	Material* _previewMatOk  = nullptr;
-	Material* _previewMatBad = nullptr;
+	// Shader: ModelRenderer 생성자가 shared_ptr<Shader>를 요구하므로 shared_ptr 보관.
+	// ResourceManager는 Shader/Model 타입을 지원하지 않으므로 직접 멤버로 관리.
+	std::shared_ptr<Shader> _blockShader;
 
-	// 프리뷰용 Material unique_ptr 보관
-	std::unique_ptr<Material> _previewMatOkOwned;
-	std::unique_ptr<Material> _previewMatBadOwned;
-
-	// 이전: shared_ptr<Shader>
-	// 변경: Shader* — ResourceManager에 등록하여 수명 관리
-	Shader* _blockShader = nullptr;
+	// Model 캐시: ModelRenderer::SetModel(shared_ptr<Model>) → shared_ptr 유지
+	std::array<std::shared_ptr<Model>, static_cast<int>(PaletteWidget::SlotType::Count)> _modelCache;
 
 	POINT _lastPreviewMouse = { -1, -1 };
-	bool  _previewDirty     = true;
+	bool  _previewDirty = true;
 
-	// 이전: array<shared_ptr<Model>, N>
-	// 변경: array<unique_ptr<Model>, N>
-	std::array<std::unique_ptr<Model>,
-		static_cast<int>(PaletteWidget::SlotType::Count)> _modelCache;
+	std::vector<std::pair<int32, int32>> _placedCells;
 
-	std::vector<std::pair<int32, int32>>  _placedCells;
-
-	// 이전: unordered_set<shared_ptr<Entity>> → erase 시 refcount 감소
-	// 변경: unordered_set<Entity*> — 씬이 소유, BlockPlacer는 관찰자
+	// 배치된 블록 관찰 목록: Scene 소유, BlockPlacer는 observer
 	std::unordered_set<Entity*> _blockSet;
 };

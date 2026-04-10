@@ -17,20 +17,20 @@
 const Vec3 OneBlockScript::s_dropOffsets[4] = {
 	Vec3(+1.f, 0.f,  0.f),
 	Vec3(-1.f, 0.f,  0.f),
-	Vec3( 0.f, 0.f, +1.f),
-	Vec3( 0.f, 0.f, -1.f),
+	Vec3(0.f, 0.f, +1.f),
+	Vec3(0.f, 0.f, -1.f),
 };
 
 const std::vector<OneBlockScript::PhaseData>& OneBlockScript::GetPhaseTable()
 {
 	static const std::vector<PhaseData> s_table = {
-		{ L"Priming_01",  L"Priming_01", L"숲 지대",      5 },
-		{ L"Priming_02",  L"Priming_02", L"동굴",          5 },
-		{ L"Priming_03",  L"Priming_03", L"지하 깊은 곳",  5 },
-		{ L"Bridge",      L"Bridge",     L"절벽 지대",     5 },
-		{ L"Mushroom_01", L"Mushroom_01",L"버섯 숲",       5 },
-		{ L"Mushroom_02", L"Mushroom_02",L"심층부",        5 },
-		{ L"Mushroom_03", L"Mushroom_03",L"마지막 차원",   99 },
+		{ L"Priming_01",  L"Priming_01",  L"숲 지대",       5 },
+		{ L"Priming_02",  L"Priming_02",  L"동굴",           5 },
+		{ L"Priming_03",  L"Priming_03",  L"지하 깊은 곳",   5 },
+		{ L"Bridge",      L"Bridge",      L"절벽 지대",      5 },
+		{ L"Mushroom_01", L"Mushroom_01", L"버섯 숲",        5 },
+		{ L"Mushroom_02", L"Mushroom_02", L"심층부",         5 },
+		{ L"Mushroom_03", L"Mushroom_03", L"마지막 차원",    99 },
 	};
 	return s_table;
 }
@@ -43,33 +43,33 @@ void OneBlockScript::Start()
 	_phaseModels.resize(table.size());
 	_dropModelPtrs.resize(table.size(), nullptr);
 
-	// 별도 dropModel unique_ptr 보관용 (modelName != dropModel인 경우)
-	static std::vector<std::unique_ptr<Model>> s_extraDropModels;
+	static std::vector<std::shared_ptr<Model>> s_extraDropModels;
 
-	auto loadModel = [](const std::wstring& name) -> std::unique_ptr<Model>
-	{
-		auto m = std::make_unique<Model>();
-		m->SetModelPath(L"../Resources/Models/MapModel/");
-		m->SetTexturePath(L"../Resources/Textures/MapModel/");
-		m->ReadModel(name);
-		m->ReadMaterial(name);
-		return m;
-	};
+	// ModelRenderer::SetModel(shared_ptr<Model>) 요구 →
+	// loadModel 반환형을 shared_ptr<Model>로 통일.
+	// (이전 코드는 unique_ptr<Model>을 반환해 _phaseModels[i](shared_ptr)에
+	//  암시적 변환 대입은 가능하나, SetModel 호출 시 .get() 로 raw ptr를
+	//  전달하면 컴파일 오류 발생)
+	auto loadModel = [](const std::wstring& name) -> std::shared_ptr<Model>
+		{
+			auto m = std::make_shared<Model>();
+			m->SetModelPath(L"../Resources/Models/MapModel/");
+			m->SetTexturePath(L"../Resources/Textures/MapModel/");
+			m->ReadModel(name);
+			m->ReadMaterial(name);
+			return m;
+		};
 
 	for (int32 i = 0; i < (int32)table.size(); i++)
 	{
-		// 이전: shared_ptr<Model> — 제어블록 별도 heap 할당 ×N
-		// 변경: unique_ptr<Model> — 단순 소유
 		_phaseModels[i] = loadModel(table[i].modelName);
 
 		if (table[i].dropModel == table[i].modelName)
 		{
-			// 같은 모델 → raw ptr로 참조
 			_dropModelPtrs[i] = _phaseModels[i].get();
 		}
 		else
 		{
-			// 다른 모델 → 별도 unique_ptr 보관
 			auto extra = loadModel(table[i].dropModel);
 			_dropModelPtrs[i] = extra.get();
 			s_extraDropModels.push_back(std::move(extra));
@@ -97,7 +97,7 @@ void OneBlockScript::TryMine()
 
 void OneBlockScript::Mine()
 {
-	_isBroken     = true;
+	_isBroken = true;
 	_respawnTimer = RESPAWN_DELAY;
 	_totalBreaks++;
 
@@ -108,7 +108,7 @@ void OneBlockScript::Mine()
 	UpdatePhase();
 
 	const auto& table = GetPhaseTable();
-	int32 clampedPhase = std::min(_currentPhase, (int32)table.size() - 1);
+	const int32 clampedPhase = std::min(_currentPhase, (int32)table.size() - 1);
 	SpawnDropBlock(table[clampedPhase].dropModel);
 }
 
@@ -122,7 +122,7 @@ void OneBlockScript::Respawn()
 	entity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
 
 	const auto& table = GetPhaseTable();
-	int32 clampedPhase = std::min(_currentPhase, (int32)table.size() - 1);
+	const int32 clampedPhase = std::min(_currentPhase, (int32)table.size() - 1);
 	ApplyPhaseModel(table[clampedPhase].modelName);
 }
 
@@ -151,7 +151,9 @@ void OneBlockScript::ApplyPhaseModel(const std::wstring& modelName)
 	{
 		if (table[i].modelName == modelName && i < (int32)_phaseModels.size())
 		{
-			mr->SetModel(_phaseModels[i].get());
+			// ModelRenderer::SetModel(shared_ptr<Model>) 요구 →
+			// 이전 코드의 .get() 제거: shared_ptr 직접 전달
+			mr->SetModel(_phaseModels[i]);
 			return;
 		}
 	}
@@ -163,41 +165,39 @@ void OneBlockScript::SpawnDropBlock(const std::wstring& modelName)
 	if (!scene) return;
 
 	Entity* myEntity = GetEntity();
-	Vec3 origin = myEntity ? myEntity->GetComponent<Transform>()->GetLocalPosition() : Vec3::Zero;
+	const Vec3 origin = myEntity
+		? myEntity->GetComponent<Transform>()->GetLocalPosition()
+		: Vec3::Zero;
 
-	int32 dir    = (_totalBreaks - 1) % 4;
-	Vec3  dropPos = origin + s_dropOffsets[dir];
+	const int32 dir = (_totalBreaks - 1) % 4;
+	const Vec3  dropPos = origin + s_dropOffsets[dir];
 
-	// 드랍 모델 선택 (raw ptr 캐시)
-	Model* dropModel = nullptr;
+	// ── 드랍 모델 shared_ptr 획득 ────────────────────────────────────────
+	// _dropModelPtrs 는 raw ptr — ModelRenderer::SetModel은 shared_ptr 요구.
+	// _phaseModels 에서 직접 shared_ptr 탐색.
+	std::shared_ptr<Model> dropModel;
 	const auto& table = GetPhaseTable();
 	for (int32 i = 0; i < (int32)table.size(); i++)
 	{
-		if (table[i].dropModel == modelName && i < (int32)_dropModelPtrs.size())
+		if (table[i].dropModel == modelName && i < (int32)_phaseModels.size())
 		{
-			dropModel = _dropModelPtrs[i];
+			dropModel = _phaseModels[i];
 			break;
 		}
 	}
 	if (!dropModel) return;
 
-	// Shader: ResourceManager에 등록하여 수명 관리
-	static Shader* s_dropShader = nullptr;
+	static std::shared_ptr<Shader> s_dropShader;
 	if (!s_dropShader)
-	{
-		auto shaderPtr = std::make_unique<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-		s_dropShader = shaderPtr.get();
-		GET_SINGLE(ResourceManager)->Add(L"DropBlockShader", std::move(shaderPtr));
-	}
+		s_dropShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 
-	// Entity 생성 — 모두 make_unique
 	auto dropEntity = std::make_unique<Entity>(L"DropBlock");
 	dropEntity->AddComponent(std::make_unique<Transform>());
 	dropEntity->GetComponent<Transform>()->SetLocalPosition(dropPos);
 	dropEntity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
 
 	auto mr = std::make_unique<ModelRenderer>(s_dropShader, false);
-	mr->SetModel(dropModel);
+	mr->SetModel(dropModel);   // shared_ptr<Model> ✓
 	mr->SetModelScale(Vec3(0.01f));
 	dropEntity->AddComponent(std::move(mr));
 
@@ -215,17 +215,15 @@ void OneBlockScript::SpawnDropBlock(const std::wstring& modelName)
 
 bool OneBlockScript::IsCharacterNearby()
 {
-	// 이전: auto charEntity = _character.lock() → shared_ptr 임시 생성
-	// 변경: Entity* 직접 사용 → atomic 0
 	if (!_character) return false;
 
 	Entity* myEntity = GetEntity();
 	if (!myEntity) return false;
 
-	Vec3 myPos   = myEntity->GetComponent<Transform>()->GetPosition();
-	Vec3 charPos = _character->GetComponent<Transform>()->GetPosition();
+	const Vec3 myPos = myEntity->GetComponent<Transform>()->GetPosition();
+	const Vec3 charPos = _character->GetComponent<Transform>()->GetPosition();
 
 	Vec3 diff = charPos - myPos;
-	diff.y    = 0.f;
+	diff.y = 0.f;
 	return diff.Length() <= MINE_RANGE;
 }

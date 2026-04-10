@@ -83,7 +83,7 @@ protected:
 private:
 	void InitDebugShader();
 
-	bool _showDebug = true;
+	bool _showDebug = false;
 
 	static std::shared_ptr<Shader> s_debugShader;
 };

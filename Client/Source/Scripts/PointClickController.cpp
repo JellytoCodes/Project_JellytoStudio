@@ -30,30 +30,30 @@ void PointClickController::HandleInput()
 {
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::RBUTTON)) return;
 
-    auto scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return;
 
-    POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+    const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
 
-    // walkChannel 채널로 블록 피킹 (Priming 블록의 pickableMask에 Character가 포함되어야 찾힘)
-    std::shared_ptr<Entity> hitEntity;
-    Vec3  hitNormal;
-    float hitDist;
+    // Scene::PickBlock 출력 파라미터는 Entity*& (raw pointer)
+    // 이전 코드의 shared_ptr<Entity> hitEntity는 컴파일 오류
+    Entity* hitEntity = nullptr;
+    Vec3    hitNormal;
+    float   hitDist;
 
     if (!scene->PickBlock((int32)mp.x, (int32)mp.y,
-                          _walkChannel, hitEntity, hitNormal, hitDist))
+        _walkChannel, hitEntity, hitNormal, hitDist))
         return;
 
     // 상면만 허용 (hitNormal.y > 0.7) — 측면/하면 클릭은 이동 무시
     if (hitNormal.y < 0.7f) return;
 
-    auto aabb = hitEntity->GetComponent<AABBCollider>();
+    AABBCollider* aabb = hitEntity->GetComponent<AABBCollider>();
     if (!aabb) return;
 
     const BoundingBox& box = aabb->GetBoundingBox();
-    float blockTopY = box.Center.y + box.Extents.y;
+    const float        blockTopY = box.Center.y + box.Extents.y;
 
-    // 목적지 = 블록 상단 XZ 중심, Y = 블록 상단 (캐릭터 발 위치)
     Vec3 dest(box.Center.x, blockTopY, box.Center.z);
     MoveTo(dest);
 }
@@ -62,21 +62,20 @@ void PointClickController::HandleInput()
 
 void PointClickController::MoveTo(const Vec3& worldPos)
 {
-    _destination = worldPos; // XYZ 모두 포함 (블록 높이 반영)
-    _isMoving    = true;
+    _destination = worldPos;
+    _isMoving = true;
     UpdateAnimState(true);
 }
 
 void PointClickController::MoveToDestination(float dt)
 {
-    auto transform = GetTransform();
+    Transform* transform = GetTransform();   // MonoBehaviour → Component::GetTransform()
     if (!transform) return;
 
-    Vec3  pos      = transform->GetLocalPosition();
+    Vec3  pos = transform->GetLocalPosition();
     Vec3  toTarget = _destination - pos;
-    float dist     = toTarget.Length();
+    float dist = toTarget.Length();
 
-    // 도착 판정
     if (dist <= _stopThreshold)
     {
         transform->SetLocalPosition(_destination);
@@ -85,15 +84,10 @@ void PointClickController::MoveToDestination(float dt)
         return;
     }
 
-    Vec3  dir      = toTarget / dist;
+    Vec3  dir = toTarget / dist;
     float moveStep = std::min(_moveSpeed * dt, dist);
 
-    // ── 블록 측면 충돌 체크 ──────────────────────────────────────
-    // XZ 이동만 체크 (Y는 목적지로 부드럽게 이동하므로 현재 Y 기준)
-    Vec3 nextPosXZ(pos.x + dir.x * moveStep,
-                   pos.y,
-                   pos.z + dir.z * moveStep);
-
+    Vec3 nextPosXZ(pos.x + dir.x * moveStep, pos.y, pos.z + dir.z * moveStep);
     if (IsMovementBlocked(nextPosXZ))
     {
         _isMoving = false;
@@ -101,82 +95,76 @@ void PointClickController::MoveToDestination(float dt)
         return;
     }
 
-    // ── Y축 회전 ─────────────────────────────────────────────────
-    Vec3  dirXZ  = Vec3(dir.x, 0.f, dir.z);
-    float xzLen  = dirXZ.Length();
+    Vec3  dirXZ = Vec3(dir.x, 0.f, dir.z);
+    float xzLen = dirXZ.Length();
     if (xzLen > 0.001f)
     {
         dirXZ /= xzLen;
         float targetYaw = atan2f(-dirXZ.x, -dirXZ.z);
-        Vec3  curRot    = transform->GetLocalRotation();
-        float diff      = targetYaw - curRot.y;
-        while (diff >  XM_PI) diff -= XM_2PI;
+        Vec3  curRot = transform->GetLocalRotation();
+        float diff = targetYaw - curRot.y;
+        while (diff > XM_PI) diff -= XM_2PI;
         while (diff < -XM_PI) diff += XM_2PI;
-        float step  = XMConvertToRadians(_rotateSpeed) * dt;
-        curRot.y   += (fabsf(diff) <= step) ? diff : (diff > 0.f ? step : -step);
+        float step = XMConvertToRadians(_rotateSpeed) * dt;
+        curRot.y += (fabsf(diff) <= step) ? diff : (diff > 0.f ? step : -step);
         transform->SetLocalRotation(curRot);
     }
 
-    // ── 이동 적용 (X, Y, Z 동시) ─────────────────────────────────
     transform->SetLocalPosition(pos + dir * moveStep);
 }
 
 // ── 블록 측면 충돌 체크 ───────────────────────────────────────────────────
-//
-// nextEntityPos: 캐릭터 Entity의 다음 위치 (콜라이더 하단 기준)
-// 체크 대상: Priming 채널 블록 중 blockTopY > charFeetY 인 것 (벽 역할)
-// 바닥 블록(blockTopY ≤ charFeetY)은 벽이 아니므로 제외
 
 bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
 {
-    auto scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return false;
 
-    auto selfEntity = _entity.lock();
+    // Component::_entity 는 Entity* (raw pointer) — .lock() 없음
+    // 이전 코드의 _entity.lock() 는 컴파일 오류
+    Entity* selfEntity = _entity;
     if (!selfEntity) return false;
 
-    auto charAabb = selfEntity->GetComponent<AABBCollider>();
+    AABBCollider* charAabb = selfEntity->GetComponent<AABBCollider>();
     if (!charAabb) return false;
 
-    // 현재 BoundingBox에서 월드 스케일 extents와 Y 오프셋 계산
-    const BoundingBox& curBox  = charAabb->GetBoundingBox();
-    Vec3  charExtents           = curBox.Extents;
-    float curEntityY            = selfEntity->GetTransform()->GetLocalPosition().y;
-    float colOffsetY            = curBox.Center.y - curEntityY; // Entity Y → 콜라이더 중심 Y 오프셋
+    const BoundingBox& curBox = charAabb->GetBoundingBox();
+    const Vec3         charExtents = curBox.Extents;
 
-    // 다음 위치에서의 캐릭터 AABB
+    // Entity에는 GetTransform()이 없음 → GetComponent<Transform>() 사용
+    Transform* tf = selfEntity->GetComponent<Transform>();
+    if (!tf) return false;
+    const float curEntityY = tf->GetLocalPosition().y;
+    const float colOffsetY = curBox.Center.y - curEntityY;
+
     BoundingBox nextCharBox;
-    nextCharBox.Center  = Vec3(nextEntityPos.x,
-                               nextEntityPos.y + colOffsetY,
-                               nextEntityPos.z);
+    nextCharBox.Center = Vec3(nextEntityPos.x,
+        nextEntityPos.y + colOffsetY,
+        nextEntityPos.z);
     nextCharBox.Extents = charExtents;
 
-    float charFeetY = nextEntityPos.y; // 발 위치 = Entity Y
+    const float charFeetY = nextEntityPos.y;
 
-    for (auto& entity : scene->GetEntities())
+    for (const auto& entity : scene->GetEntities())
     {
-        if (entity == selfEntity) continue;
+        // entity 는 const unique_ptr<Entity>& → .get() 로 raw ptr 비교
+        if (entity.get() == selfEntity) continue;
 
-        auto blockAabb = entity->GetComponent<AABBCollider>();
+        AABBCollider* blockAabb = entity->GetComponent<AABBCollider>();
         if (!blockAabb) continue;
 
-        // Priming 채널 블록만 벽 역할 (Mushroom은 관통 가능 — 장식용)
         if (blockAabb->GetOwnChannel() != CollisionChannel::Priming) continue;
 
         const BoundingBox& blockBox = blockAabb->GetBoundingBox();
 
-        // ── XZ 거리 사전 컬링 ───────────────────────────────────────
-        // 2.0f 반경 밖 블록은 AABB 교차 테스트 자체를 스킵
-        // 캐릭터 XZ 반경(~0.2) + 블록 XZ 반경(0.5) + 여유 = 2.0이면 충분
+        // XZ 사전 컬링
         {
-            float dx = blockBox.Center.x - nextEntityPos.x;
-            float dz = blockBox.Center.z - nextEntityPos.z;
-            if (dx * dx + dz * dz > 4.0f) continue; // 2.0f^2
+            const float dx = blockBox.Center.x - nextEntityPos.x;
+            const float dz = blockBox.Center.z - nextEntityPos.z;
+            if (dx * dx + dz * dz > 4.0f) continue;
         }
 
-        float blockTopY = blockBox.Center.y + blockBox.Extents.y;
-
-        // 블록 상단이 캐릭터 발보다 높을 때만 벽 취급
+        const float blockTopY = blockBox.Center.y + blockBox.Extents.y;
         if (blockTopY <= charFeetY + 0.05f) continue;
 
         if (nextCharBox.Intersects(blockBox))
@@ -190,10 +178,11 @@ bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
 
 void PointClickController::UpdateAnimState(bool moving)
 {
-    auto entity = _entity.lock();
+    // Component::_entity 는 Entity* (raw pointer) — .lock() 없음
+    Entity* entity = _entity;
     if (!entity) return;
 
-    auto asm_ = entity->GetComponent<AnimStateMachine>();
+    AnimStateMachine* asm_ = entity->GetComponent<AnimStateMachine>();
     if (!asm_) return;
 
     if (asm_->IsState(AnimState::Die) || asm_->IsState(AnimState::Attack)) return;

@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "MainApp.h"
 
+#include <random>
+
 #include "Actors.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Scene/SceneManager.h"
@@ -20,6 +22,16 @@
 #include "Graphics/Model/ModelRenderer.h"
 #include "Pipeline/Shader.h"
 #include "Scripts/OneBlockScript.h"
+
+MainApp::MainApp()
+{
+
+}
+
+MainApp::~MainApp()
+{
+
+}
 
 void MainApp::Init()
 {
@@ -62,7 +74,7 @@ void MainApp::InitScene()
 
 	// ── 시작 블록 (ModelRenderer + AABBCollider) ───────────────────────
 	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-	GET_SINGLE(ResourceManager)->Add(L"StartBlockShader", shader);
+	//GET_SINGLE(ResourceManager)->Add(L"StartBlockShader", shader);
 
 	auto model = std::make_shared<Model>();
 	model->SetModelPath(L"../Resources/Models/MapModel/");
@@ -70,27 +82,39 @@ void MainApp::InitScene()
 	model->ReadModel(L"Priming_01");
 	model->ReadMaterial(L"Priming_01");
 
-	auto mr = std::make_unique<ModelRenderer>(shader, false);
-	mr->SetModel(model);
-	mr->SetModelScale(Vec3(0.01f));
 
-	auto col = std::make_unique<AABBCollider>();
-	col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-	col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
-	col->SetOwnChannel(CollisionChannel::Priming);
-	col->SetPickableMask(
-		static_cast<uint8>(CollisionChannel::Priming) |
-		static_cast<uint8>(CollisionChannel::Character));
-	col->SetStatic(true);
+	for (int i = 0; i < 20000; i++)
+	{
+		std::random_device rd;
+		std::mt19937 mt(rd());
+		std::uniform_int_distribution<int> distXZ(-100, 100);
+		std::uniform_int_distribution<int> distY(-30, 30);
 
-	auto startBlock = std::make_unique<Entity>(L"StartBlock");
-	startBlock->AddComponent(std::make_unique<Transform>());
-	startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-	startBlock->AddComponent(std::move(mr));
-	startBlock->AddComponent(std::move(col));
+		auto randX = distXZ(mt);
+		auto randY = distY(mt);
+		auto randZ = distXZ(mt);
 
-	_startBlock = startBlock.get();
-	scene->Add(std::move(startBlock));
+		auto mr = std::make_unique<ModelRenderer>(shader, false);
+		mr->SetModel(model);
+		mr->SetModelScale(Vec3(0.01f));
+
+		auto col = std::make_unique<AABBCollider>();
+		col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
+		col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
+		col->SetOwnChannel(CollisionChannel::Priming);
+		col->SetPickableMask(
+			static_cast<uint8>(CollisionChannel::Priming) |
+			static_cast<uint8>(CollisionChannel::Character));
+		col->SetStatic(true);
+
+		auto startBlock = std::make_unique<Entity>(L"StartBlock");
+		startBlock->AddComponent(std::make_unique<Transform>());
+		startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(randX, randY, randZ));
+		startBlock->AddComponent(std::move(mr));
+		startBlock->AddComponent(std::move(col));
+
+		scene->Add(std::move(startBlock));
+	}
 
 	// ── 캐릭터 ─────────────────────────────────────────────────────────
 	Actor* charActor = spawn(std::make_unique<CharacterActor>());

@@ -23,6 +23,16 @@
 #include "UI/Components/UIButton.h"
 #include "Scene/SceneSerializer.h"
 
+EditorApp::EditorApp()
+{
+
+}
+
+EditorApp::~EditorApp()
+{
+
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 void EditorApp::Init()
 {
@@ -239,7 +249,7 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
 {
 	info.entityLabel = L"Entity";
 
-	if (Transform* tf = entity->GetTransform())
+	if (Transform* tf = entity->GetComponent<Transform>())
 	{
 		Vec3 pos = tf->GetPosition(), rot = tf->GetRotation(), scl = tf->GetScale();
 		info.tx = pos.x; info.ty = pos.y; info.tz = pos.z;
@@ -251,7 +261,7 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
 
 	if (ModelAnimator* animator = entity->GetComponent<ModelAnimator>())
 	{
-		if (Model* mdl = animator->GetModel())
+		if (std::shared_ptr<Model> mdl = animator->GetModel())
 		{
 			info.entityLabel = info.modelName =
 				(mdl->GetMeshCount() > 0) ? mdl->GetMeshByIndex(0)->name : L"Unknown";

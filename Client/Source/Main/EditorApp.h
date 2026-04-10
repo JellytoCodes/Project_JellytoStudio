@@ -14,6 +14,9 @@ class IsometricCameraController;
 class EditorApp : public IExecute
 {
 public:
+	EditorApp();
+	~EditorApp();
+
 	virtual void Init()   override;
 	virtual void Update() override;
 	virtual void Render() override;
