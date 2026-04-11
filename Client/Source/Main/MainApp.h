@@ -1,15 +1,16 @@
 
 #pragma once
 #include "Core/Interfaces/IExecute.h"
-#include "UI/InventoryData.h"   // ★ POD 데이터, 직접 소유
+#include "UI/InventoryData.h"
 
 class Scene;
 class Entity;
 class Actor;
 class IsometricCameraController;
 class BlockPlacer;
+class OneBlockScript;
 class PaletteWidget;
-class InventoryWidget;          // ★ 순방향 선언
+class InventoryWidget;
 
 class MainApp : public IExecute
 {
@@ -30,12 +31,13 @@ private:
     std::unique_ptr<Scene>              _scene;
     std::vector<std::unique_ptr<Actor>> _actors;
 
-    Entity*                     _characterEntity = nullptr;
-    Entity*                     _startBlock      = nullptr;
-    IsometricCameraController*  _isoCamCtrl      = nullptr;
-    BlockPlacer*                _blockPlacer     = nullptr;
-    PaletteWidget*              _palette         = nullptr;
+    Entity*                    _characterEntity = nullptr;
+    Entity*                    _startBlock      = nullptr;
+    IsometricCameraController* _isoCamCtrl      = nullptr;
+    BlockPlacer*               _blockPlacer     = nullptr;
+    OneBlockScript*            _oneBlockScript  = nullptr;
+    PaletteWidget*             _palette         = nullptr;
 
-    InventoryData               _inventoryData;
-    InventoryWidget*            _inventoryWidget = nullptr;
+    InventoryData   _inventoryData;             
+    InventoryWidget* _inventoryWidget = nullptr;
 };

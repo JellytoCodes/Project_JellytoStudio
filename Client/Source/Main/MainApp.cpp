@@ -13,15 +13,15 @@
 #include "Entity/Managers/CollisionManager.h"
 #include "Scripts/IsometricCameraController.h"
 #include "Scripts/BlockPlacer.h"
+#include "Scripts/OneBlockScript.h"
 #include "UI/PaletteWidget.h"
-#include "UI/InventoryWidget.h"   // ★ 추가
+#include "UI/InventoryWidget.h"
 #include "Entity/Components/Light.h"
 #include "Scene/SceneSerializer.h"
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Pipeline/Shader.h"
-#include "Scripts/OneBlockScript.h"
 
 MainApp::MainApp()  {}
 MainApp::~MainApp() {}
@@ -42,12 +42,12 @@ void MainApp::Init()
     InitScene();
     CreateCamera();
     CreatePlacementSystem();
-    CreateInventorySystem(); // ★ 배치 시스템 이후 호출 (의존성 순서)
+    CreateInventorySystem();
 
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 }
 
-// ── 씬 초기화 (기존 코드 동일) ────────────────────────────────────────────
+// ── 씬 초기화 ─────────────────────────────────────────────────────────────
 
 void MainApp::InitScene()
 {
@@ -105,6 +105,7 @@ void MainApp::InitScene()
     {
         auto oneBlock = std::make_unique<OneBlockScript>();
         oneBlock->SetCharacterEntity(_characterEntity);
+        _oneBlockScript = oneBlock.get();
         _startBlock->AddComponent(std::move(oneBlock));
     }
 }
@@ -126,7 +127,6 @@ void MainApp::CreateCamera()
 
     _isoCamCtrl = isoCtrl.get();
     Camera* camComp = camera->GetComponent<Camera>();
-
     camera->AddComponent(std::move(isoCtrl));
 
     scene->SetMainCamera(camComp);
@@ -159,24 +159,37 @@ void MainApp::CreatePlacementSystem()
         _blockPlacer->SetCharacterEntity(_characterEntity);
 }
 
+// ── 인벤토리 시스템 초기화 ────────────────────────────────────────────────
+//
+//  의존성 주입 순서:
+//    1. _inventoryData (값 타입, 힙 할당 없음) — MainApp 직접 소유
+//    2. BlockPlacer    ← &_inventoryData (배치 소비 / 제거 환급)
+//    3. OneBlockScript ← &_inventoryData (F키 채굴 → AddItem)  ★ 신규
+//    4. InventoryWidget← &_inventoryData (UI 읽기 전용)
+
 void MainApp::CreateInventorySystem()
 {
-    Scene* scene = _scene.get();
+    // ① 초기 아이템 0개 (채굴로만 획득)
+    //    개발 중 테스트가 필요하면 아래 주석 해제:
+    //  _inventoryData.GiveAll(10);
 
-    _inventoryData.GiveAll(30);
-
+    // ② BlockPlacer 연동
     if (_blockPlacer)
         _blockPlacer->SetInventoryData(&_inventoryData);
 
+    // ③ OneBlockScript 연동 ★
+    //    F키 채굴 → AddItem(dropSlot, 1) → 인벤토리 +1
+    if (_oneBlockScript)
+        _oneBlockScript->SetInventoryData(&_inventoryData);
+
+    // ④ InventoryWidget 생성
     auto invWidget = std::make_unique<InventoryWidget>(L"Inventory");
     invWidget->SetInventoryData(&_inventoryData);
     invWidget->SetPalette(_palette);
 
     _inventoryWidget = invWidget.get();
-    scene->Add(std::move(invWidget));
+    _scene->Add(std::move(invWidget));
 }
-
-// ── Update / Render ───────────────────────────────────────────────────────
 
 void MainApp::Update()
 {

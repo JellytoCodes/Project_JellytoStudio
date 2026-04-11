@@ -13,7 +13,6 @@ public:
     explicit InventoryWidget(const std::wstring& name);
     virtual ~InventoryWidget() = default;
 
-    // ── 외부 의존성 주입 (생성자 오염 없이 setter 패턴) ─────────
     void SetInventoryData(InventoryData* data)   { _pInventory = data; }
     void SetPalette(PaletteWidget* palette)      { _pPalette   = palette; }
 
@@ -30,11 +29,8 @@ private:
     void DrawBackground();
     void DrawInventoryGrid();
     void DrawHotbarMirror();
-    void DrawSingleSlot(float x, float y, float w, float h,
-                        const InventorySlotData& slot,
-                        bool selected, bool isHotbar);
-    void DrawSlotLabel(float x, float y, float w, float h,
-                       const InventorySlotData& slot, bool isHotbar);
+    void DrawSingleSlot(float x, float y, float w, float h, const InventorySlotData& slot, bool selected, bool isHotbar);
+    void DrawSlotLabel(float x, float y, float w, float h, const InventorySlotData& slot, bool isHotbar);
 
     // ── 입력 처리 ─────────────────────────────────────────────────
     void HandleInput();
@@ -43,32 +39,20 @@ private:
     static const wchar_t* GetSlotLabel(PaletteWidget::SlotType type);
     static Color          GetSlotColor(PaletteWidget::SlotType type);
 
-    // ── 레이아웃 상수 (컴파일 타임 고정) ─────────────────────────
-    //  화면 해상도: MAIN_WINDOW_WIDTH × MAIN_WINDOW_HEIGHT (1280×720)
-
     //  [인벤토리 그리드]
-    static constexpr float kGridSlotW     = 80.f;   // 슬롯 1칸 너비
-    static constexpr float kGridSlotH     = 72.f;   // 슬롯 1칸 높이
-    static constexpr float kGridSlotGap   = 6.f;    // 슬롯 간격
-    static constexpr float kGridPanelPad  = 16.f;   // 패널 내부 패딩
-    static constexpr float kGridPanelW    =
-        kGridPanelPad * 2
-        + InventoryData::kGridCols * kGridSlotW
-        + (InventoryData::kGridCols - 1) * kGridSlotGap;  // 8열
-    static constexpr float kGridPanelH    =
-        kGridPanelPad * 2 + 28.f                           // 타이틀 높이
-        + InventoryData::kGridRows * kGridSlotH
-        + (InventoryData::kGridRows - 1) * kGridSlotGap;  // 5행
+    static constexpr float kGridSlotW     = 64.f;
+    static constexpr float kGridSlotH     = 64.f;
+    static constexpr float kGridSlotGap   = 6.f; 
+    static constexpr float kGridPanelPad  = 8.f; 
+    static constexpr float kGridPanelW    = kGridPanelPad * 2 + InventoryData::kGridCols * kGridSlotW + (InventoryData::kGridCols - 1) * kGridSlotGap;
+    static constexpr float kGridPanelH    = kGridPanelPad * 2 + 28.f + InventoryData::kGridRows * kGridSlotH + (InventoryData::kGridRows - 1) * kGridSlotGap;
 
     //  [핫바 미러]
-    static constexpr float kHotbarSlotW   = 80.f;
-    static constexpr float kHotbarSlotH   = 72.f;
+    static constexpr float kHotbarSlotW   = 64.f;
+    static constexpr float kHotbarSlotH   = 64.f;
     static constexpr float kHotbarSlotGap = 6.f;
     static constexpr float kHotbarPad     = 8.f;
-    static constexpr float kHotbarPanelW  =
-        kHotbarPad * 2
-        + InventoryData::kHotbarSlots * kHotbarSlotW
-        + (InventoryData::kHotbarSlots - 1) * kHotbarSlotGap;
+    static constexpr float kHotbarPanelW  = kHotbarPad * 2 + InventoryData::kHotbarSlots * kHotbarSlotW + (InventoryData::kHotbarSlots - 1) * kHotbarSlotGap;
     static constexpr float kHotbarPanelH  = kHotbarSlotH + kHotbarPad * 2;
 
     //  [패널 간격]

@@ -45,9 +45,9 @@ private:
     void DrawBar();
 
     static constexpr int32 SLOT_COUNT  = static_cast<int32>(SlotType::Count);
-    static constexpr float SLOT_W      = 76.f;
-    static constexpr float SLOT_H      = 68.f;
-    static constexpr float SLOT_GAP    = 5.f;
+    static constexpr float SLOT_W      = 64.f;
+    static constexpr float SLOT_H      = 64.f;
+    static constexpr float SLOT_GAP    = 6.f;
     static constexpr float BAR_PADDING = 8.f;
     static constexpr float BAR_H       = SLOT_H + BAR_PADDING * 2;
 
