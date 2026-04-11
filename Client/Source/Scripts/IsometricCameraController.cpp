@@ -1,3 +1,4 @@
+
 #include "pch.h"
 #include "IsometricCameraController.h"
 
@@ -6,10 +7,25 @@
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 
-void IsometricCameraController::Awake()   { ApplyTransform(); }
-void IsometricCameraController::Start()   {}
-void IsometricCameraController::LateUpdate() {}
-void IsometricCameraController::OnDestroy()  {}
+void IsometricCameraController::Awake()
+{
+	ApplyTransform();
+}
+
+void IsometricCameraController::Start()
+{
+	
+}
+
+void IsometricCameraController::LateUpdate()
+{
+	
+}
+
+void IsometricCameraController::OnDestroy()
+{
+	
+}
 
 void IsometricCameraController::Update()
 {

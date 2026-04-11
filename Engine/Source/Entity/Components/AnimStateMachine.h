@@ -38,7 +38,7 @@ public:
     void SetState(AnimState state);
 
     AnimState GetState()          const { return _currentState; }
-    bool      IsState(AnimState s) const { return _currentState == s; }
+    bool      IsState(AnimState state) const { return _currentState == state; }
 
     void SetTweenDuration(float sec) { _tweenDuration = sec; }
 

@@ -15,8 +15,8 @@ public:
 
 private:
 	static std::wstring FindActorType(const std::wstring& entityName);
-	static std::string  WstrToStr(const std::wstring& w);
-	static std::wstring StrToWstr(const std::string& s);
+	static std::string  WstrToStr(const std::wstring& wStr);
+	static std::wstring StrToWstr(const std::string& str);
 
 	static std::unordered_map<std::wstring, ActorFactory> _factories;
 };

@@ -18,10 +18,8 @@ public:
     void SetRotateSpeed(float s)   { _rotateSpeed = s; }
     void SetStopThreshold(float t) { _stopThreshold = t; }
 
-    // 이동 가능한 블록 쿼리 채널 (default: Character)
     void SetWalkChannel(CollisionChannel ch) { _walkChannel = ch; }
 
-    // deprecated — 하위호환용, 무시됨
     void SetGroundY(float) {}
 
     void MoveTo(const Vec3& worldPos);
@@ -33,7 +31,6 @@ private:
     void MoveToDestination(float dt);
     void UpdateAnimState(bool moving);
 
-    // 다음 위치(XZ)에서 블록 측면 충돌 여부
     bool IsMovementBlocked(const Vec3& nextEntityPos) const;
 
     Vec3  _destination  = Vec3::Zero;
@@ -43,6 +40,5 @@ private:
     float _rotateSpeed   = 720.f;
     float _stopThreshold = 0.1f;
 
-    // 걸을 수 있는 블록 피킹 채널 (Priming 블록의 pickableMask에 포함되어야 함)
     CollisionChannel _walkChannel = CollisionChannel::Character;
 };

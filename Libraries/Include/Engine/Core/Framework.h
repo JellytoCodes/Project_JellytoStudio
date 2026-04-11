@@ -27,6 +27,7 @@
 #include <windows.h>
 #include <assert.h>
 #include <optional>
+#include <filesystem>
 
 ///////////////////////////////////////////////////
 /// DirectX11

@@ -48,7 +48,6 @@ void PaletteWidget::HandleInput()
     }
 }
 
-// 배치 모드 ON일 때만 렌더
 void PaletteWidget::DrawUI()
 {
     if (!_placingMode) return;

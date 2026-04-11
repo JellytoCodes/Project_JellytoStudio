@@ -21,33 +21,37 @@
 
 void SkySphereActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/SkySphere.hlsl");
-	auto mat = std::make_shared<Material>();
-	mat->SetShader(shader);
-	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"Sky", L"../Resources/Textures/clear_sky.png");
-	mat->SetDiffuseMap(tex);
-	MaterialDesc& d = mat->GetMaterialDesc();
-	d.ambient = d.diffuse = d.specular = Vec4(1.f);
-	GET_SINGLE(ResourceManager)->Add(L"Sky", mat);
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/SkySphere.hlsl");
+	std::shared_ptr<Material> material = std::make_shared<Material>();
+	material->SetShader(shader);
+	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"Sky", L"../Resources/Textures/clear_sky.png");
+	material->SetDiffuseMap(texture);
+	MaterialDesc& desc = material->GetMaterialDesc();
+	desc.ambient = Vec4(1.f);
+	desc.diffuse = Vec4(1.f);
+	desc.specular = Vec4(1.f);
+	GET_SINGLE(ResourceManager)->Add(L"Sky", material);
 
-	auto mr = std::make_unique<MeshRenderer>();
-	mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Sphere"));
-	mr->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"Sky"));
-	_entity->AddComponent(std::move(mr));
+	std::unique_ptr<MeshRenderer> meshRenderer = std::make_unique<MeshRenderer>();
+	meshRenderer->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Sphere"));
+	meshRenderer->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"Sky"));
+	_entity->AddComponent(std::move(meshRenderer));
 }
 
 void FloorActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-	auto mat = std::make_shared<Material>();
-	mat->SetShader(shader);
-	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"FloorMat", L"../Resources/Textures/GridTile.jpg");
-	mat->SetDiffuseMap(tex);
-	MaterialDesc& d = mat->GetMaterialDesc();
-	d.ambient = d.diffuse = d.specular = Vec4(1.f);
-	GET_SINGLE(ResourceManager)->Add(L"FloorMat", mat);
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	std::shared_ptr<Material> material = std::make_shared<Material>();
+	material->SetShader(shader);
+	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"FloorMat", L"../Resources/Textures/GridTile.jpg");
+	material->SetDiffuseMap(texture);
+	MaterialDesc& desc = material->GetMaterialDesc();
+	desc.ambient = Vec4(1.f);
+	desc.diffuse = Vec4(1.f);
+	desc.specular = Vec4(1.f);
+	GET_SINGLE(ResourceManager)->Add(L"FloorMat", material);
 
-	auto tileMap = std::make_unique<TileMap>();
+	std::unique_ptr<TileMap> tileMap = std::make_unique<TileMap>();
 	_entity->AddComponent(std::move(tileMap));
 	tileMap->Create(20, 20, 1.f, GET_SINGLE(ResourceManager)->Get<Material>(L"FloorMat"));
 	
@@ -56,21 +60,23 @@ void FloorActor::BuildEntity()
 
 void CubeActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-	auto mat = std::make_shared<Material>();
-	mat->SetShader(shader);
-	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
-	mat->SetDiffuseMap(tex);
-	MaterialDesc& d = mat->GetMaterialDesc();
-	d.ambient = d.diffuse = d.specular = Vec4(1.f);
-	GET_SINGLE(ResourceManager)->Add(L"CubeMat", mat);
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	std::shared_ptr<Material> material = std::make_shared<Material>();
+	material->SetShader(shader);
+	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
+	material->SetDiffuseMap(texture);
+	MaterialDesc& desc = material->GetMaterialDesc();
+	desc.ambient = Vec4(1.f);
+	desc.diffuse = Vec4(1.f);
+	desc.specular = Vec4(1.f);
+	GET_SINGLE(ResourceManager)->Add(L"CubeMat", material);
 	_entity->GetComponent<Transform>()->SetLocalScale(Vec3(0.5f));
 
-	auto mr = std::make_unique<MeshRenderer>();
-	mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube"));
-	mr->SetPass(0);
-	mr->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"));
-	_entity->AddComponent(std::move(mr));
+	std::unique_ptr<MeshRenderer> meshRenderer = std::make_unique<MeshRenderer>();
+	meshRenderer->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube"));
+	meshRenderer->SetPass(0);
+	meshRenderer->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"));
+	_entity->AddComponent(std::move(meshRenderer));
 
 	auto col = std::make_unique<AABBCollider>();
 	col->SetBoxExtents(Vec3(0.5f));
@@ -79,61 +85,60 @@ void CubeActor::BuildEntity()
 
 void SphereActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
-	auto mat = std::make_shared<Material>();
-	mat->SetShader(shader);
-	auto tex = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
-	mat->SetDiffuseMap(tex);
-	MaterialDesc& d = mat->GetMaterialDesc();
-	d.ambient = d.diffuse = d.specular = Vec4(1.f);
-	GET_SINGLE(ResourceManager)->Add(L"CubeMat", mat);
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	std::shared_ptr<Material> material = std::make_shared<Material>();
+	material->SetShader(shader);
+	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
+	material->SetDiffuseMap(texture);
+	MaterialDesc& desc = material->GetMaterialDesc();
+	desc.ambient = Vec4(1.f);
+	desc.diffuse = Vec4(1.f);
+	desc.specular = Vec4(1.f);
+	GET_SINGLE(ResourceManager)->Add(L"CubeMat", material);
 	_entity->GetComponent<Transform>()->SetLocalScale(Vec3(0.5f));
 
-	auto mr = std::make_unique<MeshRenderer>();
-	mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Sphere"));
-	mr->SetPass(0);
-	mr->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"));
-	_entity->AddComponent(std::move(mr));
+	std::unique_ptr<MeshRenderer> meshRenderer = std::make_unique<MeshRenderer>();
+	meshRenderer->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Sphere"));
+	meshRenderer->SetPass(0);
+	meshRenderer->SetMaterial(GET_SINGLE(ResourceManager)->Get<Material>(L"CubeMat"));
+	_entity->AddComponent(std::move(meshRenderer));
 
-	auto col = std::make_unique<SphereCollider>();
+	std::unique_ptr<SphereCollider> col = std::make_unique<SphereCollider>();
 	col->SetRadius(0.5f);
 	_entity->AddComponent(std::move(col));
 }
 
 void CharacterActor::BuildEntity()
 {
-	auto shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
-	auto model = std::make_shared<Model>();
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
+	std::shared_ptr<Model> model = std::make_shared<Model>();
 	model->ReadModel(L"Kaya/Kaya");
 	model->ReadMaterial(L"Kaya/Kaya");
-	model->ReadAnimation(L"Kaya/Idle"); // index 0
-	model->ReadAnimation(L"Kaya/Walking"); // index 1
+	model->ReadAnimation(L"Kaya/Idle");
+	model->ReadAnimation(L"Kaya/Walking");
 
 	_entity->GetComponent<Transform>()->SetLocalScale(Vec3(0.01f));
 	_entity->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
 
-	auto animator = std::make_unique<ModelAnimator>(shader);
+	std::unique_ptr<ModelAnimator> animator = std::make_unique<ModelAnimator>(shader);
 	animator->SetModel(model);
 	_entity->AddComponent(std::move(animator));
 
-	auto col = std::make_unique<AABBCollider>();
+	std::unique_ptr<AABBCollider> col = std::make_unique<AABBCollider>();
 	col->SetBoxExtents(Vec3(20.f, 88.f, 20.f));
 	col->SetOffsetPosition(Vec3(0.f, 88.f, 0.f));
 	col->SetShowDebug(false);
-	// 캐릭터 채널 — 블록 배치 대상이 아님(pickableMask=0)
 	col->SetOwnChannel(CollisionChannel::Character);
 	col->SetPickableMask(0);
 	_entity->AddComponent(std::move(col));
 
-	// 애니메이션 상태머신
-	auto animStateMachine = std::make_unique<AnimStateMachine>();
+	std::unique_ptr<AnimStateMachine> animStateMachine = std::make_unique<AnimStateMachine>();
 	animStateMachine->RegisterClip(AnimState::Idle, 0);
 	animStateMachine->RegisterClip(AnimState::Walk, 1);
 	animStateMachine->SetTweenDuration(0.2f);
 	_entity->AddComponent(std::move(animStateMachine));
 
-	// 클릭 이동 컨트롤러
-	auto pcc = std::make_unique<PointClickController>();
+	std::unique_ptr<PointClickController> pcc = std::make_unique<PointClickController>();
 	pcc->SetMoveSpeed(3.f);
 	pcc->SetWalkChannel(CollisionChannel::Character);
 	_entity->AddComponent(std::move(pcc));
@@ -141,10 +146,7 @@ void CharacterActor::BuildEntity()
 
 void LightActor::BuildEntity()
 {
-	assert(_entity != nullptr && "[LightActor] _entity is null before AddComponent");
-	assert(_entity->GetComponent<Transform>() != nullptr && "[LightActor] Transform not set");
-
-	auto light = std::make_unique<Light>();
+	std::unique_ptr<Light> light = std::make_unique<Light>();
 
 	LightDesc desc;
 	desc.ambient  = Color(3.f, 3.f, 3.f, 1.f);
@@ -159,7 +161,6 @@ void LightActor::BuildEntity()
 
 	_entity->AddComponent(std::move(light));
 
-	// 컴포넌트가 정상 등록됐는지 즉시 검증
 	auto check = _entity->GetComponent<Light>();
 	assert(check != nullptr && "[LightActor] GetComponent<Light>() returned null after AddComponent");
 }

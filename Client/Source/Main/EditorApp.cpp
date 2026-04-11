@@ -41,7 +41,6 @@ void EditorApp::Init()
 	_scene = std::make_unique<Scene>();
 	_scene->SetName(L"Main Scene");
 
-	// WindowManager는 IWindow 소유 → GetWindow는 raw ptr 반환
 	_itemWindow   = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
 	_detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
 
@@ -58,7 +57,6 @@ void EditorApp::Init()
 
 	Scene* rawScene = _scene.get();
 	GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
-	// _scene은 이제 nullptr — 이후 접근은 SceneManager 통해
 
 	if (_itemWindow)   _itemWindow->SetScene(rawScene);
 	if (_detailWindow) _detailWindow->SetScene(rawScene);
@@ -106,30 +104,28 @@ void EditorApp::CreateHUD()
 {
 	Scene* scene = _scene.get();
 
-	auto hud = std::make_unique<Widget>(L"HUD");
+	std::unique_ptr<Widget> hud = std::make_unique<Widget>(L"HUD");
 	float cx = MAIN_WINDOW_WIDTH * 0.5f - 130.f;
 	hud->SetScreenPos(cx, 12.f);
 
-	// 이전: make_shared<UIText>() → Widget이 shared_ptr 벡터로 보관
-	// 변경: make_unique<UIText>() → Widget이 unique_ptr로 독점 소유
-	auto txt = std::make_unique<UIText>();
-	txt->SetRect(0.f, 0.f, 260.f, 36.f);
-	txt->SetFontSize(20);
-	txt->SetTextGetter([]()
+	std::unique_ptr<UIText> timeText = std::make_unique<UIText>();
+	timeText->SetRect(0.f, 0.f, 260.f, 36.f);
+	timeText->SetFontSize(20);
+	timeText->SetTextGetter([]()
 		{
 			float t = GET_SINGLE(TimeManager)->GetTotalTime();
 			wchar_t buf[64];
 			swprintf_s(buf, L"Time  %02d:%02d", (int)(t / 60), (int)t % 60);
 			return std::wstring(buf);
 		});
-	hud->AddUIComponent(std::move(txt));
+	hud->AddUIComponent(std::move(timeText));
 
-	auto btn = std::make_unique<UIButton>();
-	btn->SetRect(50.f, 44.f, 160.f, 28.f);
-	btn->SetText(L"Reset Timer");
-	btn->SetFontSize(15);
-	btn->SetOnClick([]() { ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n"); });
-	hud->AddUIComponent(std::move(btn));
+	std::unique_ptr<UIButton> resetButton = std::make_unique<UIButton>();
+	resetButton->SetRect(50.f, 44.f, 160.f, 28.f);
+	resetButton->SetText(L"Reset Timer");
+	resetButton->SetFontSize(15);
+	resetButton->SetOnClick([]() { ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n"); });
+	hud->AddUIComponent(std::move(resetButton));
 
 	scene->Add(std::move(hud));
 }
@@ -179,14 +175,12 @@ void EditorApp::Update()
 		}
 	}
 
-	if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
-		GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
+	if ((::GetKeyState(VK_CONTROL) & 0x8000) && GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
 	{
 		SceneSerializer::Save(scene, L"../Saved/scene.xml");
 	}
 
-	if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
-		GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
+	if ((::GetKeyState(VK_CONTROL) & 0x8000) && GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
 	{
 		SceneSerializer::Load(scene, L"../Saved/scene.xml");
 		if (_detailWindow) _detailWindow->MarkDirty();
@@ -200,12 +194,8 @@ void EditorApp::UpdatePicking()
 {
 	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 
-	// Delete/P: 선택된 Entity 제거
-	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::DEL) ||
-		GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::P))
+	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::DEL))
 	{
-		// 이전: shared_ptr<Entity> selected = _detailWindow->GetSelectedEntity()
-		// 변경: Entity* — 관찰자 포인터
 		Entity* selected = _detailWindow ? _detailWindow->GetSelectedEntity() : nullptr;
 		if (selected && scene)
 		{
@@ -225,8 +215,6 @@ void EditorApp::UpdatePicking()
 
 	POINT mp = GET_SINGLE(InputManager)->GetMousePos();
 
-	// 이전: shared_ptr<Entity> picked = _scene->Pick()
-	// 변경: Entity* picked — 관찰자 포인터, refcount 0
 	Entity* picked = scene ? scene->Pick((int32)mp.x, (int32)mp.y) : nullptr;
 	_pickedEntity  = picked;
 

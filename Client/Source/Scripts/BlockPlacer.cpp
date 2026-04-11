@@ -1,5 +1,8 @@
-﻿#include "pch.h"
+﻿
+#include "pch.h"
 #include "BlockPlacer.h"
+
+#include "UI/InventoryData.h"           // ★ 추가
 
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
@@ -97,11 +100,10 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
     if (mat) return mat;
 
     mat = std::make_shared<Material>();
-    // Shader는 ResourceManager가 지원하지 않으므로 직접 생성 후 Material 내부에서 관리
     mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl"));
     auto& d = mat->GetMaterialDesc();
     d.ambient = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
-        : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
+                               : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
     d.specular = d.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
     return mat;
 }
@@ -112,7 +114,6 @@ BlockPlacer::BlockPlacer() : MonoBehaviour() {}
 
 void BlockPlacer::Awake()
 {
-    // 모든 슬롯 모델 Awake 시 사전 로드 → Update 중 I/O 스톨 방지
     for (int i = 0; i < static_cast<int>(SlotType::Count); i++)
     {
         const SlotType t = static_cast<SlotType>(i);
@@ -123,8 +124,6 @@ void BlockPlacer::Awake()
 
 void BlockPlacer::Start()
 {
-    // Shader: ResourceManager는 Shader 타입 미지원 → 멤버 shared_ptr로 직접 관리.
-    // ModelRenderer 생성자(shared_ptr<Shader>) 요구사항을 만족.
     if (!_blockShader)
         _blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 }
@@ -137,7 +136,6 @@ void BlockPlacer::SetPlacingMode(bool on)
 {
     _placingMode = on;
     if (!on) HidePreview();
-    // _palette: raw pointer (observer) → .lock() 불필요
     if (_palette) _palette->SetPlacingMode(on);
     _previewDirty = true;
 }
@@ -174,14 +172,12 @@ void BlockPlacer::HandleInput()
     if (!scene) return;
 
     const POINT mp = input->GetMousePos();
-    // _palette: raw pointer → 직접 사용
     const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
 
     if (input->GetButtonDown(KEY_TYPE::LBUTTON))
     {
         if (st == SlotType::Eraser)
         {
-            // Scene::PickBlock 출력파라미터: Entity*& (raw pointer)
             Entity* hitEntity = nullptr;
             Vec3    hitNormal;
             float   hitDist;
@@ -242,7 +238,6 @@ bool BlockPlacer::CalcPlacePos(SlotType type,
     const auto* hitAabb = hitEntity->GetComponent<AABBCollider>();
     if (!hitAabb) return false;
 
-    // GetBoundingBox() 는 non-const — hitAabb가 non-const ptr이므로 문제없음
     const BoundingBox& hitBox = const_cast<AABBCollider*>(hitAabb)->GetBoundingBox();
     const Vec3 hitCenter(hitBox.Center.x, hitBox.Center.y, hitBox.Center.z);
     const Vec3 hitExt(hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z);
@@ -282,7 +277,6 @@ void BlockPlacer::UpdatePreview()
 
     if (isErase)
     {
-        // PickBlock 출력 파라미터: Entity*& (raw pointer)
         Entity* hit = nullptr;
         Vec3    hn;
         float   hd;
@@ -300,6 +294,9 @@ void BlockPlacer::UpdatePreview()
     }
     else
     {
+        // ★ 인벤토리 수량 부족이면 프리뷰도 '불가' 색상으로 표시
+        const bool hasStock = !_pInventory || _pInventory->HasItem(st);
+
         const auto params = GetModelParams(st);
         const Vec3 newHalf = GetHalfExtents(params.collider);
 
@@ -331,7 +328,8 @@ void BlockPlacer::UpdatePreview()
             Vec3 entityPos;
             if (CalcPlacePos(st, hitEntity, hitNormal, entityPos))
             {
-                canAct = true;
+                // 위치는 유효하지만 재고가 없으면 빨간 프리뷰
+                canAct = hasStock;
                 previewPos = entityPos;
                 previewScale = Vec3(newHalf.x * 2.f * 0.95f, 0.06f, newHalf.z * 2.f * 0.95f);
             }
@@ -340,9 +338,6 @@ void BlockPlacer::UpdatePreview()
 
     _previewValid = canAct;
 
-    // ── 프리뷰 Entity 생성 ───────────────────────────────────────────────
-    // Scene::Add 는 unique_ptr<Entity> 요구.
-    // raw ptr 선저장 후 소유권 이전.
     if (!_previewEntity)
     {
         auto owned = std::make_unique<Entity>(L"__Preview__");
@@ -352,8 +347,8 @@ void BlockPlacer::UpdatePreview()
         mr->SetPass(0);
         owned->AddComponent(std::move(mr));
 
-        _previewEntity = owned.get();   // observer ptr 저장
-        scene->Add(std::move(owned));   // Scene 소유권 이전
+        _previewEntity = owned.get();
+        scene->Add(std::move(owned));
     }
 
     _previewEntity->GetComponent<Transform>()->SetLocalPosition(previewPos);
@@ -371,7 +366,7 @@ void BlockPlacer::HidePreview()
     if (!_previewEntity) return;
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
         scene->Remove(_previewEntity);
-    _previewEntity = nullptr;  // raw pointer: nullptr 대입 (reset() 아님)
+    _previewEntity = nullptr;
     _previewValid = false;
 }
 
@@ -390,14 +385,16 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     if (!scene) return false;
     if (type == SlotType::Eraser) return false;
 
+    // ★ 인벤토리 소비 — nullptr이면 무제한(에디터 호환)
+    if (_pInventory && !_pInventory->ConsumeItem(type))
+        return false; // 수량 부족: 배치 거부
+
     std::shared_ptr<Model> model = GetOrLoadModel(type);
     if (!model) return false;
 
     const auto params = GetModelParams(type);
     const Vec3 halfExt = GetHalfExtents(params.collider);
 
-    // Scene::Add 는 unique_ptr<Entity> 요구 → make_unique 사용
-    // raw ptr 선저장 후 소유권 이전
     auto blockEntity = std::make_unique<Entity>(L"MapBlock");
     blockEntity->AddComponent(std::make_unique<Transform>());
     blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
@@ -417,9 +414,11 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     col->SetStatic(true);
     blockEntity->AddComponent(std::move(col));
 
-    Entity* rawBlock = blockEntity.get();  // observer ptr 선저장
+    Entity* rawBlock = blockEntity.get();
     scene->Add(std::move(blockEntity));
+
     _blockSet.insert(rawBlock);
+    _blockTypeMap[rawBlock] = type; // ★ 타입 이력 저장
 
     GET_SINGLE(InstancingManager)->SetDirty();
     return true;
@@ -431,6 +430,17 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 {
     if (!entity) return false;
     if (_blockSet.find(entity) == _blockSet.end()) return false;
+
+    // ★ 인벤토리 환급 — 배치했던 타입을 찾아서 돌려줌
+    if (_pInventory)
+    {
+        auto it = _blockTypeMap.find(entity);
+        if (it != _blockTypeMap.end())
+        {
+            _pInventory->AddItem(it->second, 1);
+            _blockTypeMap.erase(it);
+        }
+    }
 
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
@@ -444,6 +454,14 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 
 void BlockPlacer::ClearAllBlocks()
 {
+    // ★ 전체 제거 시 인벤토리 환급
+    if (_pInventory)
+    {
+        for (auto& [entity, type] : _blockTypeMap)
+            _pInventory->AddItem(type, 1);
+        _blockTypeMap.clear();
+    }
+
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     for (Entity* e : _blockSet)
         if (scene) scene->Remove(e);
@@ -456,7 +474,6 @@ void BlockPlacer::ClearAllBlocks()
 
 bool BlockPlacer::IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const
 {
-    // _character: raw pointer (observer) → .lock() 없음
     if (!_character) return false;
 
     auto* charCol = _character->GetComponent<AABBCollider>();

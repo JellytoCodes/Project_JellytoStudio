@@ -16,8 +16,6 @@ public:
 	virtual void LateUpdate() override {}
 	virtual void OnDestroy()  override {}
 
-	// 이전: shared_ptr<Entity> ch — 함수 호출마다 refcount 복사
-	// 변경: Entity* — 관찰자, 씬이 Entity 수명 관리
 	void SetCharacterEntity(Entity* ch) { _character = ch; }
 
 	int32 GetTotalBreaks()  const { return _totalBreaks; }

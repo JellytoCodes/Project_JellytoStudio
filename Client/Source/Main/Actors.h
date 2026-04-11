@@ -1,9 +1,5 @@
 ﻿#pragma once
-#include "Entity/Actor.h"   // Engine Actor 베이스
-
-// ── 구체 Actor 선언 ───────────────────────────────────────────────────────
-// 위치: Client/Source/Main/
-// Engine의 Actor 베이스를 상속, 게임별 컴포넌트 구성 담당
+#include "Entity/Actor.h"
 
 class SkySphereActor : public Actor
 {

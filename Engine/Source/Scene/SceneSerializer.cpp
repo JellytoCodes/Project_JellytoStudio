@@ -9,11 +9,7 @@
 #include "Entity/Components/Camera.h"
 #include "UI/Widget.h"
 #include "Utils/tinyxml2.h"
-
-#include <filesystem>
 #include "Scene/BlockPlacerInterface.h"
-
-using namespace tinyxml2;
 
 std::unordered_map<std::wstring, SceneSerializer::ActorFactory> SceneSerializer::_factories;
 
@@ -38,7 +34,7 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 	tinyxml2::XMLDocument doc;
 	doc.InsertFirstChild(doc.NewDeclaration());
 
-	XMLElement* sceneElem = doc.NewElement("Scene");
+	tinyxml2::XMLElement* sceneElem = doc.NewElement("Scene");
 	sceneElem->SetAttribute("name", WstrToStr(scene->GetName()).c_str());
 	doc.InsertEndChild(sceneElem);
 
@@ -50,7 +46,7 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 
 		std::wstring actorType = FindActorType(entityPtr->GetEntityName());
 
-		XMLElement* entityElem = doc.NewElement("Entity");
+		tinyxml2::XMLElement* entityElem = doc.NewElement("Entity");
 		entityElem->SetAttribute("name", WstrToStr(entityPtr->GetEntityName()).c_str());
 		if (!actorType.empty())
 			entityElem->SetAttribute("actor", WstrToStr(actorType).c_str());
@@ -61,7 +57,7 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 			Vec3 rot = tf->GetLocalRotation();
 			Vec3 scl = tf->GetLocalScale();
 
-			XMLElement* tfElem = doc.NewElement("Transform");
+			tinyxml2::XMLElement* tfElem = doc.NewElement("Transform");
 			tfElem->SetAttribute("px", pos.x); tfElem->SetAttribute("py", pos.y); tfElem->SetAttribute("pz", pos.z);
 			tfElem->SetAttribute("rx", rot.x); tfElem->SetAttribute("ry", rot.y); tfElem->SetAttribute("rz", rot.z);
 			tfElem->SetAttribute("sx", scl.x); tfElem->SetAttribute("sy", scl.y); tfElem->SetAttribute("sz", scl.z);
@@ -72,10 +68,10 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 
 	if (placer && !placer->GetPlacedBlocks().empty())
 	{
-		XMLElement* blocksElem = doc.NewElement("Blocks");
+		tinyxml2::XMLElement* blocksElem = doc.NewElement("Blocks");
 		for (auto& [col, row] : placer->GetPlacedBlocks())
 		{
-			XMLElement* blockElem = doc.NewElement("Block");
+			tinyxml2::XMLElement* blockElem = doc.NewElement("Block");
 			blockElem->SetAttribute("col", col);
 			blockElem->SetAttribute("row", row);
 			blocksElem->InsertEndChild(blockElem);
@@ -83,8 +79,8 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 		sceneElem->InsertEndChild(blocksElem);
 	}
 
-	XMLError err = doc.SaveFile(WstrToStr(path).c_str());
-	if (err != XML_SUCCESS)
+	tinyxml2::XMLError err = doc.SaveFile(WstrToStr(path).c_str());
+	if (err != tinyxml2::XML_SUCCESS)
 	{
 		::OutputDebugStringW((L"[SceneSerializer] 저장 실패: " + path + L"\n").c_str());
 		return false;
@@ -103,13 +99,13 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 	if (!scene) return false;
 
 	tinyxml2::XMLDocument doc;
-	if (doc.LoadFile(WstrToStr(path).c_str()) != XML_SUCCESS)
+	if (doc.LoadFile(WstrToStr(path).c_str()) != tinyxml2::XML_SUCCESS)
 	{
 		::OutputDebugStringW((L"[SceneSerializer] 파일 없음: " + path + L"\n").c_str());
 		return false;
 	}
 
-	XMLElement* sceneElem = doc.FirstChildElement("Scene");
+	tinyxml2::XMLElement* sceneElem = doc.FirstChildElement("Scene");
 	if (!sceneElem) return false;
 
 	if (const char* name = sceneElem->Attribute("name"))
@@ -130,9 +126,9 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 		placer->ClearAllBlocks();
 
 	// ── Entity 복원 ───────────────────────────────────────────────────────
-	for (XMLElement* entityElem = sceneElem->FirstChildElement("Entity");
-		entityElem;
-		entityElem = entityElem->NextSiblingElement("Entity"))
+	for (tinyxml2::XMLElement* entityElem = sceneElem->FirstChildElement("Entity");
+	     entityElem;
+	     entityElem = entityElem->NextSiblingElement("Entity"))
 	{
 		const char* nameAttr  = entityElem->Attribute("name");
 		const char* actorAttr = entityElem->Attribute("actor");
@@ -174,7 +170,7 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 
 		if (!entity) continue;
 
-		if (XMLElement* tfElem = entityElem->FirstChildElement("Transform"))
+		if (tinyxml2::XMLElement* tfElem = entityElem->FirstChildElement("Transform"))
 		{
 			Vec3 pos = {}, rot = {}, scl = { 1, 1, 1 };
 			tfElem->QueryFloatAttribute("px", &pos.x); tfElem->QueryFloatAttribute("py", &pos.y); tfElem->QueryFloatAttribute("pz", &pos.z);
@@ -189,15 +185,14 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 		}
 	}
 
-	// ── 블록 복원 ────────────────────────────────────────────────────────
 	int blockCount = 0;
 	if (placer)
 	{
-		if (XMLElement* blocksElem = sceneElem->FirstChildElement("Blocks"))
+		if (tinyxml2::XMLElement* blocksElem = sceneElem->FirstChildElement("Blocks"))
 		{
-			for (XMLElement* blockElem = blocksElem->FirstChildElement("Block");
-				blockElem;
-				blockElem = blockElem->NextSiblingElement("Block"))
+			for (tinyxml2::XMLElement* blockElem = blocksElem->FirstChildElement("Block");
+			     blockElem;
+			     blockElem = blockElem->NextSiblingElement("Block"))
 			{
 				int col = 0, row = 0;
 				blockElem->QueryIntAttribute("col", &col);
@@ -229,20 +224,20 @@ std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
 	return it != nameToType.end() ? it->second : L"";
 }
 
-std::string SceneSerializer::WstrToStr(const std::wstring& w)
+std::string SceneSerializer::WstrToStr(const std::wstring& wStr)
 {
-	if (w.empty()) return {};
-	int size = ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
+	if (wStr.empty()) return {};
+	int size = ::WideCharToMultiByte(CP_UTF8, 0, wStr.c_str(), -1, nullptr, 0, nullptr, nullptr);
 	std::string result(size - 1, 0);
-	::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, result.data(), size, nullptr, nullptr);
+	::WideCharToMultiByte(CP_UTF8, 0, wStr.c_str(), -1, result.data(), size, nullptr, nullptr);
 	return result;
 }
 
-std::wstring SceneSerializer::StrToWstr(const std::string& s)
+std::wstring SceneSerializer::StrToWstr(const std::string& str)
 {
-	if (s.empty()) return {};
-	int size = ::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, nullptr, 0);
+	if (str.empty()) return {};
+	int size = ::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
 	std::wstring result(size - 1, 0);
-	::MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, result.data(), size);
+	::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
 	return result;
 }
