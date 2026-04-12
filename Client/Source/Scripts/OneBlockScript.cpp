@@ -1,5 +1,4 @@
-﻿
-#include "pch.h"
+﻿#include "pch.h"
 #include "OneBlockScript.h"
 
 #include "UI/InventoryData.h"
@@ -13,29 +12,23 @@
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 
+#include "Data/BlockDataTable.h"
+
 using SlotType = PaletteWidget::SlotType;
 
-const std::vector<OneBlockScript::PhaseData>& OneBlockScript::GetPhaseTable()
+OneBlockScript::OneBlockScript()
 {
-    static const std::vector<PhaseData> s_table =
-    {
-        { L"Priming_01",  SlotType::Priming1,  L"숲 지대",        5 },
-        { L"Priming_02",  SlotType::Priming2,  L"동굴",           5 },
-        { L"Priming_03",  SlotType::Priming3,  L"지하 깊은 곳",   5 },
-        { L"Bridge",      SlotType::Bridge,    L"절벽 지대",      5 },
-        { L"Mushroom_01", SlotType::Mushroom1, L"버섯 숲",        5 },
-        { L"Mushroom_02", SlotType::Mushroom2, L"심층부",         5 },
-        { L"Mushroom_03", SlotType::Mushroom3, L"마지막 차원",   99 },
-    };
-    return s_table;
+
 }
 
-OneBlockScript::OneBlockScript() {}
-
+// ── Start ─────────────────────────────────────────────────────────────────────
 void OneBlockScript::Start()
 {
-    const auto& table = GetPhaseTable();
-    _phaseModels.resize(table.size());
+    assert(GET_SINGLE(BlockDataTable)->IsLoaded() &&
+           "OneBlockScript::Start() 전에 BlockDataTable::Load() 가 선행되어야 합니다.");
+
+    const auto& phaseTable = GET_SINGLE(BlockDataTable)->GetPhaseSequence();
+    _phaseModels.resize(phaseTable.size());
 
     auto loadModel = [](const std::wstring& name) -> std::shared_ptr<Model>
     {
@@ -47,10 +40,11 @@ void OneBlockScript::Start()
         return m;
     };
 
-    for (int32 i = 0; i < static_cast<int32>(table.size()); ++i)
-        _phaseModels[i] = loadModel(table[i].modelName);
+    for (int32 i = 0; i < static_cast<int32>(phaseTable.size()); ++i)
+        _phaseModels[i] = loadModel(phaseTable[i].modelName);
 }
 
+// ── Update ────────────────────────────────────────────────────────────────────
 void OneBlockScript::Update()
 {
     if (_isBroken)
@@ -62,6 +56,7 @@ void OneBlockScript::Update()
     TryMine();
 }
 
+// ── TryMine ───────────────────────────────────────────────────────────────────
 void OneBlockScript::TryMine()
 {
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F)) return;
@@ -69,6 +64,7 @@ void OneBlockScript::TryMine()
     Mine();
 }
 
+// ── Mine ──────────────────────────────────────────────────────────────────────
 void OneBlockScript::Mine()
 {
     _isBroken     = true;
@@ -87,6 +83,7 @@ void OneBlockScript::Mine()
     }
 }
 
+// ── Respawn ───────────────────────────────────────────────────────────────────
 void OneBlockScript::Respawn()
 {
     _isBroken = false;
@@ -96,23 +93,31 @@ void OneBlockScript::Respawn()
 
     entity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
 
-    const auto& table = GetPhaseTable();
-    const int32 clampedPhase = std::min(_currentPhase, static_cast<int32>(table.size()) - 1);
-    ApplyPhaseModel(table[clampedPhase].modelName);
+    const auto& phaseTable   = GET_SINGLE(BlockDataTable)->GetPhaseSequence();
+    const int32 clampedPhase = std::min(_currentPhase,
+                                        static_cast<int32>(phaseTable.size()) - 1);
+    ApplyPhaseModel(phaseTable[clampedPhase].modelName);
 }
 
+// ── UpdatePhase ───────────────────────────────────────────────────────────────
 void OneBlockScript::UpdatePhase()
 {
-    const auto& table = GetPhaseTable();
+    const auto& phaseTable = GET_SINGLE(BlockDataTable)->GetPhaseSequence();
+
     int32 accumulated = 0;
-    for (int32 i = 0; i < static_cast<int32>(table.size()); ++i)
+    for (int32 i = 0; i < static_cast<int32>(phaseTable.size()); ++i)
     {
-        accumulated += table[i].breaksToNext;
-        if (_totalBreaks <= accumulated) { _currentPhase = i; return; }
+        accumulated += phaseTable[i].breaksToNext;
+        if (_totalBreaks <= accumulated)
+        {
+            _currentPhase = i;
+            return;
+        }
     }
-    _currentPhase = static_cast<int32>(table.size()) - 1;
+    _currentPhase = static_cast<int32>(phaseTable.size()) - 1;
 }
 
+// ── ApplyPhaseModel ───────────────────────────────────────────────────────────
 void OneBlockScript::ApplyPhaseModel(const std::wstring& modelName)
 {
     Entity* entity = GetEntity();
@@ -121,10 +126,11 @@ void OneBlockScript::ApplyPhaseModel(const std::wstring& modelName)
     ModelRenderer* mr = entity->GetComponent<ModelRenderer>();
     if (!mr) return;
 
-    const auto& table = GetPhaseTable();
-    for (int32 i = 0; i < static_cast<int32>(table.size()); ++i)
+    const auto& phaseTable = GET_SINGLE(BlockDataTable)->GetPhaseSequence();
+    for (int32 i = 0; i < static_cast<int32>(phaseTable.size()); ++i)
     {
-        if (table[i].modelName == modelName && i < static_cast<int32>(_phaseModels.size()))
+        if (phaseTable[i].modelName == modelName &&
+            i < static_cast<int32>(_phaseModels.size()))
         {
             mr->SetModel(_phaseModels[i]);
             return;
@@ -132,13 +138,16 @@ void OneBlockScript::ApplyPhaseModel(const std::wstring& modelName)
     }
 }
 
+// ── GetCurrentDropSlotType ────────────────────────────────────────────────────
 PaletteWidget::SlotType OneBlockScript::GetCurrentDropSlotType() const
 {
-    const auto& table = GetPhaseTable();
-    const int32 clampedPhase = std::min(_currentPhase, static_cast<int32>(table.size()) - 1);
-    return table[clampedPhase].dropSlot;
+    const auto& phaseTable   = GET_SINGLE(BlockDataTable)->GetPhaseSequence();
+    const int32 clampedPhase = std::min(_currentPhase,
+                                        static_cast<int32>(phaseTable.size()) - 1);
+    return phaseTable[clampedPhase].dropSlot;
 }
 
+// ── IsCharacterNearby ─────────────────────────────────────────────────────────
 bool OneBlockScript::IsCharacterNearby()
 {
     if (!_character) return false;

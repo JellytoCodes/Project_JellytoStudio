@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<BlockDataTable>
+    <Slots>
+
+        <Slot id="0"
+              key="Mushroom1"
+              label="버섯1"
+              paletteLabel="Mushroom1"
+              modelName="Mushroom_01"
+              colorR="0.20" colorG="0.30" colorB="0.22" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="1"
+              key="Mushroom2"
+              label="버섯2"
+              paletteLabel="Mushroom2"
+              modelName="Mushroom_02"
+              colorR="0.22" colorG="0.32" colorB="0.20" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="2"
+              key="Mushroom3"
+              label="버섯3"
+              paletteLabel="Mushroom3"
+              modelName="Mushroom_03"
+              colorR="0.18" colorG="0.28" colorB="0.24" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="3"
+              key="Priming1"
+              label="블록1"
+              paletteLabel="Priming1"
+              modelName="Priming_01"
+              colorR="0.28" colorG="0.22" colorB="0.18" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="4"
+              key="Priming2"
+              label="블록2"
+              paletteLabel="Priming2"
+              modelName="Priming_02"
+              colorR="0.30" colorG="0.24" colorB="0.18" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="5"
+              key="Priming3"
+              label="블록3"
+              paletteLabel="Priming3"
+              modelName="Priming_03"
+              colorR="0.26" colorG="0.20" colorB="0.20" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="6"
+              key="Bridge"
+              label="브릿지"
+              paletteLabel="Bridge"
+              modelName="Bridge"
+              colorR="0.22" colorG="0.22" colorB="0.30" colorA="0.90"
+              isEraser="false"/>
+
+        <Slot id="7"
+              key="Eraser"
+              label="지우개"
+              paletteLabel="Eraser"
+              modelName=""
+              colorR="0.40" colorG="0.15" colorB="0.15" colorA="0.90"
+              isEraser="true"/>
+
+    </Slots>
+
+    <PhaseSequence>
+
+        <Phase order="0"
+               slotKey="Priming1"
+               phaseName="숲 지대"
+               breaksToNext="5"/>
+
+        <Phase order="1"
+               slotKey="Priming2"
+               phaseName="동굴"
+               breaksToNext="5"/>
+
+        <Phase order="2"
+               slotKey="Priming3"
+               phaseName="지하 깊은 곳"
+               breaksToNext="5"/>
+
+        <Phase order="3"
+               slotKey="Bridge"
+               phaseName="절벽 지대"
+               breaksToNext="5"/>
+
+        <Phase order="4"
+               slotKey="Mushroom1"
+               phaseName="버섯 숲"
+               breaksToNext="5"/>
+
+        <Phase order="5"
+               slotKey="Mushroom2"
+               phaseName="심층부"
+               breaksToNext="5"/>
+
+        <Phase order="6"
+               slotKey="Mushroom3"
+               phaseName="마지막 차원"
+               breaksToNext="99"/>
+
+    </PhaseSequence>
+
+</BlockDataTable>

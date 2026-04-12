@@ -1,5 +1,4 @@
-﻿
-#include "pch.h"
+﻿#include "pch.h"
 #include "MainApp.h"
 
 #include "Actors.h"
@@ -23,12 +22,15 @@
 #include "Graphics/Model/ModelRenderer.h"
 #include "Pipeline/Shader.h"
 
+#include "Data/BlockDataTable.h"
+
 MainApp::MainApp()  {}
 MainApp::~MainApp() {}
 
 void MainApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
+    GET_SINGLE(BlockDataTable)->Load(L"../Resources/Data/BlockData.xml");
 
     SceneSerializer::RegisterActor(L"SkySphereActor",  [] { return std::make_unique<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"CubeActor",       [] { return std::make_unique<CubeActor>(); });
@@ -47,7 +49,7 @@ void MainApp::Init()
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 }
 
-// ── 씬 초기화 ─────────────────────────────────────────────────────────────
+// ── 씬 초기화 ─────────────────────────────────────────────────────────────────
 
 void MainApp::InitScene()
 {
@@ -159,30 +161,16 @@ void MainApp::CreatePlacementSystem()
         _blockPlacer->SetCharacterEntity(_characterEntity);
 }
 
-// ── 인벤토리 시스템 초기화 ────────────────────────────────────────────────
-//
-//  의존성 주입 순서:
-//    1. _inventoryData (값 타입, 힙 할당 없음) — MainApp 직접 소유
-//    2. BlockPlacer    ← &_inventoryData (배치 소비 / 제거 환급)
-//    3. OneBlockScript ← &_inventoryData (F키 채굴 → AddItem)  ★ 신규
-//    4. InventoryWidget← &_inventoryData (UI 읽기 전용)
-
 void MainApp::CreateInventorySystem()
 {
-    // ① 초기 아이템 0개 (채굴로만 획득)
-    //    개발 중 테스트가 필요하면 아래 주석 해제:
     //  _inventoryData.GiveAll(10);
 
-    // ② BlockPlacer 연동
     if (_blockPlacer)
         _blockPlacer->SetInventoryData(&_inventoryData);
 
-    // ③ OneBlockScript 연동 ★
-    //    F키 채굴 → AddItem(dropSlot, 1) → 인벤토리 +1
     if (_oneBlockScript)
         _oneBlockScript->SetInventoryData(&_inventoryData);
 
-    // ④ InventoryWidget 생성
     auto invWidget = std::make_unique<InventoryWidget>(L"Inventory");
     invWidget->SetInventoryData(&_inventoryData);
     invWidget->SetPalette(_palette);

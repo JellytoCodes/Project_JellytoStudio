@@ -13,6 +13,7 @@
     <ClCompile Include="Source\Scripts\OneBlockScript.cpp" />
     <ClCompile Include="Source\UI\InventoryData.cpp" />
     <ClCompile Include="Source\UI\InventoryWidget.cpp" />
+    <ClCompile Include="Source\Data\BlockDataTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
@@ -26,5 +27,6 @@
     <ClInclude Include="Source\Scripts\OneBlockScript.h" />
     <ClInclude Include="Source\UI\InventoryData.h" />
     <ClInclude Include="Source\UI\InventoryWidget.h" />
+    <ClInclude Include="Source\Data\BlockDataTable.h" />
   </ItemGroup>
 </Project>

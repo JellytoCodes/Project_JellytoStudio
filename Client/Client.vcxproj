@@ -136,6 +136,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Source\Main\Actors.cpp" />
+    <ClCompile Include="Source\Data\BlockDataTable.cpp" />
     <ClCompile Include="Source\Main\EditorApp.cpp" />
     <ClCompile Include="Source\Main\MainApp.cpp" />
     <ClCompile Include="Source\Scripts\OneBlockScript.cpp" />
@@ -155,6 +156,7 @@
   <ItemGroup>
     <ClInclude Include="Source\Core\pch.h" />
     <ClInclude Include="Source\Main\Actors.h" />
+    <ClInclude Include="Source\Data\BlockDataTable.h" />
     <ClInclude Include="Source\Main\EditorApp.h" />
     <ClInclude Include="Source\Main\MainApp.h" />
     <ClInclude Include="Source\Scripts\OneBlockScript.h" />
