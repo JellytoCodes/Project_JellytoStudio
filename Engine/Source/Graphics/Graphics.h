@@ -4,6 +4,8 @@
 
 class Graphics
 {
+	DECLARE_SINGLE(Graphics);
+
 public:
 	void Initialize(HWND hwnd);
 
@@ -15,8 +17,6 @@ public:
 
 	void SetViewport(float width, float height, float x= 0, float y = 0, float minDepth = 0, float maxDepth = 1);
 	Viewport& GetViewport() { return _vp; }
-
-	static Graphics* Get() { static Graphics instance; return &instance; }
 
 private:
 	void CreateDeviceAndSwapChain();

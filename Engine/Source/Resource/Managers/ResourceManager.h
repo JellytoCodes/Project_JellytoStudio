@@ -1,10 +1,6 @@
 #pragma once
 
 #include "Resource/Resource.h"
-#include <memory>
-#include <map>
-#include <array>
-#include <string>
 
 class Shader;
 class Texture;
@@ -18,7 +14,6 @@ class ResourceManager
 public:
 	void Init();
 
-	// ?? 반환형과 매개변수를 모두 shared_ptr로 변경
 	template<typename T>
 	std::shared_ptr<T> Load(const std::wstring& key, const std::wstring& path);
 
@@ -38,7 +33,6 @@ private:
 
 	std::wstring _resourcePath;
 
-	// ?? 핵심: 리소스 매니저는 자원을 '공유 소유' 합니다.
 	using KeyObjMap = std::map<std::wstring, std::shared_ptr<Resource>>;
 	std::array<KeyObjMap, RESOURCE_TYPE_COUNT> _resources;
 };
@@ -51,11 +45,11 @@ std::shared_ptr<T> ResourceManager::Load(const std::wstring& key, const std::wst
 
 	auto findIt = keyObjMap.find(key);
 	if (findIt != keyObjMap.end())
-		return std::static_pointer_cast<T>(findIt->second); // shared_ptr 다운캐스팅
+		return std::static_pointer_cast<T>(findIt->second);
 
 	auto object = std::make_shared<T>();
 	object->Load(path);
-	keyObjMap[key] = object; // 캐시에 등록 (참조 카운트 +1)
+	keyObjMap[key] = object;
 
 	return object;
 }
@@ -82,7 +76,7 @@ std::shared_ptr<T> ResourceManager::Get(const std::wstring& key)
 
 	auto findIt = keyObjMap.find(key);
 	if (findIt != keyObjMap.end())
-		return std::static_pointer_cast<T>(findIt->second); // shared_ptr 다운캐스팅
+		return std::static_pointer_cast<T>(findIt->second);
 
 	return nullptr;
 }

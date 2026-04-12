@@ -112,8 +112,8 @@ void ModelAnimator::RenderInstancing(InstancingBuffer* buffer)
 
 		_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
 
-		mesh->vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
-		mesh->indexBuffer->PushData(Graphics::Get()->GetDeviceContext());
+		mesh->vertexBuffer->PushData(GET_SINGLE(Graphics)->GetDeviceContext());
+		mesh->indexBuffer->PushData(GET_SINGLE(Graphics)->GetDeviceContext());
 		buffer->PushData();
 
 		_shader->DrawIndexedInstanced(0, _pass, mesh->indexBuffer->GetCount(), buffer->GetCount());
@@ -196,7 +196,7 @@ void ModelAnimator::CreateTexture()
 			subResources[c].SysMemSlicePitch = pageSize;
 		}
 
-		HRESULT hr = Graphics::Get()->GetDevice()->CreateTexture2D(
+		HRESULT hr = GET_SINGLE(Graphics)->GetDevice()->CreateTexture2D(
 			&desc, subResources.data(), _texture.GetAddressOf());
 		CHECK(hr);
 		::free(mallocPtr);
@@ -210,7 +210,7 @@ void ModelAnimator::CreateTexture()
 		desc.Texture2DArray.MipLevels      = 1;
 		desc.Texture2DArray.ArraySize      = _model->GetAnimationCount();
 
-		HRESULT hr = Graphics::Get()->GetDevice()->CreateShaderResourceView(
+		HRESULT hr = GET_SINGLE(Graphics)->GetDevice()->CreateShaderResourceView(
 			_texture.Get(), &desc, _srv.GetAddressOf());
 		CHECK(hr);
 	}

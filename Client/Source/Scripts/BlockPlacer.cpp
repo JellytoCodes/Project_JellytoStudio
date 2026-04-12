@@ -1,9 +1,7 @@
 ﻿
 #include "pch.h"
 #include "BlockPlacer.h"
-
-#include "UI/InventoryData.h"           // ★ 추가
-
+#include "UI/InventoryData.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
@@ -128,9 +126,10 @@ void BlockPlacer::Start()
         _blockShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 }
 
-void BlockPlacer::OnDestroy() { HidePreview(); }
-
-// ── 모드 ─────────────────────────────────────────────────────────────────
+void BlockPlacer::OnDestroy()
+{
+	HidePreview();
+}
 
 void BlockPlacer::SetPlacingMode(bool on)
 {
@@ -139,8 +138,6 @@ void BlockPlacer::SetPlacingMode(bool on)
     if (_palette) _palette->SetPlacingMode(on);
     _previewDirty = true;
 }
-
-// ── Update ────────────────────────────────────────────────────────────────
 
 void BlockPlacer::Update()
 {
@@ -160,8 +157,6 @@ void BlockPlacer::Update()
     HandleInput();
     UpdatePreview();
 }
-
-// ── 입력 ─────────────────────────────────────────────────────────────────
 
 void BlockPlacer::HandleInput()
 {
@@ -224,8 +219,6 @@ void BlockPlacer::HandleInput()
     }
 }
 
-// ── 배치 위치 계산 ────────────────────────────────────────────────────────
-
 bool BlockPlacer::CalcPlacePos(SlotType type,
     Entity* hitEntity,
     const Vec3& hitNormal,
@@ -253,8 +246,6 @@ bool BlockPlacer::CalcPlacePos(SlotType type,
     outEntityPos = Vec3(newColCenter.x, newColCenter.y - newHalf.y, newColCenter.z);
     return true;
 }
-
-// ── 프리뷰 ────────────────────────────────────────────────────────────────
 
 void BlockPlacer::UpdatePreview()
 {
@@ -294,7 +285,6 @@ void BlockPlacer::UpdatePreview()
     }
     else
     {
-        // ★ 인벤토리 수량 부족이면 프리뷰도 '불가' 색상으로 표시
         const bool hasStock = !_pInventory || _pInventory->HasItem(st);
 
         const auto params = GetModelParams(st);
@@ -328,7 +318,6 @@ void BlockPlacer::UpdatePreview()
             Vec3 entityPos;
             if (CalcPlacePos(st, hitEntity, hitNormal, entityPos))
             {
-                // 위치는 유효하지만 재고가 없으면 빨간 프리뷰
                 canAct = hasStock;
                 previewPos = entityPos;
                 previewScale = Vec3(newHalf.x * 2.f * 0.95f, 0.06f, newHalf.z * 2.f * 0.95f);
@@ -370,8 +359,6 @@ void BlockPlacer::HidePreview()
     _previewValid = false;
 }
 
-// ── 배치 ─────────────────────────────────────────────────────────────────
-
 bool BlockPlacer::TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, SlotType type)
 {
     Vec3 entityPos;
@@ -385,9 +372,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     if (!scene) return false;
     if (type == SlotType::Eraser) return false;
 
-    // ★ 인벤토리 소비 — nullptr이면 무제한(에디터 호환)
     if (_pInventory && !_pInventory->ConsumeItem(type))
-        return false; // 수량 부족: 배치 거부
+        return false;
 
     std::shared_ptr<Model> model = GetOrLoadModel(type);
     if (!model) return false;
@@ -418,20 +404,17 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     scene->Add(std::move(blockEntity));
 
     _blockSet.insert(rawBlock);
-    _blockTypeMap[rawBlock] = type; // ★ 타입 이력 저장
+    _blockTypeMap[rawBlock] = type;
 
     GET_SINGLE(InstancingManager)->SetDirty();
     return true;
 }
-
-// ── 제거 ─────────────────────────────────────────────────────────────────
 
 bool BlockPlacer::TryRemoveEntity(Entity* entity)
 {
     if (!entity) return false;
     if (_blockSet.find(entity) == _blockSet.end()) return false;
 
-    // ★ 인벤토리 환급 — 배치했던 타입을 찾아서 돌려줌
     if (_pInventory)
     {
         auto it = _blockTypeMap.find(entity);
@@ -454,7 +437,6 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 
 void BlockPlacer::ClearAllBlocks()
 {
-    // ★ 전체 제거 시 인벤토리 환급
     if (_pInventory)
     {
         for (auto& [entity, type] : _blockTypeMap)
@@ -469,8 +451,6 @@ void BlockPlacer::ClearAllBlocks()
     _placedCells.clear();
     GET_SINGLE(InstancingManager)->SetDirty();
 }
-
-// ── 유틸 ─────────────────────────────────────────────────────────────────
 
 bool BlockPlacer::IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const
 {

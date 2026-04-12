@@ -472,11 +472,11 @@ std::string Converter::WriteTexture(std::string saveFolder, std::string file)
 			subResource.pSysMem = srcTexture->pcData;
 
 			ComPtr<ID3D11Texture2D> texture;
-			HRESULT hr = Graphics::Get()->GetDevice()->CreateTexture2D(&desc, &subResource, texture.GetAddressOf());
+			HRESULT hr = GET_SINGLE(Graphics)->GetDevice()->CreateTexture2D(&desc, &subResource, texture.GetAddressOf());
 			CHECK(hr);
 
 			DirectX::ScratchImage img;
-			::CaptureTexture(Graphics::Get()->GetDevice().Get(), Graphics::Get()->GetDeviceContext().Get(), texture.Get(), img);
+			::CaptureTexture(GET_SINGLE(Graphics)->GetDevice().Get(), GET_SINGLE(Graphics)->GetDeviceContext().Get(), texture.Get(), img);
 
 			hr = DirectX::SaveToDDSFile(*img.GetImages(), DirectX::DDS_FLAGS_NONE, Utils::ToWString(fileName).c_str());
 			CHECK(hr);
@@ -507,9 +507,6 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 
 	animation->frameRate = ticksPerSecond;
 
-	// POS는 매 프레임 키가 있고 ROT는 일부 구간만 키가 있는 경우
-	// mDuration 기준 frameCount를 쓰면 ROT 없는 후반부가 더미가 됨
-	// → ROT 채널의 실제 마지막 유효 키 틱 기준으로 frameCount 결정
 	uint32 maxRotTick = 0;
 	for (uint32 i = 0; i < srcAnimation->mNumChannels; i++)
 	{
@@ -556,7 +553,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 
 	auto buildIndexMap = [](uint32 numKeys, auto* keys) -> std::vector<uint32>
 		{
-			// -inf / NaN / 음수 mTime은 Mixamo FBX의 쓰레기 키 → 완전히 무시
 			uint32 maxFrame = 0;
 			for (uint32 i = 0; i < numKeys; i++)
 			{
@@ -571,7 +567,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 				double t = keys[i].mTime;
 				if (!std::isfinite(t) || t < 0.0) continue;
 				uint32 f = (uint32)t;
-				// 첫 번째 유효 키만 유지 (쓰레기 키가 같은 mTime=0.0으로 덮어쓰는 것 방지)
 				if (f <= maxFrame && map[f] == UINT32_MAX) map[f] = i;
 			}
 			return map;
@@ -595,7 +590,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
 			return 0;
 		};
 
-	// f 이후 다음 유효 키 탐색 (f+1만 보면 3틱 간격 키에서 보간 안 됨)
 	auto findNextKey = [](const std::vector<uint32>& map, uint32 frame) -> uint32
 		{
 			for (uint32 i = frame + 1; i < map.size(); i++)

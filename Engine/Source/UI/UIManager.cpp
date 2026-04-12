@@ -50,7 +50,7 @@ void UIManager::SetScreenSize(float w, float h) { _screenW = w; _screenH = h; }
 
 void UIManager::CreateDeviceObjects()
 {
-    auto device = Graphics::Get()->GetDevice();
+    auto device = GET_SINGLE(Graphics)->GetDevice();
 
     // ── 셰이더 컴파일 ────────────────────────────────────────────────
     ComPtr<ID3DBlob> vsBlob, psColorBlob, psTexBlob, errBlob;
@@ -141,7 +141,7 @@ void UIManager::CreateBuffers()
 {
     _vbCap = 4096;
     _ibCap = 8192;
-    auto device = Graphics::Get()->GetDevice();
+    auto device = GET_SINGLE(Graphics)->GetDevice();
 
     D3D11_BUFFER_DESC vbd = {};
     vbd.BindFlags      = D3D11_BIND_VERTEX_BUFFER;
@@ -168,7 +168,7 @@ void UIManager::UpdateBuffers()
         CreateBuffers();
     }
 
-    auto dc = Graphics::Get()->GetDeviceContext();
+    auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
     {
         D3D11_MAPPED_SUBRESOURCE ms = {};
         dc->Map(_vb.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
@@ -194,7 +194,7 @@ void UIManager::Render()
 
     UpdateBuffers();
 
-    auto dc = Graphics::Get()->GetDeviceContext();
+    auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
 
     // ── ConstantBuffer 업데이트 (ScreenSize) ─────────────────────────
     {
@@ -380,7 +380,7 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     sd.SysMemPitch = tw * 4;
 
     ComPtr<ID3D11Texture2D> tex;
-    if (FAILED(Graphics::Get()->GetDevice()->CreateTexture2D(&td, &sd, tex.GetAddressOf())))
+    if (FAILED(GET_SINGLE(Graphics)->GetDevice()->CreateTexture2D(&td, &sd, tex.GetAddressOf())))
         return nullptr;
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
@@ -389,7 +389,7 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     srvd.Texture2D.MipLevels = 1;
 
     ComPtr<ID3D11ShaderResourceView> srv;
-    if (FAILED(Graphics::Get()->GetDevice()->CreateShaderResourceView(
+    if (FAILED(GET_SINGLE(Graphics)->GetDevice()->CreateShaderResourceView(
         tex.Get(), &srvd, srv.GetAddressOf())))
         return nullptr;
 

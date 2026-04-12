@@ -65,7 +65,7 @@ void Application::Shutdown() {}
 
 void Application::Update()
 {
-	Graphics::Get()->RenderBegin();
+	GET_SINGLE(Graphics)->RenderBegin();
 	GET_SINGLE(TimeManager)->Update();
 	GET_SINGLE(InputManager)->Update();
 	UpdateWindowTitle();
@@ -75,7 +75,7 @@ void Application::Update()
 	_desc.app->Render();
 	GET_SINGLE(SceneManager)->Render();
 	
-	Graphics::Get()->RenderEnd();
+	GET_SINGLE(Graphics)->RenderEnd();
 }
 
 void Application::UpdateWindowTitle()
@@ -204,6 +204,6 @@ BOOL Application::InitInstance()
 	CreateMainMenu();
 	::ShowWindow(_desc.hWnd, SW_SHOWNORMAL);
 	::UpdateWindow(_desc.hWnd);
-	Graphics::Get()->Initialize(_desc.hWnd);
+	GET_SINGLE(Graphics)->Initialize(_desc.hWnd);
 	return TRUE;
 }

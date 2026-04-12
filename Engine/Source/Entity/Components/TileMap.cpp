@@ -27,7 +27,7 @@ void TileMap::Create(int32 cols, int32 rows, float tileSize, std::shared_ptr<Mat
         entity->AddComponent(std::make_unique<MeshRenderer>());
 
     _mesh = std::make_shared<Mesh>();
-    _mesh->CreateGrid(Graphics::Get()->GetDevice(), cols, rows);
+    _mesh->CreateGrid(GET_SINGLE(Graphics)->GetDevice(), cols, rows);
 
     MeshRenderer* mr = entity->GetComponent<MeshRenderer>();
     mr->SetMesh(_mesh);

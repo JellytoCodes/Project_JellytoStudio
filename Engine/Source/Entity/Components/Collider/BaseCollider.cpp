@@ -67,7 +67,7 @@ void BaseCollider::RenderDebug()
 	s_debugShader->GetVector("ColliderColor")->SetFloatVector(reinterpret_cast<float*>(&color));
 
 	// IA 세팅 후 Draw (인스턴싱 없이 단순 DrawIndexed)
-	auto dc = Graphics::Get()->GetDeviceContext();
+	auto dc = Graphics::GET_SINGLE(Graphics)->GetDeviceContext();
 	mesh->GetVertexBuffer()->PushData(dc);
 	mesh->GetIndexBuffer()->PushData(dc);
 	dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

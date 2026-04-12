@@ -7,7 +7,7 @@ Shader::Shader(const std::wstring& file) : _file(L"..\\Shaders\\" + file)
 {
 	_initialStateBlock = std::make_unique<StateBlock>();
 	{
-		auto dc = Graphics::Get()->GetDeviceContext();
+		auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
 		dc->RSGetState(_initialStateBlock->RSRasterizerState.GetAddressOf());
 		dc->OMGetBlendState(_initialStateBlock->OMBlendState.GetAddressOf(), _initialStateBlock->OMBlendFactor, &_initialStateBlock->OMSampleMask);
 		dc->OMGetDepthStencilState(_initialStateBlock->OMDepthStencilState.GetAddressOf(), &_initialStateBlock->OMStencilRef);
@@ -116,7 +116,7 @@ ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
 	if (!inputLayoutDesc.empty())
 	{
 		ComPtr<ID3D11InputLayout> inputLayout;
-		HRESULT hr = Graphics::Get()->GetDevice()->CreateInputLayout(
+		HRESULT hr = GET_SINGLE(Graphics)->GetDevice()->CreateInputLayout(
 			inputLayoutDesc.data(), static_cast<UINT>(inputLayoutDesc.size()),
 			code, codeSize, inputLayout.GetAddressOf());
 		CHECK(hr);
@@ -166,14 +166,14 @@ void Shader::PushGlobalData(const Matrix& view, const Matrix& projection)
 	if (_globalEffectBuffer == nullptr)
 	{
 		_globalBuffer = std::make_unique<ConstantBuffer<GlobalDesc>>();
-		_globalBuffer->Create(Graphics::Get()->GetDevice());
+		_globalBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_globalEffectBuffer = GetConstantBuffer("GlobalBuffer");
 	}
 	_globalDesc.P   = projection;
 	_globalDesc.V   = view;
 	_globalDesc.VP  = view * projection;
 	_globalDesc.VInv = view.Invert();
-	_globalBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _globalDesc);
+	_globalBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _globalDesc);
 	_globalEffectBuffer->SetConstantBuffer(_globalBuffer->GetComPtr().Get());
 }
 
@@ -182,11 +182,11 @@ void Shader::PushTransformData(const TransformDesc& desc)
 	if (_transformEffectBuffer == nullptr)
 	{
 		_transformBuffer = std::make_unique<ConstantBuffer<TransformDesc>>();
-		_transformBuffer->Create(Graphics::Get()->GetDevice());
+		_transformBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_transformEffectBuffer = GetConstantBuffer("TransformBuffer");
 	}
 	_transformDesc = desc;
-	_transformBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _transformDesc);
+	_transformBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _transformDesc);
 	_transformEffectBuffer->SetConstantBuffer(_transformBuffer->GetComPtr().Get());
 }
 
@@ -195,11 +195,11 @@ void Shader::PushLightData(const LightDesc& desc)
 	if (_lightEffectBuffer == nullptr)
 	{
 		_lightBuffer = std::make_unique<ConstantBuffer<LightDesc>>();
-		_lightBuffer->Create(Graphics::Get()->GetDevice());
+		_lightBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_lightEffectBuffer = GetConstantBuffer("LightBuffer");
 	}
 	_lightDesc = desc;
-	_lightBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _lightDesc);
+	_lightBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _lightDesc);
 	_lightEffectBuffer->SetConstantBuffer(_lightBuffer->GetComPtr().Get());
 }
 
@@ -208,11 +208,11 @@ void Shader::PushMaterialData(const MaterialDesc& desc)
 	if (_materialEffectBuffer == nullptr)
 	{
 		_materialBuffer = std::make_unique<ConstantBuffer<MaterialDesc>>();
-		_materialBuffer->Create(Graphics::Get()->GetDevice());
+		_materialBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_materialEffectBuffer = GetConstantBuffer("MaterialBuffer");
 	}
 	_materialDesc = desc;
-	_materialBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _materialDesc);
+	_materialBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _materialDesc);
 	_materialEffectBuffer->SetConstantBuffer(_materialBuffer->GetComPtr().Get());
 }
 
@@ -221,11 +221,11 @@ void Shader::PushBoneData(const BoneDesc& desc)
 	if (_boneEffectBuffer == nullptr)
 	{
 		_boneBuffer = std::make_unique<ConstantBuffer<BoneDesc>>();
-		_boneBuffer->Create(Graphics::Get()->GetDevice());
+		_boneBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_boneEffectBuffer = GetConstantBuffer("BoneBuffer");
 	}
 	_boneDesc = desc;
-	_boneBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _boneDesc);
+	_boneBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _boneDesc);
 	_boneEffectBuffer->SetConstantBuffer(_boneBuffer->GetComPtr().Get());
 }
 
@@ -234,11 +234,11 @@ void Shader::PushKeyframeData(const KeyframeDesc& desc)
 	if (_keyframeEffectBuffer == nullptr)
 	{
 		_keyframeBuffer = std::make_unique<ConstantBuffer<KeyframeDesc>>();
-		_keyframeBuffer->Create(Graphics::Get()->GetDevice());
+		_keyframeBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_keyframeEffectBuffer = GetConstantBuffer("KeyframeBuffer");
 	}
 	_keyframeDesc = desc;
-	_keyframeBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _keyframeDesc);
+	_keyframeBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _keyframeDesc);
 	_keyframeEffectBuffer->SetConstantBuffer(_keyframeBuffer->GetComPtr().Get());
 }
 
@@ -247,11 +247,11 @@ void Shader::PushTweenData(const InstancedTweenDesc& desc)
 	if (_tweenEffectBuffer == nullptr)
 	{
 		_tweenBuffer = std::make_unique<ConstantBuffer<InstancedTweenDesc>>();
-		_tweenBuffer->Create(Graphics::Get()->GetDevice());
+		_tweenBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_tweenEffectBuffer = GetConstantBuffer("TweenBuffer");
 	}
 	_tweenDesc = desc;
-	_tweenBuffer->CopyData(Graphics::Get()->GetDeviceContext(), _tweenDesc);
+	_tweenBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _tweenDesc);
 	_tweenEffectBuffer->SetConstantBuffer(_tweenBuffer->GetComPtr().Get());
 }
 
@@ -276,7 +276,7 @@ ShaderDesc ShaderManager::GetEffect(const std::wstring& fileName)
 
 		ComPtr<ID3DX11Effect> effect;
 		hr = ::D3DX11CreateEffectFromMemory(blob->GetBufferPointer(), blob->GetBufferSize(),
-			0, Graphics::Get()->GetDevice().Get(), effect.GetAddressOf());
+			0, GET_SINGLE(Graphics)->GetDevice().Get(), effect.GetAddressOf());
 		CHECK(hr);
 
 		shaders[fileName] = ShaderDesc{ blob, effect };

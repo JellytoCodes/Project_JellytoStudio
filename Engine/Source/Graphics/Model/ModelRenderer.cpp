@@ -20,7 +20,7 @@ void ModelRenderer::Awake() {}
 
 void ModelRenderer::Start()
 {
-	auto device = Graphics::Get()->GetDevice();
+	auto device = GET_SINGLE(Graphics)->GetDevice();
 
 	_constantBuffer = std::make_unique<ConstantBuffer<TransformData>>();
 	_constantBuffer->Create(device);
@@ -70,8 +70,8 @@ void ModelRenderer::RenderInstancing(InstancingBuffer* buffer)
 		if (_bIsSkinned)
 			_shader->GetScalar("BoneIndex")->SetInt(mesh->boneIndex);
 
-		mesh->vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
-		mesh->indexBuffer->PushData(Graphics::Get()->GetDeviceContext());
+		mesh->vertexBuffer->PushData(GET_SINGLE(Graphics)->GetDeviceContext());
+		mesh->indexBuffer->PushData(GET_SINGLE(Graphics)->GetDeviceContext());
 		buffer->BindBuffer();
 
 		_shader->DrawIndexedInstanced(0, _pass, mesh->indexBuffer->GetCount(), buffer->GetCount());

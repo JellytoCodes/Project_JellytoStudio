@@ -25,18 +25,20 @@ struct ModelMesh
 {
 	void CreateBuffers()
 	{
+		auto device = GET_SINGLE(Graphics)->GetDevice();
 		vertexBuffer = std::make_unique<VertexBuffer>();
-		vertexBuffer->Create(Graphics::Get()->GetDevice(), geometry->GetVertices());
+		vertexBuffer->Create(device, geometry->GetVertices());
 
 		indexBuffer = std::make_unique<IndexBuffer>();
-		indexBuffer->Create(Graphics::Get()->GetDevice(), geometry->GetIndices());
+		indexBuffer->Create(device, geometry->GetIndices());
 	}
 
 	void Render()
 	{
-		vertexBuffer->PushData(Graphics::Get()->GetDeviceContext());
-		indexBuffer->PushData(Graphics::Get()->GetDeviceContext());
-		Graphics::Get()->GetDeviceContext()->DrawIndexed(geometry->GetIndexCount(), 0, 0);
+		auto deviceContext = GET_SINGLE(Graphics)->GetDeviceContext();
+		vertexBuffer->PushData(deviceContext);
+		indexBuffer->PushData(deviceContext);
+		deviceContext->DrawIndexed(geometry->GetIndexCount(), 0, 0);
 	}
 
 	std::wstring name;
@@ -67,8 +69,7 @@ public:
 	void SetTexturePath(const std::wstring& p) { _texturePath = p; }
 
 	uint32 GetMaterialCount() const { return static_cast<uint32>(_materials.size()); }
-	// 이전: vector<shared_ptr<Material>>& 반환
-	// 변경: vector<unique_ptr<Material>>& 반환 (소유자임을 명확히)
+
 	std::vector<std::shared_ptr<Material>>& GetMaterials() { return _materials; }
 	std::shared_ptr<Material> GetMaterialByIndex(uint32 index)             { return _materials[index]; }
 	std::shared_ptr<Material> GetMaterialByName(const std::wstring& name);
@@ -100,9 +101,7 @@ private:
 	std::wstring _modelPath   = L"../Resources/Models/";
 	std::wstring _texturePath = L"../Resources/Textures/";
 
-	// 이전: 전부 shared_ptr 벡터
-	// 변경: unique_ptr 벡터 — Model이 유일한 소유자
-	ModelBone* _root = nullptr; // 관찰자 (소유는 _bones가)
+	ModelBone* _root = nullptr;
 	std::vector<std::shared_ptr<Material>>       _materials;
 	std::vector<std::unique_ptr<ModelBone>>      _bones;
 	std::vector<std::unique_ptr<ModelMesh>>      _meshes;

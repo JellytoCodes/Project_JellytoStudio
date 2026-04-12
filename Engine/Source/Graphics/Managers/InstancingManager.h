@@ -7,10 +7,6 @@ class InstancingManager
 	DECLARE_SINGLE(InstancingManager);
 
 public:
-	// ── 렌더 진입점 ────────────────────────────────────────────────────
-	// 이전: vector<shared_ptr<Entity>>& → 함수 진입 시 N번 refcount 복사 없음(ref)
-	//        내부 캐시 map에 shared_ptr 저장 → 또 N번 복사
-	// 변경: vector<Entity*>& → 포인터 배열, refcount 0
 	void Render(std::vector<Entity*>& entities);
 	void ClearData();
 

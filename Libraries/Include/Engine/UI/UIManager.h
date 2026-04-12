@@ -11,12 +11,8 @@ public:
 
     void AddRect(float x, float y, float w, float h, Color color);
     void AddRectBorder(float x, float y, float w, float h, Color color, float thickness = 1.f);
-    void AddTexturedRect(float x, float y, float w, float h, Color tint,
-                         ComPtr<ID3D11ShaderResourceView> srv);
-    void AddText(const std::wstring& text,
-                 float x, float y, float w, float h,
-                 Color color, int fontSize = 18,
-                 const std::wstring& fontName = L"Arial");
+    void AddTexturedRect(float x, float y, float w, float h, Color tint, ComPtr<ID3D11ShaderResourceView> srv);
+    void AddText(const std::wstring& text, float x, float y, float w, float h, Color color, int fontSize = 18, const std::wstring& fontName = L"Arial");
 
 private:
     struct DrawCmd
@@ -39,17 +35,14 @@ private:
     void CreateBuffers();
     void UpdateBuffers();
 
-    // DrawList
     std::vector<VertexUI>  _vertices;
     std::vector<uint32>    _indices;
     std::vector<DrawCmd>   _cmds;
 
-    // GPU 버퍼
     ComPtr<ID3D11Buffer>      _vb;
     ComPtr<ID3D11Buffer>      _ib;
     uint32 _vbCap = 0, _ibCap = 0;
 
-    // 직접 D3D11 오브젝트 (IMGUI 방식)
     ComPtr<ID3D11InputLayout>       _inputLayout;
     ComPtr<ID3D11VertexShader>      _vs;
     ComPtr<ID3D11PixelShader>       _psColor;   // pass=0

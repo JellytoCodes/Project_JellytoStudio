@@ -8,18 +8,15 @@ struct DetailInfo
 {
 	std::wstring entityLabel;
 
-	// Model
 	std::wstring modelName;
 	int          boneCount = 0;
 	int          meshCount = 0;
 
-	// Animation
 	std::wstring animName;
 	int          frameCount = 0;
 	float        frameRate = 0.f;
 	float        duration = 0.f;
 
-	// Transform
 	float tx = 0.f, ty = 0.f, tz = 0.f;
 	float rx = 0.f, ry = 0.f, rz = 0.f;
 	float sx = 1.f, sy = 1.f, sz = 1.f;
@@ -39,8 +36,6 @@ public:
 
 	void SetScene(Scene* scene);
 
-	// Entity 추가/삭제 등 씬 구조가 변경됐을 때만 호출
-	// (매 프레임 틱 호출 X)
 	void MarkDirty();
 	void RefreshEntityList();
 

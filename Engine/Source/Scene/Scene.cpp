@@ -121,8 +121,8 @@ Entity* Scene::Pick(int32 screenX, int32 screenY)
 {
 	if (!_mainCamera) return nullptr;
 
-	float width  = Graphics::Get()->GetViewport().GetWidth();
-	float height = Graphics::Get()->GetViewport().GetHeight();
+	float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
+	float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
 
 	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
 	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
@@ -165,8 +165,8 @@ bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, flo
 {
 	if (!_mainCamera) return false;
 
-	float width  = Graphics::Get()->GetViewport().GetWidth();
-	float height = Graphics::Get()->GetViewport().GetHeight();
+	float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
+	float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
 
 	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
 	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
@@ -195,8 +195,8 @@ bool Scene::PickBlock(int32 screenX, int32 screenY,
 {
 	if (!_mainCamera) return false;
 
-	float width  = Graphics::Get()->GetViewport().GetWidth();
-	float height = Graphics::Get()->GetViewport().GetHeight();
+	float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
+	float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
 
 	Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
 	Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();

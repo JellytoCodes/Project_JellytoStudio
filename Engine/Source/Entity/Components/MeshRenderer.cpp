@@ -37,7 +37,7 @@ void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
 
 	_material->Update();
 
-	auto dc = Graphics::Get()->GetDeviceContext();
+	auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
 	_mesh->GetVertexBuffer()->PushData(dc);
 	_mesh->GetIndexBuffer()->PushData(dc);
 

@@ -1,15 +1,14 @@
-﻿#include "Framework.h"
+﻿
+#include "Framework.h"
 #include "Model.h"
 #include "Utils/Utils.h"
 #include "Utils/FileUtils.h"
-#include "Utils/tinyxml2.h"
-#include <filesystem>
 #include "Resource/Material.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Graphics/Model/ModelAnimation.h"
 
-Model::Model()  {}
-Model::~Model() {}
+Model::Model() = default;
+Model::~Model() = default;
 
 void Model::ReadMaterial(const std::wstring& filename)
 {
@@ -174,7 +173,6 @@ void Model::ReadAnimation(const std::wstring& filename)
 	_animations.push_back(std::move(animation));
 }
 
-// ── 이름 검색 (원시 포인터 반환) ─────────────────────────────────────────
 std::shared_ptr<Material> Model::GetMaterialByName(const std::wstring& name)
 {
 	for (auto& material : _materials)

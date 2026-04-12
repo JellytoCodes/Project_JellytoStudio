@@ -53,7 +53,7 @@ int32 InventoryData::GetCount(SlotType type) const
 {
     const int32 idx = static_cast<int32>(type);
     if (idx < 0 || idx >= kTypeCount) return 0;
-    if (type == SlotType::Eraser)     return 999; // 무한 표시
+    if (type == SlotType::Eraser)     return 999;
     return _typeCounts[idx];
 }
 
@@ -63,7 +63,6 @@ bool InventoryData::HasItem(SlotType type, int32 amount) const
     return GetCount(type) >= amount;
 }
 
-// ── 그리드 슬롯 (InventoryWidget 렌더용) ─────────────────────
 InventorySlotData InventoryData::GetGridSlot(int32 index) const
 {
     if (index < 0 || index >= kTotalSlots)
@@ -78,7 +77,6 @@ InventorySlotData InventoryData::GetGridSlot(int32 index) const
     return { SlotType::Count, 0 };
 }
 
-// ── 핫바 슬롯 ────────────────────────────────────────────────
 InventorySlotData InventoryData::GetHotbarSlot(int32 index) const
 {
     if (index < 0 || index >= kHotbarSlots)

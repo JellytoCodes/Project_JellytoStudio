@@ -20,7 +20,7 @@ void Texture::Load(const std::wstring& path)
 	HRESULT hr = ::LoadFromWICFile(path.c_str(), WIC_FLAGS_NONE, &md, _img);
 	CHECK(hr);
 
-	hr = ::CreateShaderResourceView(Graphics::Get()->GetDevice().Get(), _img.GetImages(), _img.GetImageCount(), md, _shaderResourceView.GetAddressOf());
+	hr = ::CreateShaderResourceView(GET_SINGLE(Graphics)->GetDevice().Get(), _img.GetImages(), _img.GetImageCount(), md, _shaderResourceView.GetAddressOf());
 	CHECK(hr);
 
 	_size.x = static_cast<float>(md.width);
