@@ -1,3 +1,4 @@
+
 #include "Framework.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Camera.h"
@@ -11,42 +12,60 @@
 #include "Scene/Scene.h"
 
 MeshRenderer::MeshRenderer()
-	: Super(ComponentType::MeshRenderer)
+    : Super(ComponentType::MeshRenderer)
 {
 }
 
 MeshRenderer::~MeshRenderer() {}
 
-void MeshRenderer::Awake()     {}
-void MeshRenderer::Start()     {}
-void MeshRenderer::Update()    {}
-void MeshRenderer::LateUpdate(){}
-void MeshRenderer::OnDestroy() {}
+void MeshRenderer::Awake()      {}
+void MeshRenderer::Start()      {}
+void MeshRenderer::Update()     {}
+void MeshRenderer::LateUpdate() {}
+void MeshRenderer::OnDestroy()  {}
+
+bool MeshRenderer::FillPacket(const Matrix& matWorld, RenderPacket& outPacket) const
+{
+    if (_mesh == nullptr || _material == nullptr)
+        return false;
+
+    outPacket.instanceID = GetInstanceID();
+    outPacket.pMesh      = _mesh.get();      // 수명: ResourceManager가 보장
+    outPacket.pMaterial  = _material.get();
+    outPacket.pass       = _pass;
+    outPacket.matWorld   = matWorld;
+
+    return true;
+}
 
 void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
 {
-	if (_mesh == nullptr || _material == nullptr) return;
+    if (_mesh == nullptr || _material == nullptr) return;
 
-	auto shader = _material->GetShader();
-	if (shader == nullptr) return;
+    auto shader = _material->GetShader();
+    if (shader == nullptr) return;
 
-	shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
+    shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
-	if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
-		shader->PushLightData(lightObj->GetLightDesc());
+    if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
+        shader->PushLightData(lightObj->GetLightDesc());
 
-	_material->Update();
+    _material->Update();
 
-	auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
-	_mesh->GetVertexBuffer()->PushData(dc);
-	_mesh->GetIndexBuffer()->PushData(dc);
+    auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
+    _mesh->GetVertexBuffer()->PushData(dc);
+    _mesh->GetIndexBuffer()->PushData(dc);
 
-	buffer->PushData();
+    buffer->PushData();
 
-	shader->DrawIndexedInstanced(0, _pass, _mesh->GetIndexBuffer()->GetCount(), buffer->GetCount());
+    shader->DrawIndexedInstanced(0, _pass,
+        _mesh->GetIndexBuffer()->GetCount(),
+        buffer->GetCount());
 }
 
-InstanceID MeshRenderer::GetInstanceID()
+InstanceID MeshRenderer::GetInstanceID() const
 {
-	return std::make_pair(reinterpret_cast<uint64>(_mesh.get()), reinterpret_cast<uint64>(_material.get()));
+    return std::make_pair(
+        reinterpret_cast<uint64>(_mesh.get()),
+        reinterpret_cast<uint64>(_material.get()));
 }
