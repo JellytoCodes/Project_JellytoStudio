@@ -1,4 +1,4 @@
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "Graphics.h"
 
 void Graphics::Initialize(HWND hwnd)
@@ -13,6 +13,8 @@ void Graphics::Initialize(HWND hwnd)
 
 void Graphics::RenderBegin()
 {
+	InvalidateStateCache();
+
 	_deviceContext->OMSetRenderTargets(1, _renderTargetView.GetAddressOf(), _depthStencilView.Get());
 	_deviceContext->ClearRenderTargetView(_renderTargetView.Get(), _clearColor);
 	_deviceContext->ClearDepthStencilView(_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
@@ -42,7 +44,7 @@ void Graphics::CreateDeviceAndSwapChain()
 		desc.BufferCount = 1;
 		desc.OutputWindow = _hwnd;
 		desc.Windowed = TRUE;
-		desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; // GDI �������� ȣȯ
+		desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; // GDI 오버레이 호환
 	}
 
 	HRESULT hr = ::D3D11CreateDeviceAndSwapChain(
@@ -113,4 +115,50 @@ void Graphics::CreateDepthStencilView()
 void Graphics::SetViewport(float width, float height, float x, float y, float minDepth, float maxDepth)
 {
 	_vp.Set(width, height, x, y, minDepth, maxDepth);
+}
+
+void Graphics::InvalidateStateCache()
+{
+	_stateCache.rsValid = false;
+	_stateCache.dssValid = false;
+	_stateCache.blendValid = false;
+}
+
+void Graphics::SetRasterizerState(ID3D11RasterizerState* state)
+{
+	if (_stateCache.rsValid && _stateCache.rsState == state) return;
+
+	_deviceContext->RSSetState(state);
+	_stateCache.rsState = state;
+	_stateCache.rsValid = true;
+}
+
+void Graphics::SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencilRef)
+{
+	if (_stateCache.dssValid
+		&& _stateCache.dssState == state
+		&& _stateCache.stencilRef == stencilRef) return;
+
+	_deviceContext->OMSetDepthStencilState(state, stencilRef);
+	_stateCache.dssState = state;
+	_stateCache.stencilRef = stencilRef;
+	_stateCache.dssValid = true;
+}
+
+void Graphics::SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask)
+{
+	// blendFactor는 float4 포인터 — 내용 비교
+	const bool factorSame = (::memcmp(_stateCache.blendFactor,
+		blendFactor,
+		sizeof(FLOAT) * 4) == 0);
+	if (_stateCache.blendValid
+		&& _stateCache.blendState == state
+		&& _stateCache.sampleMask == sampleMask
+		&& factorSame) return;
+
+	_deviceContext->OMSetBlendState(state, blendFactor, sampleMask);
+	_stateCache.blendState = state;
+	_stateCache.sampleMask = sampleMask;
+	_stateCache.blendValid = true;
+	::memcpy(_stateCache.blendFactor, blendFactor, sizeof(FLOAT) * 4);
 }

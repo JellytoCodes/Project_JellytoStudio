@@ -131,6 +131,8 @@ Entity* Scene::Pick(int32 screenX, int32 screenY)
     Vec3 worldRayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
     worldRayDir.Normalize();
 
+    if (worldRayDir.LengthSquared() < 1e-6f) return nullptr;
+
     Ray ray = Ray(worldRayOrigin, worldRayDir);
 
     Entity* picked  = nullptr;
@@ -201,6 +203,8 @@ bool Scene::PickBlock(int32 screenX, int32 screenY,
     Vec3 rayOrigin = XMVector3TransformCoord(Vec4(0, 0, 0, 1), viewMatrixInv);
     Vec3 rayDir    = XMVector3TransformNormal(Vec4(viewX, viewY, 1, 0), viewMatrixInv);
     rayDir.Normalize();
+
+    if (rayDir.LengthSquared() < 1e-6f) return false;
 
     Ray ray(rayOrigin, rayDir);
 

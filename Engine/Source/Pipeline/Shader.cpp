@@ -198,6 +198,9 @@ void Shader::PushLightData(const LightDesc& desc)
 		_lightBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_lightEffectBuffer = GetConstantBuffer("LightBuffer");
 	}
+
+	if (::memcmp(&_lightDesc, &desc, sizeof(LightDesc)) == 0) return;
+
 	_lightDesc = desc;
 	_lightBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _lightDesc);
 	_lightEffectBuffer->SetConstantBuffer(_lightBuffer->GetComPtr().Get());
@@ -211,6 +214,9 @@ void Shader::PushMaterialData(const MaterialDesc& desc)
 		_materialBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_materialEffectBuffer = GetConstantBuffer("MaterialBuffer");
 	}
+
+	if (::memcmp(&_materialDesc, &desc, sizeof(MaterialDesc)) == 0) return;
+
 	_materialDesc = desc;
 	_materialBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _materialDesc);
 	_materialEffectBuffer->SetConstantBuffer(_materialBuffer->GetComPtr().Get());

@@ -52,13 +52,13 @@ void ShaderPass::BeginDraw()
 void ShaderPass::EndDraw()
 {
 	if (stateBlockMask.RSRasterizerState == 1)
-		GET_SINGLE(Graphics)->GetDeviceContext()->RSSetState(stateBlock->RSRasterizerState.Get());
+		GET_SINGLE(Graphics)->SetRasterizerState(stateBlock->RSRasterizerState.Get());
 
 	if (stateBlockMask.OMDepthStencilState == 1)
-		GET_SINGLE(Graphics)->GetDeviceContext()->OMSetDepthStencilState(stateBlock->OMDepthStencilState.Get(), stateBlock->OMStencilRef);
+		GET_SINGLE(Graphics)->SetDepthStencilState(stateBlock->OMDepthStencilState.Get(), stateBlock->OMStencilRef);
 
 	if (stateBlockMask.OMBlendState == 1)
-		GET_SINGLE(Graphics)->GetDeviceContext()->OMSetBlendState(stateBlock->OMBlendState.Get(), stateBlock->OMBlendFactor, stateBlock->OMSampleMask);
+		GET_SINGLE(Graphics)->SetBlendState(stateBlock->OMBlendState.Get(), stateBlock->OMBlendFactor, stateBlock->OMSampleMask);
 
 	GET_SINGLE(Graphics)->GetDeviceContext()->HSSetShader(nullptr, nullptr, 0);
 	GET_SINGLE(Graphics)->GetDeviceContext()->DSSetShader(nullptr, nullptr, 0);
