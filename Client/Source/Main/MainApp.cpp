@@ -1,7 +1,10 @@
 ﻿#include "pch.h"
 #include "MainApp.h"
 
+#include <Core/Managers/InputManager.h>
+
 #include "Actors.h"
+#include "../../../Engine/Source/Graphics/Managers/InstancingManager.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Scene.h"
@@ -182,6 +185,9 @@ void MainApp::CreateInventorySystem()
 void MainApp::Update()
 {
     CollisionManager::CheckCollision();
+
+    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F1))
+        GET_SINGLE(InstancingManager)->DumpInstancingStats();
 }
 
 void MainApp::Render() {}

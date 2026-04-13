@@ -338,6 +338,8 @@ void BlockPlacer::UpdatePreview()
 
         _previewEntity = owned.get();
         scene->Add(std::move(owned));
+
+        GET_SINGLE(InstancingManager)->SetMeshDirty();
     }
 
     _previewEntity->GetComponent<Transform>()->SetLocalPosition(previewPos);
@@ -348,15 +350,21 @@ void BlockPlacer::UpdatePreview()
         mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube"));
         mr->SetMaterial(GetPreviewMat(canAct));
     }
+
+    GET_SINGLE(InstancingManager)->SetMeshDirty();
 }
 
 void BlockPlacer::HidePreview()
 {
     if (!_previewEntity) return;
+
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
         scene->Remove(_previewEntity);
+
     _previewEntity = nullptr;
     _previewValid = false;
+
+    GET_SINGLE(InstancingManager)->SetMeshDirty();
 }
 
 bool BlockPlacer::TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, SlotType type)
@@ -407,6 +415,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     _blockTypeMap[rawBlock] = type;
 
     GET_SINGLE(InstancingManager)->SetDirty();
+    GET_SINGLE(InstancingManager)->SetMeshDirty();
     return true;
 }
 
@@ -430,6 +439,7 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
         scene->Remove(entity);
         _blockSet.erase(entity);
         GET_SINGLE(InstancingManager)->SetDirty();
+        GET_SINGLE(InstancingManager)->SetMeshDirty();
         return true;
     }
     return false;

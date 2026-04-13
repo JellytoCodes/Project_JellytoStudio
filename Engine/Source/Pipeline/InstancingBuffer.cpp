@@ -57,8 +57,11 @@ void InstancingBuffer::PushData()
 void InstancingBuffer::CreateBuffer(uint32 maxCount)
 {
 	_maxCount = maxCount;
-	_instanceBuffer = std::make_unique<VertexBuffer>();
+	
+	_data.clear();
+	_data.reserve(maxCount);
 
+	_instanceBuffer = std::make_unique<VertexBuffer>();
 	std::vector<InstancingData> temp(maxCount);
 	_instanceBuffer->Create(GET_SINGLE(Graphics)->GetDevice(), temp, 1, true);
 }
