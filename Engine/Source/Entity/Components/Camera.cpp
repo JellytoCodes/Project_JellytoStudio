@@ -74,19 +74,14 @@ void Camera::SortEntities()
     _vecForward.clear();
     _vecForward.reserve(entities.size());
 
-    // ── 프러스텀을 SortEntities 내 로컬 변수로 매 재빌드 시마다 신선하게 계산
-    // _worldFrustum을 멤버로 두지 않음 → Camera 레이아웃 불변, 파생 버그 차단
     BoundingFrustum worldFrustum;
     bool frustumValid = false;
 
     if (_width > 0.f && _height > 0.f)
     {
-        // 투영 행렬 → 뷰 공간 프러스텀 생성
         BoundingFrustum viewSpaceFrustum;
         BoundingFrustum::CreateFromMatrix(viewSpaceFrustum, _matProjection);
 
-        // 뷰 역행렬(= 카메라→월드 변환)로 월드 공간으로 변환
-        // XMMatrixInverse로 행렬식을 먼저 확인해 비가역 케이스를 방어
         XMVECTOR det;
         XMMATRIX viewInv = XMMatrixInverse(&det, _matView);
         float detF;
@@ -109,9 +104,6 @@ void Camera::SortEntities()
             entity->GetComponent<ModelAnimator>() != nullptr;
         if (!hasRenderer) continue;
 
-        // ── Frustum Culling ──────────────────────────────────────────────
-        // frustumValid가 false면(초기화 실패 등) 컬링 스킵 → 항상 포함
-        // AABBCollider 없는 엔티티(카메라, 조명 등)도 항상 포함
         if (frustumValid)
         {
             if (auto* aabb = entity->GetComponent<AABBCollider>())
@@ -121,14 +113,13 @@ void Camera::SortEntities()
             }
         }
 
+        GET_SINGLE(InstancingManager)->SetDirty();
+        GET_SINGLE(InstancingManager)->SetMeshDirty();
+
         _vecForward.push_back(entity.get());
     }
 
-    // ★ SetDirty를 SortEntities에서 직접 호출하지 않는다.
-    //   InstancingManager의 Dirty 상태는 오직 씬 구조 변경(블록 설치/파괴)
-    //   시에만 BlockPlacer에서 관리한다.
-    //   카메라 이동에 의한 가시 집합 변경은 다음 프레임 Render에서
-    //   InstancingManager가 _vecForward 기반으로 자연스럽게 처리.
+
     _sortDirty = false;
 }
 

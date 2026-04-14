@@ -14,6 +14,8 @@ public:
 	void ChangeScene(std::unique_ptr<T> scene)
 	{
 		_currentScene = std::move(scene);
+
+		_currentScene->Awake();
 		_currentScene->Start();
 	}
 
