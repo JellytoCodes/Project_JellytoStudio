@@ -30,16 +30,14 @@ void Camera::Update()
 {
     UpdateMatrix();
 
-    // ★ 카메라가 실제로 이동/회전했을 때만 SortEntities 재빌드 플래그 설정
-    // IsometricCameraController::ApplyTransform() 이후의 값을 확인
     const Vec3  curPos = GetTransform()->GetPosition();
     const float curYaw = GetTransform()->GetRotation().y;
 
     const float moveDelta = (curPos - _prevCamPos).LengthSquared();
     const float rotDelta = fabsf(curYaw - _prevCamYaw);
 
-    constexpr float kMoveThreshold = 1e-4f;
-    constexpr float kRotThreshold = 1e-4f;
+    constexpr float kMoveThreshold = 0.0025f;
+    constexpr float kRotThreshold = 0.001f;
 
     if (moveDelta > kMoveThreshold || rotDelta > kRotThreshold)
     {
@@ -71,8 +69,6 @@ void Camera::SortEntities()
     if (!scene) return;
 
     const auto& entities = scene->GetEntities();
-    _vecForward.clear();
-    _vecForward.reserve(entities.size());
 
     BoundingFrustum worldFrustum;
     bool frustumValid = false;
@@ -94,6 +90,9 @@ void Camera::SortEntities()
         }
     }
 
+    std::vector<Entity*> newForward;
+    newForward.reserve(entities.size());
+
     for (const auto& entity : entities)
     {
         if (IsCulled(entity->GetLayerIndex())) continue;
@@ -113,12 +112,25 @@ void Camera::SortEntities()
             }
         }
 
-        GET_SINGLE(InstancingManager)->SetDirty();
-        GET_SINGLE(InstancingManager)->SetMeshDirty();
-
-        _vecForward.push_back(entity.get());
+        newForward.push_back(entity.get());
     }
 
+    size_t newHash = newForward.size();
+    for (Entity* e : newForward)
+    {
+        newHash ^= std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(e))
+            + 0x9e3779b97f4a7c15ULL
+            + (newHash << 6) + (newHash >> 2);
+    }
+
+    if (newHash != _visibilityHash)
+    {
+        _visibilityHash = newHash;
+        _vecForward = std::move(newForward);
+
+        GET_SINGLE(InstancingManager)->SetDirty();
+        GET_SINGLE(InstancingManager)->SetMeshDirty();
+    }
 
     _sortDirty = false;
 }

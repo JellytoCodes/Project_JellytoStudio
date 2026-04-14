@@ -69,7 +69,8 @@ private:
     std::vector<Entity*> _vecForward;
 
     bool _sortDirty = true;
-    // ★ 이전 프레임의 카메라 위치/회전을 저장해 실제로 움직였을 때만 SortDirty 발동
     Vec3  _prevCamPos = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
     float _prevCamYaw = FLT_MAX;
+
+    size_t _visibilityHash = 0;
 };
