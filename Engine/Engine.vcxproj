@@ -178,6 +178,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Graphics\Model\ModelAnimator.cpp" />
     <ClCompile Include="Source\Graphics\Model\ModelRenderer.cpp" />
     <ClCompile Include="Source\Graphics\RenderPacket.cpp" />
+    <ClCompile Include="Source\Graphics\ShadowPass.cpp" />
     <ClCompile Include="Source\Pipeline\ShaderPass.cpp" />
     <ClCompile Include="Source\Pipeline\ShaderTechnique.cpp" />
     <ClCompile Include="Source\Scene\BlockPlacerInterface.cpp" />
@@ -252,6 +253,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Graphics\Model\ModelAnimator.h" />
     <ClInclude Include="Source\Graphics\Model\ModelRenderer.h" />
     <ClInclude Include="Source\Graphics\RenderPacket.h" />
+    <ClInclude Include="Source\Graphics\ShadowPass.h" />
     <ClInclude Include="Source\Pipeline\ShaderPass.h" />
     <ClInclude Include="Source\Pipeline\ShaderTechnique.h" />
     <ClInclude Include="Source\Scene\BlockPlacerInterface.h" />

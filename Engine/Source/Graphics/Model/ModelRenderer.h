@@ -28,6 +28,8 @@ public:
 	Matrix GetModelScaleMatrix()const		{ return Matrix::CreateScale(_modelScale); }
 
 	void RenderInstancing(InstancingBuffer* buffer);
+	void RenderRawInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer);
+
 	InstanceID GetInstanceID();
 
 private:

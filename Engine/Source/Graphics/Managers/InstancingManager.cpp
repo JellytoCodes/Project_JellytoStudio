@@ -109,31 +109,37 @@ void InstancingManager::ClearData()
     for (auto& [id, buf] : _buffers) buf->ClearData();
 }
 
-// ★ 핵심 변경: 업로드 없이 기존 버퍼만 바인딩 후 드로우
 void InstancingManager::RenderMeshRenderer()
 {
+    _stats.meshDrawCalls  = 0;
+    _stats.totalInstances = 0;
     for (auto& [id, entityVec] : _meshCache)
     {
         if (entityVec.empty()) continue;
-
         auto it = _buffers.find(id);
         if (it == _buffers.end() || !it->second->IsUploaded()) continue;
 
-        // ★ ClearData / AddData / UploadData 없음 — 이미 업로드된 버퍼 재사용
         entityVec[0]->GetComponent<MeshRenderer>()->RenderInstancing(it->second.get());
+
+        _stats.meshDrawCalls++;
+        _stats.totalInstances += it->second->GetCount();
     }
+    _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
 }
 
 void InstancingManager::RenderModelRenderer()
 {
+    _stats.modelDrawCalls = 0;
     for (auto& [id, entityVec] : _modelCache)
     {
         if (entityVec.empty()) continue;
-
         auto it = _buffers.find(id);
         if (it == _buffers.end() || !it->second->IsUploaded()) continue;
 
         entityVec[0]->GetComponent<ModelRenderer>()->RenderInstancing(it->second.get());
+
+        _stats.modelDrawCalls++;                        
+        _stats.totalInstances += it->second->GetCount();
     }
 }
 

@@ -45,6 +45,12 @@ void ModelRenderer::RenderInstancing(InstancingBuffer* buffer)
 	if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
 		_shader->PushLightData(lightObj->GetLightDesc());
 
+	if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (auto* sp = scene->GetShadowPass())  // getter 필요 (아래 참조)
+            _shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
+    }
+
 	const uint32 boneCount = _model->GetBoneCount();
 
 	if (_bIsSkinned)
@@ -76,6 +82,23 @@ void ModelRenderer::RenderInstancing(InstancingBuffer* buffer)
 
 		_shader->DrawIndexedInstanced(0, _pass, mesh->indexBuffer->GetCount(), buffer->GetCount());
 	}
+}
+
+void ModelRenderer::RenderRawInstanced(const ComPtr<ID3D11DeviceContext>& dc,
+                                        InstancingBuffer* buffer)
+{
+    if (!_model || !buffer || buffer->GetCount() == 0) return;
+
+    const auto& meshes = _model->GetMeshes();
+    for (auto& mesh : meshes)
+    {
+        mesh->vertexBuffer->PushData(dc);
+        mesh->indexBuffer->PushData(dc);
+
+        buffer->BindBuffer();
+
+        dc->DrawIndexedInstanced(mesh->indexBuffer->GetCount(), buffer->GetCount(), 0, 0, 0);
+    }
 }
 
 InstanceID ModelRenderer::GetInstanceID()

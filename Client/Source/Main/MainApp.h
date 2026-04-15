@@ -1,6 +1,7 @@
 
 #pragma once
 #include "Core/Interfaces/IExecute.h"
+#include "UI/DebugHUD.h"
 #include "UI/InventoryData.h"
 
 class Scene;
@@ -40,4 +41,6 @@ private:
 
     InventoryData   _inventoryData;             
     InventoryWidget* _inventoryWidget = nullptr;
+
+    DebugHUD _debugHUD;
 };

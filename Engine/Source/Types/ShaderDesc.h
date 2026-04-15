@@ -87,3 +87,10 @@ struct InstancedTweenDesc
 {
 	TweenDesc tweens[MAX_MODEL_INSTANCE];
 };
+
+struct ShadowDesc
+{
+    Matrix lightVP  = Matrix::Identity;
+    float  bias     = 0.003f;
+    float  pad[3]   = {};
+};

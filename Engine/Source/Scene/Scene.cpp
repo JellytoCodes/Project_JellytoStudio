@@ -12,7 +12,11 @@
 #include "UI/UIManager.h"
 #include "Graphics/Managers/InstancingManager.h"
 
-Scene::Scene()  {}
+Scene::Scene()
+{
+	_shadowPass = std::make_unique<ShadowPass>();
+    _shadowPass->Init();
+}
 Scene::~Scene() {}
 
 void Scene::Awake()
@@ -53,6 +57,15 @@ void Scene::Render()
     if (_mainCamera == nullptr) return;
 
     _mainCamera->SortEntities();
+        if (_mainLight)
+    {
+        const Vec3 lightDir = _mainLight->GetLightDesc().direction;
+        if (lightDir.LengthSquared() > 1e-6f)
+        {
+            _shadowPass->Render(_mainCamera->GetVisibleEntities(), lightDir);
+        }
+    }
+
     _mainCamera->RenderForward();
 
     for (Entity* object : _collidableObjects)

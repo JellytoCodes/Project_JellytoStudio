@@ -15,11 +15,22 @@ struct InstanceIDHash
     }
 };
 
+struct RenderStats
+{
+    uint32 modelDrawCalls  = 0;
+    uint32 meshDrawCalls   = 0;
+    uint32 totalDrawCalls  = 0;
+    uint32 totalInstances  = 0;
+};
+
 class InstancingManager
 {
     DECLARE_SINGLE(InstancingManager);
 
 public:
+
+	const RenderStats& GetStats() const { return _stats; }
+
     void Render(std::vector<Entity*>& entities);
     void ClearData();
 
@@ -48,4 +59,6 @@ private:
 
     bool _bDirty = true;
     bool _meshDirty = true;
+
+	RenderStats _stats;
 };

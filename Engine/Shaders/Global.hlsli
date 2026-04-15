@@ -18,6 +18,54 @@ cbuffer TransformBuffer
     matrix W;
 };
 
+cbuffer ShadowBuffer
+{
+    matrix LightVP;
+    float  ShadowBias;
+    float3 ShadowPad;
+};
+
+Texture2D ShadowMap;
+
+SamplerComparisonState ShadowSampler
+{
+    Filter         = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    AddressU       = BORDER;
+    AddressV       = BORDER;
+    BorderColor    = float4(1, 1, 1, 1);
+    ComparisonFunc = LESS_EQUAL;
+};
+
+float ComputeShadowFactor(float3 worldPos)
+{
+    float4 lsPos = mul(float4(worldPos, 1.0f), LightVP);
+    float3 proj  = lsPos.xyz / lsPos.w;
+    
+    float2 uv = proj.xy * float2(0.5f, -0.5f) + 0.5f;
+    
+    if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f)
+        return 1.0f;
+
+    float depth = proj.z - ShadowBias;
+
+    float shadow    = 0.0f;
+    float texelSize = 1.0f / 1024.0f;
+
+    [unroll]
+    for (int x = -1; x <= 1; x++)
+    {
+        [unroll]
+        for (int y = -1; y <= 1; y++)
+        {
+            shadow += ShadowMap.SampleCmpLevelZero(
+                ShadowSampler,
+                uv + float2(x, y) * texelSize,
+                depth);
+        }
+    }
+    return shadow / 9.0f;
+}
+
 ////////////////
 // VertexData //
 ////////////////

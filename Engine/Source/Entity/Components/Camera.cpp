@@ -131,6 +131,9 @@ void Camera::SortEntities()
         GET_SINGLE(InstancingManager)->SetDirty();
         GET_SINGLE(InstancingManager)->SetMeshDirty();
     }
+    _cullStats.totalEntities   = static_cast<uint32>(entities.size());
+    _cullStats.visibleEntities = static_cast<uint32>(_vecForward.size());
+    _cullStats.culledEntities  = _cullStats.totalEntities - _cullStats.visibleEntities;
 
     _sortDirty = false;
 }

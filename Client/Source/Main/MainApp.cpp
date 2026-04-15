@@ -1,10 +1,8 @@
 ﻿#include "pch.h"
 #include "MainApp.h"
 
-#include <Core/Managers/InputManager.h>
-
 #include "Actors.h"
-#include "../../../Engine/Source/Graphics/Managers/InstancingManager.h"
+#include "Graphics/Managers/InstancingManager.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Scene/SceneManager.h"
 #include "Scene/Scene.h"
@@ -24,6 +22,7 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Pipeline/Shader.h"
+#include "Core/Managers/InputManager.h"
 
 #include "Data/BlockDataTable.h"
 
@@ -48,6 +47,8 @@ void MainApp::Init()
     CreateCamera();
     CreatePlacementSystem();
     CreateInventorySystem();
+
+    _debugHUD.Init(GET_SINGLE(SceneManager)->GetCurrentScene()->GetMainCamera());
 
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 }
@@ -80,7 +81,7 @@ void MainApp::InitScene()
     model->ReadModel(L"Priming_01");
     model->ReadMaterial(L"Priming_01");
 
-    for (int i = 0; i < 20000; i++)
+    for (int i = 0; i < 5000; i++)
     {
         std::random_device rd;
         std::mt19937 mt(rd());
@@ -219,8 +220,13 @@ void MainApp::Update()
 {
     CollisionManager::CheckCollision();
 
+    _debugHUD.Update();
+
     if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F1))
         GET_SINGLE(InstancingManager)->DumpInstancingStats();
 }
 
-void MainApp::Render() {}
+void MainApp::Render()
+{
+	_debugHUD.Render(); 
+}

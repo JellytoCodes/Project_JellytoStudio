@@ -51,6 +51,7 @@ public:
 	void PushBoneData(const BoneDesc& desc);
 	void PushKeyframeData(const KeyframeDesc& desc);
 	void PushTweenData(const InstancedTweenDesc& desc);
+	void PushShadowData(const ShadowDesc& desc, ID3D11ShaderResourceView* shadowSrv);
 
 private:
 	void CreateEffect();
@@ -91,6 +92,10 @@ private:
 	InstancedTweenDesc										_tweenDesc;
 	std::unique_ptr<ConstantBuffer<InstancedTweenDesc>>		_tweenBuffer;
 	ComPtr<ID3DX11EffectConstantBuffer>						_tweenEffectBuffer;
+
+	ShadowDesc												_shadowDesc;
+	std::unique_ptr<ConstantBuffer<ShadowDesc>>				_shadowBuffer;
+	ComPtr<ID3DX11EffectConstantBuffer>						_shadowEffectBuffer;
 };
 
 class ShaderManager

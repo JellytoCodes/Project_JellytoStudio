@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Entity/Components/Collider/CollisionChannel.h"
+#include "Graphics/ShadowPass.h"
 
 class Light;
 class Camera;
@@ -44,6 +45,8 @@ public:
     const std::unordered_set<Entity*>& GetCollidableEntities() const { return _collidableObjects; }
     std::unordered_set<Entity*>&       GetCollidableEntities()       { return _collidableObjects; }
 
+	ShadowPass* GetShadowPass() const { return _shadowPass.get(); }
+
 private:
     std::wstring _name = L"Unnamed Scene";
 
@@ -54,4 +57,5 @@ private:
 
     std::unordered_set<Entity*> _collidableObjects;
     std::vector<Widget*> _widgetObjects;
+    std::unique_ptr<ShadowPass> _shadowPass;
 };

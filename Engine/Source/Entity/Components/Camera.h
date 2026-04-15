@@ -10,7 +10,15 @@ enum class ProjectionType
 class Camera : public Component
 {
     using Super = Component;
+
 public:
+    struct CullStats
+	{
+	    uint32 totalEntities   = 0;
+	    uint32 visibleEntities = 0;
+	    uint32 culledEntities  = 0;
+	};
+
     Camera();
     virtual ~Camera();
 
@@ -51,6 +59,9 @@ public:
     void SetCullingMask(uint32 mask) { _cullingMask = mask; }
     bool IsCulled(uint8 layer) const { return (_cullingMask & (1 << layer)) != 0; }
 
+    const CullStats& GetCullStats() const { return _cullStats; }
+    const std::vector<Entity*>& GetVisibleEntities() const { return _vecForward; }
+
     static Matrix S_MatView;
     static Matrix S_MatProjection;
 
@@ -73,4 +84,6 @@ private:
     float _prevCamYaw = FLT_MAX;
 
     size_t _visibilityHash = 0;
+
+    CullStats _cullStats;
 };

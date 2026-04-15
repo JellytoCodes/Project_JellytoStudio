@@ -29,14 +29,13 @@ MeshOutput VS(VertexMesh input)
 
 float4 PS(MeshOutput input) : SV_TARGET
 {
-    float3 N = normalize(input.normal);
-    
+	float3 N = normalize(input.normal);
+
     float4 texColor = DiffuseMap.Sample(LinearSampler, input.uv);
     bool   hasTex   = (texColor.a > 0.001f) || any(texColor.rgb > 0.001f);
-
     float4 baseColor = hasTex ? texColor : Material.diffuse;
 
-    float4 ambient = baseColor * GlobalLight.ambient * Material.ambient;
+    float4 ambient  = baseColor * GlobalLight.ambient  * Material.ambient;
 
     float  NdotL    = saturate(dot(N, -GlobalLight.direction));
     float4 diffuse  = baseColor * NdotL * GlobalLight.diffuse * Material.diffuse;
@@ -46,17 +45,18 @@ float4 PS(MeshOutput input) : SV_TARGET
     float3 R        = reflect(GlobalLight.direction, N);
     float  spec     = pow(saturate(dot(R, E)), 16.0f);
     float4 specular = GlobalLight.specular * Material.specular * spec;
-    
+
     float  rim      = 1.0f - saturate(dot(E, N));
     float4 emissive = GlobalLight.emissive * Material.emissive * pow(rim, 2.0f);
+    
+    float shadow = ComputeShadowFactor(input.worldPosition);
 
-    float4 finalColor = ambient + diffuse + specular + emissive;
+    float4 finalColor = ambient + (diffuse + specular) * shadow + emissive;
     finalColor.a = 1.0f;
-
     return finalColor;
 }
 
 technique11 T0
 {
     PASS_VP(P0, VS, PS)
-}
+};
