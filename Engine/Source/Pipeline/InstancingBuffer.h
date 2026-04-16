@@ -31,9 +31,9 @@ public:
 private:
 	void CreateBuffer(uint32 maxCount);
 
-	uint32 _maxCount = 0;
+	uint32							_maxCount = 0;
 
-	std::unique_ptr<VertexBuffer> _instanceBuffer;
-	std::vector<InstancingData>   _data;
-	bool _uploaded = false;
+	std::unique_ptr<VertexBuffer>	_instanceBuffer;
+	std::vector<InstancingData>		_data;
+	bool							_uploaded = false;
 };

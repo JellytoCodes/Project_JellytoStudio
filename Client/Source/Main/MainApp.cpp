@@ -1,33 +1,50 @@
-﻿#include "pch.h"
+﻿
+#include "pch.h"
 #include "MainApp.h"
 
 #include "Actors.h"
-#include "Graphics/Managers/InstancingManager.h"
-#include "Resource/Managers/ResourceManager.h"
-#include "Scene/SceneManager.h"
-#include "Scene/Scene.h"
-#include "Entity/Entity.h"
-#include "Entity/Actor.h"
-#include "Entity/Components/Transform.h"
-#include "Entity/Components/Camera.h"
-#include "Entity/Managers/CollisionManager.h"
-#include "Scripts/IsometricCameraController.h"
-#include "Scripts/BlockPlacer.h"
-#include "Scripts/OneBlockScript.h"
-#include "UI/PaletteWidget.h"
-#include "UI/InventoryWidget.h"
-#include "Entity/Components/Light.h"
-#include "Scene/SceneSerializer.h"
-#include "Entity/Components/Collider/AABBCollider.h"
-#include "Graphics/Model/Model.h"
-#include "Graphics/Model/ModelRenderer.h"
-#include "Pipeline/Shader.h"
+
 #include "Core/Managers/InputManager.h"
 
 #include "Data/BlockDataTable.h"
 
-MainApp::MainApp()  {}
-MainApp::~MainApp() {}
+#include "Entity/Actor.h"
+#include "Entity/Entity.h"
+#include "Entity/Components/Camera.h"
+#include "Entity/Components/Light.h"
+#include "Entity/Components/Transform.h"
+#include "Entity/Components/Collider/AABBCollider.h"
+#include "Entity/Managers/CollisionManager.h"
+
+#include "Graphics/Managers/InstancingManager.h"
+
+#include "Resource/Managers/ResourceManager.h"
+
+#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
+#include "Scene/SceneSerializer.h"
+
+#include "Scripts/IsometricCameraController.h"
+#include "Scripts/BlockPlacer.h"
+#include "Scripts/OneBlockScript.h"
+
+#include "UI/PaletteWidget.h"
+#include "UI/InventoryWidget.h"
+
+#include "Graphics/Model/Model.h"
+#include "Graphics/Model/ModelRenderer.h"
+
+#include "Pipeline/Shader.h"
+
+MainApp::MainApp()
+{
+	
+}
+
+MainApp::~MainApp()
+{
+	
+}
 
 void MainApp::Init()
 {
@@ -81,60 +98,25 @@ void MainApp::InitScene()
     model->ReadModel(L"Priming_01");
     model->ReadMaterial(L"Priming_01");
 
-    for (int i = 0; i < 5000; i++)
-    {
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_int_distribution<int> distXZ(-100, 100);
-        std::uniform_int_distribution<int> distY(-30, 30);
-
-        auto randX = distXZ(mt);
-        auto randY = distY(mt);
-        auto randZ = distXZ(mt);
-
-        auto mr = std::make_unique<ModelRenderer>(shader, false);
-        mr->SetModel(model);
-        mr->SetModelScale(Vec3(0.01f));
-
-        auto col = std::make_unique<AABBCollider>();
-        col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-        col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
-        col->SetOwnChannel(CollisionChannel::Priming);
-        col->SetPickableMask(
-            static_cast<uint8>(CollisionChannel::Priming) |
-            static_cast<uint8>(CollisionChannel::Character));
-        col->SetStatic(true);
-
-        auto startBlock = std::make_unique<Entity>(L"StartBlock");
-        startBlock->AddComponent(std::make_unique<Transform>());
-        startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(randX, randY, randZ));
-        startBlock->AddComponent(std::move(mr));
-        startBlock->AddComponent(std::move(col));
-
-        scene->Add(std::move(startBlock));
-    }
-
-    //auto mr = std::make_unique<ModelRenderer>(shader, false);
-    //mr->SetModel(model);
-    //mr->SetModelScale(Vec3(0.01f));
-    //
-    //auto col = std::make_unique<AABBCollider>();
-    //col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-    //col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
-    //col->SetOwnChannel(CollisionChannel::Priming);
-    //col->SetPickableMask(
-    //    static_cast<uint8>(CollisionChannel::Priming) |
-    //    static_cast<uint8>(CollisionChannel::Character));
-    //col->SetStatic(true);
-    //
-    //auto startBlock = std::make_unique<Entity>(L"StartBlock");
-    //startBlock->AddComponent(std::make_unique<Transform>());
-    //startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-    //startBlock->AddComponent(std::move(mr));
-    //startBlock->AddComponent(std::move(col));
-    //
-    //_startBlock = startBlock.get();
-    //scene->Add(std::move(startBlock));
+    auto mr = std::make_unique<ModelRenderer>(shader, false);
+    mr->SetModel(model);
+    mr->SetModelScale(Vec3(0.01f));
+    
+    auto col = std::make_unique<AABBCollider>();
+    col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
+    col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
+    col->SetOwnChannel(CollisionChannel::Priming);
+    col->SetPickableMask(static_cast<uint8>(CollisionChannel::Priming) | static_cast<uint8>(CollisionChannel::Character));
+    col->SetStatic(true);
+    
+    auto startBlock = std::make_unique<Entity>(L"StartBlock");
+    startBlock->AddComponent(std::make_unique<Transform>());
+    startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+    startBlock->AddComponent(std::move(mr));
+    startBlock->AddComponent(std::move(col));
+    
+    _startBlock = startBlock.get();
+    scene->Add(std::move(startBlock));
 
     Actor* charActor = spawn(std::make_unique<CharacterActor>());
     _characterEntity = charActor->GetEntity();
@@ -200,7 +182,7 @@ void MainApp::CreatePlacementSystem()
 
 void MainApp::CreateInventorySystem()
 {
-    //  _inventoryData.GiveAll(10);
+    _inventoryData.GiveAll(10);
 
     if (_blockPlacer)
         _blockPlacer->SetInventoryData(&_inventoryData);

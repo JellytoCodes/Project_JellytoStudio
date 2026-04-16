@@ -39,20 +39,20 @@ class ModelRenderer;
 class ModelAnimator;
 class AnimStateMachine;
 
-template<> struct ComponentTypeOf<Transform>       { static constexpr ComponentType kType = ComponentType::Transform;      };
-template<> struct ComponentTypeOf<Light>           { static constexpr ComponentType kType = ComponentType::Light;          };
-template<> struct ComponentTypeOf<Camera>          { static constexpr ComponentType kType = ComponentType::Camera;         };
-template<> struct ComponentTypeOf<MeshRenderer>    { static constexpr ComponentType kType = ComponentType::MeshRenderer;   };
+template<> struct ComponentTypeOf<Transform>        { static constexpr ComponentType kType = ComponentType::Transform;      };
+template<> struct ComponentTypeOf<Light>            { static constexpr ComponentType kType = ComponentType::Light;          };
+template<> struct ComponentTypeOf<Camera>           { static constexpr ComponentType kType = ComponentType::Camera;         };
+template<> struct ComponentTypeOf<MeshRenderer>     { static constexpr ComponentType kType = ComponentType::MeshRenderer;   };
 
-template<> struct ComponentTypeOf<BaseCollider>    { static constexpr ComponentType kType = ComponentType::Collider;       };
-template<> struct ComponentTypeOf<AABBCollider>    { static constexpr ComponentType kType = ComponentType::Collider;       };
-template<> struct ComponentTypeOf<OBBCollider>     { static constexpr ComponentType kType = ComponentType::Collider;       };
-template<> struct ComponentTypeOf<SphereCollider>  { static constexpr ComponentType kType = ComponentType::Collider;       };
-template<> struct ComponentTypeOf<FrustumCollider> { static constexpr ComponentType kType = ComponentType::Collider;       };
+template<> struct ComponentTypeOf<BaseCollider>     { static constexpr ComponentType kType = ComponentType::Collider;       };
+template<> struct ComponentTypeOf<AABBCollider>     { static constexpr ComponentType kType = ComponentType::Collider;       };
+template<> struct ComponentTypeOf<OBBCollider>      { static constexpr ComponentType kType = ComponentType::Collider;       };
+template<> struct ComponentTypeOf<SphereCollider>   { static constexpr ComponentType kType = ComponentType::Collider;       };
+template<> struct ComponentTypeOf<FrustumCollider>  { static constexpr ComponentType kType = ComponentType::Collider;       };
 
-template<> struct ComponentTypeOf<ModelRenderer>   { static constexpr ComponentType kType = ComponentType::ModelRenderer;  };
-template<> struct ComponentTypeOf<ModelAnimator>   { static constexpr ComponentType kType = ComponentType::Animator;       };
-template<> struct ComponentTypeOf<AnimStateMachine>{ static constexpr ComponentType kType = ComponentType::AnimStateMachine;};
+template<> struct ComponentTypeOf<ModelRenderer>    { static constexpr ComponentType kType = ComponentType::ModelRenderer;  };
+template<> struct ComponentTypeOf<ModelAnimator>    { static constexpr ComponentType kType = ComponentType::Animator;       };
+template<> struct ComponentTypeOf<AnimStateMachine> { static constexpr ComponentType kType = ComponentType::AnimStateMachine;};
 
 class Component
 {

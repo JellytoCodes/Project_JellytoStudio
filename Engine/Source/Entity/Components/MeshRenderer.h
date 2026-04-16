@@ -24,7 +24,6 @@ public:
 
     bool FillPacket(const Matrix& matWorld, RenderPacket& outPacket) const;
 
-    // 기존 인터페이스 유지 ? InstancingManager 내부에서만 호출됨
     void RenderInstancing(InstancingBuffer* buffer);
 
     InstanceID GetInstanceID() const;
@@ -38,9 +37,9 @@ public:
     uint8                            GetPass()     const { return _pass;     }
 
 private:
-    std::shared_ptr<Mesh>     _mesh;
-    std::shared_ptr<Shader>   _shader;    // Material에서 파생, 캐시용
-    std::shared_ptr<Material> _material;
+    std::shared_ptr<Mesh>       _mesh;
+    std::shared_ptr<Shader>     _shader;
+    std::shared_ptr<Material>   _material;
 
-    uint8 _pass = 0;
+    uint8                       _pass = 0;
 };

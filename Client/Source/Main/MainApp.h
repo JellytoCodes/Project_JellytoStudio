@@ -39,8 +39,8 @@ private:
     OneBlockScript*            _oneBlockScript  = nullptr;
     PaletteWidget*             _palette         = nullptr;
 
-    InventoryData   _inventoryData;             
-    InventoryWidget* _inventoryWidget = nullptr;
+    InventoryData              _inventoryData;             
+    InventoryWidget*           _inventoryWidget = nullptr;
 
-    DebugHUD _debugHUD;
+    DebugHUD                   _debugHUD;
 };

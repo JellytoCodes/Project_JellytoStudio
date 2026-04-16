@@ -19,12 +19,31 @@ Camera::Camera() : Super(ComponentType::Camera)
     _width = MAIN_WINDOW_WIDTH;
     _height = MAIN_WINDOW_HEIGHT;
 }
-Camera::~Camera() {}
 
-void Camera::Awake() {}
-void Camera::Start() {}
-void Camera::LateUpdate() {}
-void Camera::OnDestroy() {}
+Camera::~Camera()
+{
+	
+}
+
+void Camera::Awake()
+{
+	
+}
+
+void Camera::Start()
+{
+	
+}
+
+void Camera::LateUpdate()
+{
+	
+}
+
+void Camera::OnDestroy()
+{
+	
+}
 
 void Camera::Update()
 {

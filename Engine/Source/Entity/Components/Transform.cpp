@@ -1,14 +1,42 @@
+
 #include "Framework.h"
 #include "Entity/Components/Transform.h"
 
-Transform::Transform() : Super(ComponentType::Transform) {}
-Transform::~Transform() {}
+Transform::Transform() 
+	: Super(ComponentType::Transform)
+{
+	
+}
 
-void Transform::Awake()      {}
-void Transform::Start()      {}
-void Transform::Update()     {}
-void Transform::LateUpdate() {}
-void Transform::OnDestroy()  {}
+Transform::~Transform()
+{
+	
+}
+
+void Transform::Awake()
+{
+	
+}
+
+void Transform::Start()
+{
+	
+}
+
+void Transform::Update()
+{
+	
+}
+
+void Transform::LateUpdate()
+{
+	
+}
+
+void Transform::OnDestroy()
+{
+	
+}
 
 Vec3 Transform::ToEulerAngles(Quaternion q)
 {
@@ -37,8 +65,6 @@ void Transform::UpdateTransform()
 
 	_matLocal = matScale * matRotation * matTranslation;
 
-	// 이전: if (HasParent()) { _matWorld = _matLocal * _parent.lock()->GetWorldMatrix(); }
-	// 변경: raw pointer → lock() 제거, atomic 연산 0
 	if (_parent != nullptr)
 		_matWorld = _matLocal * _parent->GetWorldMatrix();
 	else

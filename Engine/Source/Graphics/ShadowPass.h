@@ -29,24 +29,19 @@ private:
 
     Matrix ComputeLightVP(const std::vector<Entity*>& entities, const Vec3& lightDir);
 
-    // ── Shadow Map 리소스 ─────────────────────────────────────────────
-    ComPtr<ID3D11Texture2D>          _shadowTexture;
-    ComPtr<ID3D11DepthStencilView>   _shadowDSV;
-    ComPtr<ID3D11ShaderResourceView> _shadowSRV;
+	ComPtr<ID3D11Texture2D>                                                             _shadowTexture;
+    ComPtr<ID3D11DepthStencilView>                                                      _shadowDSV;
+    ComPtr<ID3D11ShaderResourceView>                                                    _shadowSRV;
 
-    // ── Depth-Only 셰이더 ─────────────────────────────────────────────
-    ComPtr<ID3D11VertexShader>   _depthVS;
-    ComPtr<ID3D11Buffer>         _cbuffer;      // ShadowDesc (LightVP + bias)
-    ComPtr<ID3D11InputLayout>    _inputLayout;
+	ComPtr<ID3D11VertexShader>                                                          _depthVS;
+    ComPtr<ID3D11Buffer>                                                                _cbuffer;
+    ComPtr<ID3D11InputLayout>                                                           _inputLayout;
 
-    // ── 파이프라인 상태 ───────────────────────────────────────────────
-    ComPtr<ID3D11RasterizerState>    _rasterState;
-    ComPtr<ID3D11DepthStencilState>  _depthState;
+	ComPtr<ID3D11RasterizerState>                                                       _rasterState;
+    ComPtr<ID3D11DepthStencilState>                                                     _depthState;
 
-    // ── 그룹별 인스턴스 버퍼 (Shadow 전용 — 씬 변경 시 재빌드) ────────
-    using ShadowBufferMap = std::unordered_map<InstanceID,std::unique_ptr<InstancingBuffer>, InstanceIDHash>;
-    ShadowBufferMap _shadowBuffers;
+    std::unordered_map<InstanceID, std::unique_ptr<InstancingBuffer>, InstanceIDHash>   _shadowBuffers;
 
-    ShadowDesc _shadowDesc;
-    D3D11_VIEWPORT _shadowVP = {};
+    ShadowDesc                                                                          _shadowDesc;
+    D3D11_VIEWPORT                                                                      _shadowVP = {};
 };

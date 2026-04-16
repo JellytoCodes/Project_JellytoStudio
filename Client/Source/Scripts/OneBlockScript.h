@@ -17,7 +17,6 @@ public:
     virtual void LateUpdate() override {}
     virtual void OnDestroy()  override {}
 
-    // ── 외부 의존성 주입 ──────────────────────────────────────────────────────
     void SetCharacterEntity(Entity* ch)       { _character  = ch; }
     void SetInventoryData(InventoryData* inv) { _pInventory = inv; }
 
@@ -41,16 +40,16 @@ private:
     bool IsCharacterNearby();
 
     // ── 멤버 변수 ─────────────────────────────────────────────────────────────
-    Entity*        _character  = nullptr;
-    InventoryData* _pInventory = nullptr;   // 소유하지 않음 (observer)
+    Entity*                                 _character  = nullptr;
+    InventoryData*                          _pInventory = nullptr;
 
-    int32 _totalBreaks  = 0;
-    int32 _currentPhase = 0;
-    bool  _isBroken     = false;
-    float _respawnTimer = 0.f;
+    int32                                   _totalBreaks  = 0;
+    int32                                   _currentPhase = 0;
+    bool                                    _isBroken     = false;
+    float                                   _respawnTimer = 0.f;
 
-    static constexpr float kRespawnDelay = 2.5f;
-    static constexpr float kMineRange    = 3.0f;
+    static constexpr float                  kRespawnDelay = 2.5f;
+    static constexpr float                  kMineRange    = 3.0f;
 
-    std::vector<std::shared_ptr<Model>> _phaseModels;
+    std::vector<std::shared_ptr<Model>>     _phaseModels;
 };

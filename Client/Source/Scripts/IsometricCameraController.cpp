@@ -2,10 +2,11 @@
 #include "pch.h"
 #include "IsometricCameraController.h"
 
-#include "Entity/Entity.h"
-#include "Entity/Components/Transform.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
+
+#include "Entity/Entity.h"
+#include "Entity/Components/Transform.h"
 
 void IsometricCameraController::Awake()
 {

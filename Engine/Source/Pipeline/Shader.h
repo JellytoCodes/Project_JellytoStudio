@@ -1,7 +1,8 @@
 #pragma once
+
 #include "ShaderPass.h"
 #include "ShaderTechnique.h"
-#include "Resource/Material.h"
+
 #include "Pipeline/ConstantBuffer.h"
 
 struct ShaderDesc
@@ -57,12 +58,12 @@ private:
 	void CreateEffect();
 	ComPtr<ID3D11InputLayout> CreateInputLayout(ComPtr<ID3DBlob> fxBlob, D3DX11_EFFECT_SHADER_DESC* effectVsDesc, std::vector<D3D11_SIGNATURE_PARAMETER_DESC>& params);
 
-	std::wstring _file;
-	ShaderDesc   _shaderDesc;
-	D3DX11_EFFECT_DESC _effectDesc;
+	std::wstring											_file;
+	ShaderDesc												_shaderDesc;
+	D3DX11_EFFECT_DESC										_effectDesc;
 
-	std::unique_ptr<StateBlock> _initialStateBlock;
-	std::vector<Technique>      _techniques;
+	std::unique_ptr<StateBlock>								_initialStateBlock;
+	std::vector<Technique>									_techniques;
 
 
 	GlobalDesc												_globalDesc;

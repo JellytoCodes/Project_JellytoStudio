@@ -33,12 +33,12 @@ private:
 
     bool IsMovementBlocked(const Vec3& nextEntityPos) const;
 
-    Vec3  _destination  = Vec3::Zero;
-    bool  _isMoving     = false;
+    Vec3                _destination  = Vec3::Zero;
+    bool                _isMoving     = false;
 
-    float _moveSpeed     = 5.f;
-    float _rotateSpeed   = 720.f;
-    float _stopThreshold = 0.1f;
+    float               _moveSpeed     = 5.f;
+    float               _rotateSpeed   = 720.f;
+    float               _stopThreshold = 0.1f;
 
-    CollisionChannel _walkChannel = CollisionChannel::Character;
+    CollisionChannel    _walkChannel = CollisionChannel::Character;
 };

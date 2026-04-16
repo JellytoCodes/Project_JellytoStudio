@@ -7,9 +7,13 @@
 Entity::Entity(const std::wstring& name)
     : _entityName(name)
 {
+
 }
 
-Entity::~Entity() {}
+Entity::~Entity()
+{
+	
+}
 
 void Entity::Awake()
 {
@@ -73,8 +77,7 @@ void Entity::AddComponent(std::unique_ptr<Component> component)
     }
     else if (index == FIXED_COMPONENT_COUNT)
     {
-        std::unique_ptr<MonoBehaviour> script(
-            static_cast<MonoBehaviour*>(component.release()));
+        std::unique_ptr<MonoBehaviour> script(static_cast<MonoBehaviour*>(component.release()));
         _scripts.push_back(std::move(script));
     }
 }
