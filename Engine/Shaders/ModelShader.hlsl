@@ -106,7 +106,7 @@ matrix GetAnimationMatrix(VS_IN input)
 		
         matrix result = lerp(curr, next, ratio[0]);
 		
-		// ¥Ÿ¿Ω æ÷¥œ∏ﬁ¿Ãº«¿Ã ¿÷¥¬¡ˆ »Æ¿Œ
+		//       ÷¥œ∏  Ãº     ÷¥    »Æ  
         if (animIndex[1] >= 0)
         {
             c0 = TransformMap.Load(int4(indices[i] * 4 + 0, currFrame[1], animIndex[1], 0));
@@ -150,7 +150,9 @@ VS_OUT VS(VS_IN input)
 
 float4 PS(VS_OUT input) : SV_TARGET
 {
-	float4 color = ComputeLight(input.normal, input.uv, input.worldPosition);
+    float4 color  = ComputeLight(input.normal, input.uv, input.worldPosition);
+    float  shadow = ComputeShadowFactor(input.worldPosition);
+    color.rgb *= lerp(0.3f, 1.0f, shadow); // 0.3 = Í∑∏Î¶ºÏûê ÏµúÏÜå Î∞ùÍ∏∞ (ambient floor)
     return color;
 }
 

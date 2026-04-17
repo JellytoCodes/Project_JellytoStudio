@@ -1,4 +1,3 @@
-
 #include "Framework.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Camera.h"
@@ -30,7 +29,7 @@ bool MeshRenderer::FillPacket(const Matrix& matWorld, RenderPacket& outPacket) c
         return false;
 
     outPacket.instanceID = GetInstanceID();
-    outPacket.pMesh      = _mesh.get();      // 수명: ResourceManager가 보장
+    outPacket.pMesh      = _mesh.get();
     outPacket.pMaterial  = _material.get();
     outPacket.pass       = _pass;
     outPacket.matWorld   = matWorld;
@@ -49,6 +48,10 @@ void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
 
     if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
         shader->PushLightData(lightObj->GetLightDesc());
+
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+        if (auto* sp = scene->GetShadowPass())
+            shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
 
     _material->Update();
 
