@@ -2,7 +2,7 @@
 #include "Entity/Components/Transform.h"
 
 class MonoBehaviour;
-class Widget;  // [FIX B] Widget 타입 직접 추적을 위한 전방 선언
+class Widget;
 
 class Entity
 {
@@ -23,17 +23,17 @@ public:
     template <typename T>
     T* GetComponent();
 
-    void SetLayerIndex(const uint8 layer) { _layerIndex = layer; }
-    uint8 GetLayerIndex() const           { return _layerIndex;  }
+    void SetLayerIndex(const uint8 layer)   { _layerIndex = layer; }
+    uint8 GetLayerIndex() const             { return _layerIndex;  }
 
-    std::wstring GetEntityName() const { return _entityName; }
+    std::wstring GetEntityName() const      { return _entityName; }
 
 protected:
-    std::array<std::unique_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
-    std::vector<std::unique_ptr<MonoBehaviour>> _scripts;
+    std::array<std::unique_ptr<Component>, FIXED_COMPONENT_COUNT>   _components;
+    std::vector<std::unique_ptr<MonoBehaviour>>                     _scripts;
 
-    uint8        _layerIndex = 0;
-    std::wstring _entityName = L"";
+    uint8                                                           _layerIndex = 0;
+    std::wstring                                                    _entityName = L"";
 };
 
 template <typename T>

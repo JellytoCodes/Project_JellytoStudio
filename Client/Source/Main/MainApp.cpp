@@ -65,9 +65,11 @@ void MainApp::Init()
     CreatePlacementSystem();
     CreateInventorySystem();
 
-    _debugHUD.Init(GET_SINGLE(SceneManager)->GetCurrentScene()->GetMainCamera());
+    Camera* mainCam = _scene->GetMainCamera();
 
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
+
+    _debugHUD.Init(mainCam);
 }
 
 // ── 씬 초기화 ─────────────────────────────────────────────────────────────────

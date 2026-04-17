@@ -33,13 +33,11 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         {
             if (auto* mr = entity->GetComponent<MeshRenderer>())
             {
-                if (!_meshDirty) continue;  // Mesh 캐시 갱신이 불필요하면 스킵
+                if (!_meshDirty) continue;
 
                 const InstanceID id = mr->GetInstanceID();
                 _meshCache[id].push_back(entity);
 
-                // ★ 핵심 수정: world 행렬을 CPU 캐시에 사전 저장
-                //   이후 프레임에서 FillPacket() 재호출 없이 캐시로 렌더링
                 RenderPacket packet;
                 auto* tr = entity->GetComponent<Transform>();
                 if (tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
@@ -102,6 +100,8 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
     RenderMeshRenderer();
     RenderModelRenderer();
     RenderAnimRenderer();
+
+    _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
 }
 
 void InstancingManager::ClearData()

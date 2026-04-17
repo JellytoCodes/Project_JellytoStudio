@@ -414,6 +414,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     _blockSet.insert(rawBlock);
     _blockTypeMap[rawBlock] = type;
 
+    _placedCells.emplace_back(static_cast<int32>(std::roundf(entityPos.x)), static_cast<int32>(std::roundf(entityPos.z)));
+
     GET_SINGLE(InstancingManager)->SetDirty();
     GET_SINGLE(InstancingManager)->SetMeshDirty();
     return true;

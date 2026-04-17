@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <iostream>
+
 #include <array>
 #include <vector>
 #include <list>
@@ -15,9 +16,13 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+
 #include <algorithm>
+
 #include <functional>
+
 #include <string>
+
 #include <sstream>
 
 ///////////////////////////////////////////////////
@@ -34,13 +39,16 @@
 ///////////////////////////////////////////////////
 
 #include <d3d11.h>
-#include <d3dcompiler.h>
 #include <d3d11shader.h>
 #include <d3d11.h>
-#include <wrl.h>
+#include <d3dcompiler.h>
+
 #include <DirectXMath.h>
 #include <DirectXTex/DirectXTex.h>
 #include <DirectXTex/DirectXTex.inl>
+
+#include <wrl.h>
+
 #include <FX11/d3dx11effect.h>
 
 #include "Utils/SimpleMath.h"
@@ -69,9 +77,10 @@ using namespace DirectX;
 /// Utils
 ///////////////////////////////////////////////////
 
-#include "Utils/tinyxml2.h"
 #include "Utils/Geometry/Geometry.h"
 #include "Utils/Geometry/GeometryHelper.h"
+
+#include "Utils/tinyxml2.h"
 
 ///////////////////////////////////////////////////
 /// Libraries
