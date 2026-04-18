@@ -91,6 +91,10 @@ void ModelAnimator::RenderInstancing(InstancingBuffer* buffer)
 	if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
 		_shader->PushLightData(lightObj->GetLightDesc());
 
+	if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+		if (auto* sp = scene->GetShadowPass())
+			_shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
+
 	_shader->GetSRV("TransformMap")->SetResource(_srv.Get());
 
 	BoneDesc boneDesc;

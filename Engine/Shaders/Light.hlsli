@@ -67,8 +67,8 @@ float4 ComputeLight(float3 normal, float2 uv, float3 worldPosition)
 	// Diffuse
 	{
         float4 color = DiffuseMap.Sample(LinearSampler, uv);
-        float value = dot(-GlobalLight.direction, normalize(normal));
-		
+        float value = saturate(dot(-GlobalLight.direction, normalize(normal))); // ★ saturate: 음수 방지
+
         diffuseColor = color * value * GlobalLight.diffuse * Material.diffuse;
     }
 	
@@ -114,9 +114,7 @@ void ComputNormalMapping(inout float3 normal, float3 tangent, float2 uv)
     float3 B = normalize(cross(N, T)); // y
 	
     float3x3 TBN = float3x3(T, B, N);
-    
     float3 tangentSpaceNormal = (map.rgb * 2.f - 1.f);
-	
     float3 worldNormal = mul(tangentSpaceNormal, TBN);
 
     normal = worldNormal;

@@ -138,12 +138,12 @@ VS_OUT VS(VS_IN input)
 	//output.position = mul(input.position, BoneTransforms[BoneIndex]);
     matrix m = GetAnimationMatrix(input);
 
-    output.position = mul(input.position, m);
-    output.position = mul(output.position, input.world);
-    output.worldPosition = output.position;
-    output.position = mul(output.position, VP);
-    output.uv = input.uv;
-    output.normal = input.normal;
+    output.position      = mul(input.position, m);
+    output.position      = mul(output.position, input.world);
+    output.worldPosition = output.position.xyz;               
+    output.position      = mul(output.position, VP);
+    output.uv            = input.uv;
+    output.normal        = mul(mul(input.normal, (float3x3)m), (float3x3)input.world);        
 		
     return output;
 }
