@@ -1,37 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scene name="Main Scene">
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="-5" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
     <Entity name="BlockPlacer">
         <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
     <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="-6" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+        <Transform px="-2" py="0" pz="-1" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
     <Entity name="SkySphere" actor="SkySphereActor">
+        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+    <Entity name="DirectionalLight" actor="LightActor">
+        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
+    </Entity>
+    <Entity name="StartBlock">
         <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
     <Entity name="Character" actor="CharacterActor">
         <Transform px="0" py="1" pz="0" rx="0" ry="0" rz="0" sx="0.0099999998" sy="0.0099999998" sz="0.0099999998"/>
     </Entity>
-    <Entity name="DirectionalLight" actor="LightActor">
-        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-2" py="0" pz="-4" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="StartBlock">
-        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="-3" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
     <Entity name="MapBlock">
         <Transform px="0" py="0" pz="-1" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="__Preview__">
-        <Transform px="0" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="0.059999999" sz="1"/>
     </Entity>
     <Entity name="MapBlock">
         <Transform px="-1" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
@@ -40,84 +28,21 @@
         <Transform px="-1" py="0" pz="-1" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
     <Entity name="MapBlock">
-        <Transform px="-2" py="0" pz="-6" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="-2" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
         <Transform px="0" py="0" pz="-2" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
     <Entity name="MapBlock">
         <Transform px="-1" py="0" pz="-2" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
     <Entity name="MapBlock">
-        <Transform px="-1" py="0" pz="-5" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="0" py="0" pz="-3" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-1" py="0" pz="-3" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="-6" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="-3" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="0" py="0" pz="-4" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-1" py="0" pz="-4" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
         <Transform px="-2" py="0" pz="-2" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
     </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-2" py="0" pz="-3" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="-4" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-2" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-2" py="0" pz="-1" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="-1" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="-4" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-3" py="0" pz="-5" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="0" py="0" pz="-5" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-2" py="0" pz="-5" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="0" py="0" pz="-6" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-1" py="0" pz="-6" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="0" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="-1" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
-    <Entity name="MapBlock">
-        <Transform px="-4" py="0" pz="-2" rx="0" ry="0" rz="0" sx="1" sy="1" sz="1"/>
-    </Entity>
+    <Blocks>
+        <Block x="0" y="0" z="-1" type="3"/>
+        <Block x="-1" y="0" z="0" type="3"/>
+        <Block x="-1" y="0" z="-1" type="3"/>
+        <Block x="0" y="0" z="-2" type="3"/>
+        <Block x="-1" y="0" z="-2" type="3"/>
+        <Block x="-2" y="0" z="-1" type="3"/>
+        <Block x="-2" y="0" z="-2" type="3"/>
+    </Blocks>
 </Scene>

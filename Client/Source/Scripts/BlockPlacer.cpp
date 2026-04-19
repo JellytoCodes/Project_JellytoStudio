@@ -1,5 +1,4 @@
-﻿
-#include "pch.h"
+﻿#include "pch.h"
 #include "BlockPlacer.h"
 #include "UI/InventoryData.h"
 #include "Entity/Entity.h"
@@ -414,7 +413,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     _blockSet.insert(rawBlock);
     _blockTypeMap[rawBlock] = type;
 
-    _placedCells.emplace_back(static_cast<int32>(std::roundf(entityPos.x)), static_cast<int32>(std::roundf(entityPos.z)));
+    _placedCells.push_back({ entityPos.x, entityPos.y, entityPos.z,
+                             static_cast<int32>(type) });
 
     GET_SINGLE(InstancingManager)->SetDirty();
     GET_SINGLE(InstancingManager)->SetMeshDirty();
@@ -445,6 +445,60 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
         return true;
     }
     return false;
+}
+
+// ── SceneSerializer::Load() 에서 호출되는 복원 진입점 ─────────────────────────
+// entityPos 원본을 그대로 받아 PlaceBlockAt으로 위임.
+// 인벤토리 소비 없이 배치 (로드 시에는 재고 차감 불필요 — ConsumeItem 분기 우회)
+bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
+{
+    const SlotType type = static_cast<SlotType>(typeInt);
+
+    // SlotType 범위 검사
+    if (typeInt < 0 || typeInt >= static_cast<int32>(SlotType::Count)) return false;
+    if (type == SlotType::Eraser) return false;
+
+    // 인벤토리 소비 없이 직접 배치
+    // (로드 복원이므로 GiveAll 이전 상태에서 호출될 수 있어 소비 스킵)
+    std::shared_ptr<Model> model = GetOrLoadModel(type);
+    if (!model) return false;
+
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    if (!scene) return false;
+
+    const auto params  = GetModelParams(type);
+    const Vec3 halfExt = GetHalfExtents(params.collider);
+    const Vec3 entityPos(x, y, z);
+
+    auto blockEntity = std::make_unique<Entity>(L"MapBlock");
+    blockEntity->AddComponent(std::make_unique<Transform>());
+    blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
+    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
+
+    auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
+    mr->SetModel(model);
+    mr->SetModelScale(params.modelScale);
+    blockEntity->AddComponent(std::move(mr));
+
+    auto col = std::make_unique<AABBCollider>();
+    col->SetShowDebug(false);
+    col->SetBoxExtents(halfExt);
+    col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f));
+    col->SetOwnChannel(params.ownChannel);
+    col->SetPickableMask(params.pickableMask);
+    col->SetStatic(true);
+    blockEntity->AddComponent(std::move(col));
+
+    Entity* rawBlock = blockEntity.get();
+    scene->Add(std::move(blockEntity));
+
+    _blockSet.insert(rawBlock);
+    _blockTypeMap[rawBlock] = type;
+    _placedCells.push_back({ x, y, z, typeInt });
+
+    GET_SINGLE(InstancingManager)->SetDirty();
+    GET_SINGLE(InstancingManager)->SetMeshDirty();
+    return true;
 }
 
 void BlockPlacer::ClearAllBlocks()

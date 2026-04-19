@@ -1,4 +1,3 @@
-
 #pragma once
 #include "Entity/Components/MonoBehaviour.h"
 #include "Entity/Components/Collider/CollisionChannel.h"
@@ -41,8 +40,8 @@ public:
     bool IsPlacingMode() const                                                              { return _placingMode; }
     void SetPlacingMode(bool on);
 
-    virtual const std::vector<std::pair<int32, int32>>& GetPlacedBlocks() const override    { return _placedCells; }
-    virtual bool PlaceBlock(int32 col, int32 row) override                                  { return false; }
+    virtual const std::vector<PlacedBlockRecord>& GetPlacedBlocks() const override    { return _placedCells; }
+    virtual bool PlaceBlock(float x, float y, float z, int32 type) override;
     virtual void ClearAllBlocks() override;
 
     bool PlaceBlockAt(const Vec3& entityPos, PaletteWidget::SlotType type);
@@ -90,7 +89,7 @@ private:
     POINT                                                                                   _lastPreviewMouse = { -1, -1 };
     bool                                                                                    _previewDirty     = true;
 
-    std::vector<std::pair<int32, int32>>                                                    _placedCells;
+    std::vector<PlacedBlockRecord>                                                          _placedCells;
     std::unordered_set<Entity*>                                                             _blockSet;
 
     InventoryData*                                                                          _pInventory = nullptr;

@@ -69,11 +69,13 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 	if (placer && !placer->GetPlacedBlocks().empty())
 	{
 		tinyxml2::XMLElement* blocksElem = doc.NewElement("Blocks");
-		for (auto& [col, row] : placer->GetPlacedBlocks())
+		for (const PlacedBlockRecord& rec : placer->GetPlacedBlocks())
 		{
 			tinyxml2::XMLElement* blockElem = doc.NewElement("Block");
-			blockElem->SetAttribute("col", col);
-			blockElem->SetAttribute("row", row);
+			blockElem->SetAttribute("x",    rec.x);
+			blockElem->SetAttribute("y",    rec.y);
+			blockElem->SetAttribute("z",    rec.z);
+			blockElem->SetAttribute("type", rec.type);
 			blocksElem->InsertEndChild(blockElem);
 		}
 		sceneElem->InsertEndChild(blocksElem);
@@ -108,98 +110,24 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 	tinyxml2::XMLElement* sceneElem = doc.FirstChildElement("Scene");
 	if (!sceneElem) return false;
 
-	if (const char* name = sceneElem->Attribute("name"))
-		scene->SetName(StrToWstr(name));
-
-	std::vector<Entity*> toRemove;
-	for (const auto& entityPtr : scene->GetEntities())
-	{
-		if (!entityPtr) continue;
-		if (dynamic_cast<Widget*>(entityPtr.get())) continue;
-		if (entityPtr->GetComponent<Camera>()) continue;
-		toRemove.push_back(entityPtr.get());
-	}
-	for (Entity* e : toRemove)
-		scene->Remove(e);
-
 	if (placer)
 		placer->ClearAllBlocks();
 
-	// ── Entity 복원 ───────────────────────────────────────────────────────
-	for (tinyxml2::XMLElement* entityElem = sceneElem->FirstChildElement("Entity");
-	     entityElem;
-	     entityElem = entityElem->NextSiblingElement("Entity"))
-	{
-		const char* nameAttr  = entityElem->Attribute("name");
-		const char* actorAttr = entityElem->Attribute("actor");
-
-		std::wstring entityName = nameAttr  ? StrToWstr(nameAttr)  : L"Entity";
-		std::wstring actorType  = actorAttr ? StrToWstr(actorAttr) : L"";
-
-		Entity* entity = nullptr;
-
-		if (!actorType.empty())
-		{
-			auto it = _factories.find(actorType);
-			if (it != _factories.end())
-			{
-				auto actor = it->second();
-				if (actor)
-				{
-					actor->Spawn(scene);
-					entity = actor->GetEntity();
-					if (entity)
-					{
-						if (Light* light = entity->GetComponent<Light>())
-							scene->SetMainLight(light);
-					}
-				}
-			}
-			else
-			{
-				::OutputDebugStringW((L"[SceneSerializer] 미등록 Actor: " + actorType + L"\n").c_str());
-			}
-		}
-		else
-		{
-			auto newEntity = std::make_unique<Entity>(entityName);
-			newEntity->AddComponent(std::make_unique<Transform>());
-			entity = newEntity.get();
-			scene->Add(std::move(newEntity));
-		}
-
-		if (!entity) continue;
-
-		if (tinyxml2::XMLElement* tfElem = entityElem->FirstChildElement("Transform"))
-		{
-			Vec3 pos = {}, rot = {}, scl = { 1, 1, 1 };
-			tfElem->QueryFloatAttribute("px", &pos.x); tfElem->QueryFloatAttribute("py", &pos.y); tfElem->QueryFloatAttribute("pz", &pos.z);
-			tfElem->QueryFloatAttribute("rx", &rot.x); tfElem->QueryFloatAttribute("ry", &rot.y); tfElem->QueryFloatAttribute("rz", &rot.z);
-			tfElem->QueryFloatAttribute("sx", &scl.x); tfElem->QueryFloatAttribute("sy", &scl.y); tfElem->QueryFloatAttribute("sz", &scl.z);
-			if (Transform* tf = entity->GetComponent<Transform>())
-			{
-				tf->SetLocalPosition(pos);
-				tf->SetLocalRotation(rot);
-				tf->SetLocalScale(scl);
-			}
-		}
-	}
-
 	int blockCount = 0;
-	if (placer)
+	if (tinyxml2::XMLElement* blocksElem = sceneElem->FirstChildElement("Blocks"))
 	{
-		if (tinyxml2::XMLElement* blocksElem = sceneElem->FirstChildElement("Blocks"))
+		for (tinyxml2::XMLElement* blockElem = blocksElem->FirstChildElement("Block");
+		     blockElem;
+		     blockElem = blockElem->NextSiblingElement("Block"))
 		{
-			for (tinyxml2::XMLElement* blockElem = blocksElem->FirstChildElement("Block");
-			     blockElem;
-			     blockElem = blockElem->NextSiblingElement("Block"))
-			{
-				int col = 0, row = 0;
-				blockElem->QueryIntAttribute("col", &col);
-				blockElem->QueryIntAttribute("row", &row);
-				placer->PlaceBlock(col, row);
+			float x = 0.f, y = 0.f, z = 0.f;
+			int   type = 0;
+			blockElem->QueryFloatAttribute("x",    &x);
+			blockElem->QueryFloatAttribute("y",    &y);
+			blockElem->QueryFloatAttribute("z",    &z);
+			blockElem->QueryIntAttribute  ("type", &type);
+			if (placer->PlaceBlock(x, y, z, type))
 				blockCount++;
-			}
 		}
 	}
 
