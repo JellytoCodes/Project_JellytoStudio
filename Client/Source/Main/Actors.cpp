@@ -54,7 +54,7 @@ void FloorActor::BuildEntity()
 	std::unique_ptr<TileMap> tileMap = std::make_unique<TileMap>();
 	_entity->AddComponent(std::move(tileMap));
 	tileMap->Create(20, 20, 1.f, GET_SINGLE(ResourceManager)->Get<Material>(L"FloorMat"));
-	
+
 	_entity->GetComponent<Transform>()->SetLocalPosition(Vec3(-10.f, 0.f, -10.f));
 }
 
@@ -149,12 +149,12 @@ void LightActor::BuildEntity()
 	std::unique_ptr<Light> light = std::make_unique<Light>();
 
 	LightDesc desc;
-	desc.ambient  = Color(3.f, 3.f, 3.f, 1.f);
-	desc.diffuse  = Color(1.0f, 0.98f, 0.9f, 1.f);
-	desc.specular = Color(1.f, 1.f, 1.f, 1.f);
+	desc.ambient = Color(0.35f, 0.38f, 0.42f, 1.f);
+	desc.diffuse = Color(1.0f, 0.95f, 0.85f, 1.f);
+	desc.specular = Color(0.6f, 0.6f, 0.6f, 1.f);
 	desc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);
 
-	Vec3 dir = Vec3(5.f, -2.f, 5.f);
+	Vec3 dir = Vec3(1.f, -3.f, 1.f);
 	dir.Normalize();
 	desc.direction = dir;
 	light->SetLightDesc(desc);
