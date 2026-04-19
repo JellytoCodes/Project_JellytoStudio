@@ -40,7 +40,7 @@ public:
     bool IsPlacingMode() const                                                              { return _placingMode; }
     void SetPlacingMode(bool on);
 
-    virtual const std::vector<PlacedBlockRecord>& GetPlacedBlocks() const override    { return _placedCells; }
+    virtual const std::vector<PlacedBlockRecord>& GetPlacedBlocks() const override;
     virtual bool PlaceBlock(float x, float y, float z, int32 type) override;
     virtual void ClearAllBlocks() override;
 
@@ -89,10 +89,10 @@ private:
     POINT                                                                                   _lastPreviewMouse = { -1, -1 };
     bool                                                                                    _previewDirty     = true;
 
-    std::vector<PlacedBlockRecord>                                                          _placedCells;
-    std::unordered_set<Entity*>                                                             _blockSet;
-
     InventoryData*                                                                          _pInventory = nullptr;
 
-    std::unordered_map<Entity*, PaletteWidget::SlotType>                                    _blockTypeMap;
+    // ── 블록 레코드 (단일 진실 소스) ─────────────────────────────────────
+    // Entity* → PlacedBlockRecord 한 곳에서만 관리해 불일치를 원천 차단
+    std::unordered_map<Entity*, PlacedBlockRecord>                                          _blockRecordMap;
+    mutable std::vector<PlacedBlockRecord>                                                  _placedCellsCache;
 };

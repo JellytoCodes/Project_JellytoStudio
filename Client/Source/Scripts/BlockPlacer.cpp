@@ -410,11 +410,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     Entity* rawBlock = blockEntity.get();
     scene->Add(std::move(blockEntity));
 
-    _blockSet.insert(rawBlock);
-    _blockTypeMap[rawBlock] = type;
-
-    _placedCells.push_back({ entityPos.x, entityPos.y, entityPos.z,
-                             static_cast<int32>(type) });
+    _blockRecordMap[rawBlock] = { entityPos.x, entityPos.y, entityPos.z,
+                                  static_cast<int32>(type) };
 
     GET_SINGLE(InstancingManager)->SetDirty();
     GET_SINGLE(InstancingManager)->SetMeshDirty();
@@ -424,22 +421,18 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
 bool BlockPlacer::TryRemoveEntity(Entity* entity)
 {
     if (!entity) return false;
-    if (_blockSet.find(entity) == _blockSet.end()) return false;
+
+    auto it = _blockRecordMap.find(entity);
+    if (it == _blockRecordMap.end()) return false;
 
     if (_pInventory)
-    {
-        auto it = _blockTypeMap.find(entity);
-        if (it != _blockTypeMap.end())
-        {
-            _pInventory->AddItem(it->second, 1);
-            _blockTypeMap.erase(it);
-        }
-    }
+        _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
+
+    _blockRecordMap.erase(it);
 
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
         scene->Remove(entity);
-        _blockSet.erase(entity);
         GET_SINGLE(InstancingManager)->SetDirty();
         GET_SINGLE(InstancingManager)->SetMeshDirty();
         return true;
@@ -492,29 +485,34 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     Entity* rawBlock = blockEntity.get();
     scene->Add(std::move(blockEntity));
 
-    _blockSet.insert(rawBlock);
-    _blockTypeMap[rawBlock] = type;
-    _placedCells.push_back({ x, y, z, typeInt });
+    _blockRecordMap[rawBlock] = { x, y, z, typeInt };
 
     GET_SINGLE(InstancingManager)->SetDirty();
     GET_SINGLE(InstancingManager)->SetMeshDirty();
     return true;
 }
 
+const std::vector<PlacedBlockRecord>& BlockPlacer::GetPlacedBlocks() const
+{
+    _placedCellsCache.clear();
+    _placedCellsCache.reserve(_blockRecordMap.size());
+    for (const auto& [entity, rec] : _blockRecordMap)
+        _placedCellsCache.push_back(rec);
+    return _placedCellsCache;
+}
+
 void BlockPlacer::ClearAllBlocks()
 {
-    if (_pInventory)
-    {
-        for (auto& [entity, type] : _blockTypeMap)
-            _pInventory->AddItem(type, 1);
-        _blockTypeMap.clear();
-    }
-
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-    for (Entity* e : _blockSet)
-        if (scene) scene->Remove(e);
-    _blockSet.clear();
-    _placedCells.clear();
+
+    for (auto& [entity, rec] : _blockRecordMap)
+    {
+        if (_pInventory)
+            _pInventory->AddItem(static_cast<SlotType>(rec.type), 1);
+        if (scene) scene->Remove(entity);
+    }
+    _blockRecordMap.clear();
+
     GET_SINGLE(InstancingManager)->SetDirty();
 }
 

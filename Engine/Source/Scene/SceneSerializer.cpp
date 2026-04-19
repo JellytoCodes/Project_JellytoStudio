@@ -3,9 +3,7 @@
 
 #include "Scene/Scene.h"
 #include "Entity/Entity.h"
-#include "Entity/Actor.h"
 #include "Entity/Components/Transform.h"
-#include "Entity/Components/Light.h"
 #include "Entity/Components/Camera.h"
 #include "UI/Widget.h"
 #include "Utils/tinyxml2.h"
@@ -28,7 +26,6 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 	if (!dir.empty() && !std::filesystem::exists(dir))
 	{
 		std::filesystem::create_directories(dir);
-		::OutputDebugStringW((L"[SceneSerializer] 폴더 생성: " + StrToWstr(dir.string()) + L"\n").c_str());
 	}
 
 	tinyxml2::XMLDocument doc;
@@ -82,16 +79,8 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
 	}
 
 	tinyxml2::XMLError err = doc.SaveFile(WstrToStr(path).c_str());
-	if (err != tinyxml2::XML_SUCCESS)
-	{
-		::OutputDebugStringW((L"[SceneSerializer] 저장 실패: " + path + L"\n").c_str());
-		return false;
-	}
+	if (err != tinyxml2::XML_SUCCESS) return false;
 
-	wchar_t dbg[128];
-	swprintf_s(dbg, L"[SceneSerializer] 저장 완료: %s  (블록 %d개)\n",
-		path.c_str(), placer ? (int)placer->GetPlacedBlocks().size() : 0);
-	::OutputDebugStringW(dbg);
 	return true;
 }
 
@@ -131,9 +120,6 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 		}
 	}
 
-	wchar_t dbg[128];
-	swprintf_s(dbg, L"[SceneSerializer] 로드 완료: %s  (블록 %d개)\n", path.c_str(), blockCount);
-	::OutputDebugStringW(dbg);
 	return true;
 }
 
