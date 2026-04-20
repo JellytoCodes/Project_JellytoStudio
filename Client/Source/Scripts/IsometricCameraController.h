@@ -41,9 +41,16 @@ private:
 	float		_distance		= 10.f;
 	float		_pitchDeg		= 35.264f;
 	float		_yawDeg			= 45.f;
+
+	Vec3		_targetPivot	= Vec3::Zero;
+	float		_targetDistance	= 10.f;
+
 	float		_panSpeed		= 10.f;
 	float		_zoomSpeed		= 10.f;
 	float		_orbitSpeed		= 90.f;
 	float		_minDist		= 5.f;
 	float		_maxDist		= 40.f;
+
+	static constexpr float kPivotEase    = 10.f;   // 타깃 추적 / 패닝
+	static constexpr float kZoomEase     = 8.f;    // 줌
 };

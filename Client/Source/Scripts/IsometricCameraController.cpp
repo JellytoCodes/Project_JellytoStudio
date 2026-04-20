@@ -1,4 +1,3 @@
-
 #include "pch.h"
 #include "IsometricCameraController.h"
 
@@ -10,6 +9,8 @@
 
 void IsometricCameraController::Awake()
 {
+	_targetPivot    = _pivot;
+	_targetDistance = _distance;
 	ApplyTransform();
 }
 
@@ -30,14 +31,21 @@ void IsometricCameraController::OnDestroy()
 
 void IsometricCameraController::Update()
 {
-	float dt = GET_SINGLE(TimeManager)->GetDeltaTime();
+	const float dt = GET_SINGLE(TimeManager)->GetDeltaTime();
 
 	if (_target && _target->GetComponent<Transform>())
-		_pivot = _target->GetComponent<Transform>()->GetPosition();
+		_targetPivot = _target->GetComponent<Transform>()->GetPosition();
 
 	HandleOrbit(dt);
 	HandleZoom(dt);
 	HandlePan(dt);
+
+	const float pivotAlpha = 1.f - expf(-kPivotEase * dt);
+	const float zoomAlpha  = 1.f - expf(-kZoomEase  * dt);
+
+	_pivot    = Vec3::Lerp(_pivot,    _targetPivot,    pivotAlpha);
+	_distance = _distance + (_targetDistance - _distance) * zoomAlpha;
+
 	ApplyTransform();
 }
 
@@ -60,16 +68,16 @@ void IsometricCameraController::HandlePan(float dt)
 	if (move.LengthSquared() > 0.f)
 	{
 		move.Normalize();
-		_pivot += move * _panSpeed * dt;
+		_targetPivot += move * _panSpeed * dt;
 	}
 }
 
 void IsometricCameraController::HandleZoom(float dt)
 {
 	auto input = GET_SINGLE(InputManager);
-	if (input->GetButton(KEY_TYPE::Z)) _distance += _zoomSpeed * dt;
-	if (input->GetButton(KEY_TYPE::C)) _distance -= _zoomSpeed * dt;
-	_distance = max(_minDist, std::min(_maxDist, _distance));
+	if (input->GetButton(KEY_TYPE::Z)) _targetDistance += _zoomSpeed * dt;
+	if (input->GetButton(KEY_TYPE::C)) _targetDistance -= _zoomSpeed * dt;
+	_targetDistance = max(_minDist, std::min(_maxDist, _targetDistance));
 }
 
 void IsometricCameraController::HandleOrbit(float dt)
