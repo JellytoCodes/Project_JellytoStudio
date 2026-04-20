@@ -17,7 +17,7 @@ public:
     virtual void LateUpdate() override {}
     virtual void OnDestroy()  override {}
 
-    void SetCharacterEntity(Entity* ch)       { _character  = ch; }
+    void SetCharacterEntity(Entity* ch) { _character = ch; }
     void SetInventoryData(InventoryData* inv) { _pInventory = inv; }
 
     // ── 상태 조회 ─────────────────────────────────────────────────────────────
@@ -40,16 +40,24 @@ private:
     bool IsCharacterNearby();
 
     // ── 멤버 변수 ─────────────────────────────────────────────────────────────
-    Entity*                                 _character  = nullptr;
-    InventoryData*                          _pInventory = nullptr;
+    Entity* _character = nullptr;
+    InventoryData* _pInventory = nullptr;
 
-    int32                                   _totalBreaks  = 0;
+    int32                                   _totalBreaks = 0;
     int32                                   _currentPhase = 0;
-    bool                                    _isBroken     = false;
+    bool                                    _isBroken = false;
     float                                   _respawnTimer = 0.f;
 
     static constexpr float                  kRespawnDelay = 2.5f;
-    static constexpr float                  kMineRange    = 3.0f;
+    static constexpr float                  kMineRange = 3.0f;
+    static constexpr float                  kBreakDuration = 0.12f;   // squash 시간
+    static constexpr float                  kRespawnDuration = 0.22f;  // bounce 시간
+
+    // ── 채굴 이펙트 트윈 ─────────────────────────────────────────────────
+    enum class TweenState { None, Breaking, Respawning };
+    void        TickTween(float dt);
+    TweenState  _tweenState = TweenState::None;
+    float       _tweenElapsed = 0.f;
 
     std::vector<std::shared_ptr<Model>>     _phaseModels;
 };

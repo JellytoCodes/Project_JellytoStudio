@@ -8,6 +8,7 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Core/Managers/InputManager.h"
+#include "Core/Managers/TimeManager.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 #include "Scene/SceneSerializer.h"
@@ -100,7 +101,7 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
     mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl"));
     auto& d = mat->GetMaterialDesc();
     d.ambient = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
-                               : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
+        : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
     d.specular = d.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
     return mat;
 }
@@ -127,7 +128,7 @@ void BlockPlacer::Start()
 
 void BlockPlacer::OnDestroy()
 {
-	HidePreview();
+    HidePreview();
 }
 
 void BlockPlacer::SetPlacingMode(bool on)
@@ -140,6 +141,10 @@ void BlockPlacer::SetPlacingMode(bool on)
 
 void BlockPlacer::Update()
 {
+    const float dt = GET_SINGLE(TimeManager)->GetDeltaTime();
+
+    TickPlaceTweens(dt);  // ★ 배치 모드와 무관하게 매 프레임 실행
+
     auto* input = GET_SINGLE(InputManager);
 
     if (input->GetButtonDown(KEY_TYPE::TAB))
@@ -391,7 +396,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     auto blockEntity = std::make_unique<Entity>(L"MapBlock");
     blockEntity->AddComponent(std::make_unique<Transform>());
     blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
-    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
+    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(0.001f)); // ★ 트윈 시작 스케일
 
     auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
     mr->SetModel(model);
@@ -412,6 +417,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
 
     _blockRecordMap[rawBlock] = { entityPos.x, entityPos.y, entityPos.z,
                                   static_cast<int32>(type) };
+    _placeTweens.push_back({ rawBlock, 0.f }); // ★ 트윈 등록
 
     GET_SINGLE(InstancingManager)->SetDirty();
     GET_SINGLE(InstancingManager)->SetMeshDirty();
@@ -429,6 +435,12 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
         _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
 
     _blockRecordMap.erase(it);
+
+    // 진행 중인 배치 트윈도 제거
+    _placeTweens.erase(
+        std::remove_if(_placeTweens.begin(), _placeTweens.end(),
+            [entity](const PlaceTween& tw) { return tw.entity == entity; }),
+        _placeTweens.end());
 
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
@@ -459,7 +471,7 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return false;
 
-    const auto params  = GetModelParams(type);
+    const auto params = GetModelParams(type);
     const Vec3 halfExt = GetHalfExtents(params.collider);
     const Vec3 entityPos(x, y, z);
 
@@ -492,6 +504,41 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     return true;
 }
 
+// ── 배치 트윈 틱 ─────────────────────────────────────────────────────────────
+// smoothstep(t) = 3t²-2t³ : 시작·끝 속도가 0이라 자연스러운 팝업 느낌
+void BlockPlacer::TickPlaceTweens(float dt)
+{
+    if (_placeTweens.empty()) return;
+
+    bool anyDirty = false;
+
+    _placeTweens.erase(
+        std::remove_if(_placeTweens.begin(), _placeTweens.end(),
+            [&](PlaceTween& tw) -> bool
+            {
+                if (!tw.entity) return true;
+                if (_blockRecordMap.find(tw.entity) == _blockRecordMap.end())
+                    return true;
+
+                tw.elapsed += dt;
+                const float t = std::min(tw.elapsed / PlaceTween::kDuration, 1.f);
+                const float s = t * t * (3.f - 2.f * t);  // smoothstep
+
+                if (auto* tf = tw.entity->GetComponent<Transform>())
+                    tf->SetLocalScale(Vec3(s));
+
+                if (auto* col = tw.entity->GetComponent<AABBCollider>())
+                    col->InvalidateBounds();
+
+                anyDirty = true;
+                return t >= 1.f;
+            }),
+        _placeTweens.end());
+
+    if (anyDirty)
+        GET_SINGLE(InstancingManager)->SetMeshDirty();
+}
+
 const std::vector<PlacedBlockRecord>& BlockPlacer::GetPlacedBlocks() const
 {
     _placedCellsCache.clear();
@@ -512,6 +559,7 @@ void BlockPlacer::ClearAllBlocks()
         if (scene) scene->Remove(entity);
     }
     _blockRecordMap.clear();
+    _placeTweens.clear();  // 진행 중인 트윈 전체 폐기
 
     GET_SINGLE(InstancingManager)->SetDirty();
 }

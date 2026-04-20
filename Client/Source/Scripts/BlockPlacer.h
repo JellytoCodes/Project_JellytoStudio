@@ -20,7 +20,7 @@ public:
     };
 
     static Vec3  GetHalfExtents(ColliderSize s);
-    static float GetFullHeight(ColliderSize s)                                              { return GetHalfExtents(s).y * 2.f; }
+    static float GetFullHeight(ColliderSize s) { return GetHalfExtents(s).y * 2.f; }
 
     BlockPlacer();
     virtual ~BlockPlacer() = default;
@@ -32,12 +32,12 @@ public:
     virtual void OnDestroy()  override;
 
     // ── 외부 의존성 주입 ────────────────────────────────────────
-    void SetPalette(PaletteWidget* palette)                                                 { _palette    = palette; }
-    void SetSavePath(const std::wstring& path)                                              { _savePath   = path; }
-    void SetCharacterEntity(Entity* character)                                              { _character  = character; }
-    void SetInventoryData(InventoryData* inventory)                                         { _pInventory = inventory; } // ★ 추가
+    void SetPalette(PaletteWidget* palette) { _palette = palette; }
+    void SetSavePath(const std::wstring& path) { _savePath = path; }
+    void SetCharacterEntity(Entity* character) { _character = character; }
+    void SetInventoryData(InventoryData* inventory) { _pInventory = inventory; } // ★ 추가
 
-    bool IsPlacingMode() const                                                              { return _placingMode; }
+    bool IsPlacingMode() const { return _placingMode; }
     void SetPlacingMode(bool on);
 
     virtual const std::vector<PlacedBlockRecord>& GetPlacedBlocks() const override;
@@ -72,13 +72,22 @@ private:
     bool TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
     bool TryRemoveEntity(Entity* entity);
 
-    PaletteWidget*                                                                          _palette       = nullptr;
-    Entity*                                                                                 _character     = nullptr;
-    Entity*                                                                                 _previewEntity = nullptr;
+    // ── 배치 트윈 ────────────────────────────────────────────────────────
+    struct PlaceTween
+    {
+        Entity* entity = nullptr;
+        float   elapsed = 0.f;
+        static constexpr float kDuration = 0.18f;  // 트윈 총 시간(초)
+    };
+    void TickPlaceTweens(float dt);
 
-    bool                                                                                    _placingMode  = false;
+    PaletteWidget* _palette = nullptr;
+    Entity* _character = nullptr;
+    Entity* _previewEntity = nullptr;
+
+    bool                                                                                    _placingMode = false;
     bool                                                                                    _previewValid = false;
-    std::wstring                                                                            _savePath     = L"../Saved/scene.xml";
+    std::wstring                                                                            _savePath = L"../Saved/scene.xml";
 
     std::shared_ptr<Material>                                                               _previewMatOk;
     std::shared_ptr<Material>                                                               _previewMatBad;
@@ -87,12 +96,13 @@ private:
     std::array<std::shared_ptr<Model>, static_cast<int>(PaletteWidget::SlotType::Count)>    _modelCache;
 
     POINT                                                                                   _lastPreviewMouse = { -1, -1 };
-    bool                                                                                    _previewDirty     = true;
+    bool                                                                                    _previewDirty = true;
 
-    InventoryData*                                                                          _pInventory = nullptr;
+    InventoryData* _pInventory = nullptr;
 
     // ── 블록 레코드 (단일 진실 소스) ─────────────────────────────────────
     // Entity* → PlacedBlockRecord 한 곳에서만 관리해 불일치를 원천 차단
     std::unordered_map<Entity*, PlacedBlockRecord>                                          _blockRecordMap;
     mutable std::vector<PlacedBlockRecord>                                                  _placedCellsCache;
+    std::vector<PlaceTween>                                                                 _placeTweens;
 };
