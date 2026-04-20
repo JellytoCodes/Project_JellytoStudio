@@ -45,7 +45,7 @@ static const D3D11_INPUT_ELEMENT_DESC kShadowLayout[] =
     {"TANGENT",      0, DXGI_FORMAT_R32G32B32_FLOAT,    0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA,   0},
     {"BLEND_INDICES",0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA,   0},
     {"BLEND_WEIGHTS",0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA,   0},
-    // slot 1 — InstancingData::world (row0~row3)
+
     {"INST",         0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1,  0,                            D3D11_INPUT_PER_INSTANCE_DATA, 1},
     {"INST",         1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
     {"INST",         2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1,  D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
@@ -71,8 +71,9 @@ void ShadowPass::CompileDepthShader()
     auto device = GET_SINGLE(Graphics)->GetDevice();
 
     ComPtr<ID3DBlob> vsBlob, errBlob;
+    const UINT compileFlags = D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
     HRESULT hr = D3DCompile(kDepthVS_HLSL, strlen(kDepthVS_HLSL),
-        nullptr, nullptr, nullptr, "main", "vs_5_0", 0, 0,
+        nullptr, nullptr, nullptr, "main", "vs_5_0", compileFlags, 0,
         vsBlob.GetAddressOf(), errBlob.GetAddressOf());
 
     if (FAILED(hr))
@@ -102,7 +103,6 @@ void ShadowPass::CreateShadowMapResources()
     auto device = GET_SINGLE(Graphics)->GetDevice();
 
     D3D11_TEXTURE2D_DESC td = {};
-    ZeroMemory(&td, sizeof(D3D11_TEXTURE2D_DESC));
     td.Width = kShadowMapSize;
     td.Height = kShadowMapSize;
     td.MipLevels = 1;
@@ -113,14 +113,12 @@ void ShadowPass::CreateShadowMapResources()
     td.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
     CHECK(device->CreateTexture2D(&td, nullptr, _shadowTexture.GetAddressOf()));
 
-    D3D11_DEPTH_STENCIL_VIEW_DESC dsvd;
-    ZeroMemory(&dsvd, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvd = {};
     dsvd.Format = DXGI_FORMAT_D32_FLOAT;
     dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     CHECK(device->CreateDepthStencilView(_shadowTexture.Get(), &dsvd, _shadowDSV.GetAddressOf()));
 
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvd;
-    ZeroMemory(&srvd, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
     srvd.Format = DXGI_FORMAT_R32_FLOAT;
     srvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     srvd.Texture2D.MipLevels = 1;
@@ -131,8 +129,7 @@ void ShadowPass::CreateStates()
 {
     auto device = GET_SINGLE(Graphics)->GetDevice();
 
-    D3D11_RASTERIZER_DESC rd;
-    ZeroMemory(&rd, sizeof(D3D11_RASTERIZER_DESC));
+    D3D11_RASTERIZER_DESC rd = {};
     rd.FillMode = D3D11_FILL_SOLID;
     rd.CullMode = D3D11_CULL_BACK;
     rd.DepthClipEnable = TRUE;
@@ -142,7 +139,6 @@ void ShadowPass::CreateStates()
     CHECK(device->CreateRasterizerState(&rd, _rasterState.GetAddressOf()));
 
     D3D11_DEPTH_STENCIL_DESC dsd = {};
-    ZeroMemory(&dsd, sizeof(D3D11_DEPTH_STENCIL_DESC));
     dsd.DepthEnable = TRUE;
     dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     dsd.DepthFunc = D3D11_COMPARISON_LESS;
@@ -199,8 +195,7 @@ void ShadowPass::Render(const std::vector<Entity*>& entities, const Vec3& lightD
     _shadowDesc.lightVP = lightVP;
 
     {
-        D3D11_MAPPED_SUBRESOURCE ms;
-        ZeroMemory(&ms, sizeof(D3D11_MAPPED_SUBRESOURCE));
+        D3D11_MAPPED_SUBRESOURCE ms = {};
         dc->Map(_cbuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
         memcpy(ms.pData, &_shadowDesc, sizeof(ShadowDesc));
         dc->Unmap(_cbuffer.Get(), 0);

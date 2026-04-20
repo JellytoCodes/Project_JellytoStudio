@@ -43,8 +43,7 @@ void VertexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<
 	_cpuWrite = cpuWrite;
 	_gpuWrite = gpuWrite;
 
-	D3D11_BUFFER_DESC desc;
-	ZeroMemory(&desc, sizeof(desc));
+	D3D11_BUFFER_DESC desc = {};
 	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	desc.ByteWidth = (uint32)(_stride * _count);
 
@@ -67,8 +66,7 @@ void VertexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<
 		desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
 	}
 
-	D3D11_SUBRESOURCE_DATA data;
-	ZeroMemory(&data, sizeof(data));
+	D3D11_SUBRESOURCE_DATA data = {};
 	data.pSysMem = vertices.data();
 
 	HRESULT hr = device->CreateBuffer(&desc, &data, _vertexBuffer.GetAddressOf());

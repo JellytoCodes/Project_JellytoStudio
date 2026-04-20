@@ -166,8 +166,7 @@ void ModelAnimator::CreateTexture()
 		CreateAnimationTransform(i);
 
 	{
-		D3D11_TEXTURE2D_DESC desc;
-		ZeroMemory(&desc, sizeof(desc));
+		D3D11_TEXTURE2D_DESC desc = {};
 		desc.Width     = MAX_MODEL_TRANSFORMS * 4;
 		desc.Height    = MAX_MODEL_KEYFRAMES;
 		desc.ArraySize = _model->GetAnimationCount();
@@ -207,8 +206,7 @@ void ModelAnimator::CreateTexture()
 	}
 
 	{
-		D3D11_SHADER_RESOURCE_VIEW_DESC desc;
-		ZeroMemory(&desc, sizeof(desc));
+		D3D11_SHADER_RESOURCE_VIEW_DESC desc = {};
 		desc.Format                        = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		desc.ViewDimension                 = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
 		desc.Texture2DArray.MipLevels      = 1;

@@ -457,8 +457,7 @@ std::string Converter::WriteTexture(std::string saveFolder, std::string file)
 		}
 		else
 		{
-			D3D11_TEXTURE2D_DESC desc;
-			ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
+			D3D11_TEXTURE2D_DESC desc = {};
 			desc.Width = srcTexture->mWidth;
 			desc.Height = srcTexture->mHeight;
 			desc.MipLevels = 1;
@@ -468,7 +467,7 @@ std::string Converter::WriteTexture(std::string saveFolder, std::string file)
 			desc.SampleDesc.Quality = 0;
 			desc.Usage = D3D11_USAGE_IMMUTABLE;
 
-			D3D11_SUBRESOURCE_DATA subResource = { 0 };
+			D3D11_SUBRESOURCE_DATA subResource = {};
 			subResource.pSysMem = srcTexture->pcData;
 
 			ComPtr<ID3D11Texture2D> texture;

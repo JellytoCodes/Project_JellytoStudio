@@ -28,8 +28,7 @@ void Graphics::RenderEnd()
 }
 void Graphics::CreateDeviceAndSwapChain()
 {
-	DXGI_SWAP_CHAIN_DESC desc;
-	ZeroMemory(&desc, sizeof(desc));
+	DXGI_SWAP_CHAIN_DESC desc = {};
 	{
 		desc.BufferDesc.Width = MAIN_WINDOW_WIDTH;
 		desc.BufferDesc.Height = MAIN_WINDOW_HEIGHT;
@@ -80,8 +79,7 @@ void Graphics::CreateRenderTargetView()
 void Graphics::CreateDepthStencilView()
 {
 	{
-		D3D11_TEXTURE2D_DESC desc = {0};
-		ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
+		D3D11_TEXTURE2D_DESC desc = {};
 
 		desc.Width = static_cast<uint32>(MAIN_WINDOW_WIDTH);
 		desc.Height = static_cast<uint32>(MAIN_WINDOW_HEIGHT);
@@ -100,8 +98,7 @@ void Graphics::CreateDepthStencilView()
 	}
 
 	{
-		D3D11_DEPTH_STENCIL_VIEW_DESC desc;
-		ZeroMemory(&desc, sizeof(D3D11_DEPTH_STENCIL_VIEW_DESC));
+		D3D11_DEPTH_STENCIL_VIEW_DESC desc = {};
 
 		desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
@@ -147,7 +144,6 @@ void Graphics::SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencil
 
 void Graphics::SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask)
 {
-	// blendFactor는 float4 포인터 — 내용 비교
 	const bool factorSame = (::memcmp(_stateCache.blendFactor,
 		blendFactor,
 		sizeof(FLOAT) * 4) == 0);

@@ -7,14 +7,12 @@ void IndexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<u
 	_stride = sizeof(uint32);
 	_count = static_cast<uint32>(indices.size());
 
-	D3D11_BUFFER_DESC desc;
-	ZeroMemory(&desc, sizeof(desc));
+	D3D11_BUFFER_DESC desc = {};
 	desc.Usage = D3D11_USAGE_IMMUTABLE;
 	desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	desc.ByteWidth = (uint32)(_stride * _count);
 
-	D3D11_SUBRESOURCE_DATA data;
-	ZeroMemory(&data, sizeof(data));
+	D3D11_SUBRESOURCE_DATA data = {};
 	data.pSysMem = indices.data();
 
 	HRESULT hr = device->CreateBuffer(&desc, &data, _indexBuffer.GetAddressOf());
