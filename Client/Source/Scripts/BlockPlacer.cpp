@@ -436,7 +436,6 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 
     _blockRecordMap.erase(it);
 
-    // 진행 중인 배치 트윈도 제거
     _placeTweens.erase(
         std::remove_if(_placeTweens.begin(), _placeTweens.end(),
             [entity](const PlaceTween& tw) { return tw.entity == entity; }),
@@ -452,19 +451,13 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     return false;
 }
 
-// ── SceneSerializer::Load() 에서 호출되는 복원 진입점 ─────────────────────────
-// entityPos 원본을 그대로 받아 PlaceBlockAt으로 위임.
-// 인벤토리 소비 없이 배치 (로드 시에는 재고 차감 불필요 — ConsumeItem 분기 우회)
 bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
 {
     const SlotType type = static_cast<SlotType>(typeInt);
 
-    // SlotType 범위 검사
     if (typeInt < 0 || typeInt >= static_cast<int32>(SlotType::Count)) return false;
     if (type == SlotType::Eraser) return false;
 
-    // 인벤토리 소비 없이 직접 배치
-    // (로드 복원이므로 GiveAll 이전 상태에서 호출될 수 있어 소비 스킵)
     std::shared_ptr<Model> model = GetOrLoadModel(type);
     if (!model) return false;
 
@@ -504,8 +497,6 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     return true;
 }
 
-// ── 배치 트윈 틱 ─────────────────────────────────────────────────────────────
-// smoothstep(t) = 3t²-2t³ : 시작·끝 속도가 0이라 자연스러운 팝업 느낌
 void BlockPlacer::TickPlaceTweens(float dt)
 {
     if (_placeTweens.empty()) return;
@@ -536,7 +527,7 @@ void BlockPlacer::TickPlaceTweens(float dt)
         _placeTweens.end());
 
     if (anyDirty)
-        GET_SINGLE(InstancingManager)->SetMeshDirty();
+        GET_SINGLE(InstancingManager)->SetDirty();
 }
 
 const std::vector<PlacedBlockRecord>& BlockPlacer::GetPlacedBlocks() const

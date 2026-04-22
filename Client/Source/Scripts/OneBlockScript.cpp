@@ -1,4 +1,5 @@
-﻿#include "pch.h"
+﻿
+#include "pch.h"
 #include "OneBlockScript.h"
 
 #include "UI/InventoryData.h"
@@ -12,6 +13,7 @@
 #include "Resource/Managers/ResourceManager.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
+#include "Graphics/Managers/InstancingManager.h"
 
 #include "Data/BlockDataTable.h"
 
@@ -50,7 +52,7 @@ void OneBlockScript::Update()
 {
     const float dt = GET_SINGLE(TimeManager)->GetDeltaTime();
 
-    TickTween(dt);  // 매 프레임 트윈 진행
+    TickTween(dt);
 
     if (_isBroken)
     {
@@ -177,12 +179,15 @@ void OneBlockScript::TickTween(float dt)
         const float scaleXZ = 1.f + ease * 0.6f;
 
         tf->SetLocalScale(Vec3(scaleXZ, max(scaleY, 0.001f), scaleXZ));
-        if (col) col->InvalidateBounds(); // ★ static 콜라이더 매 프레임 재계산
+        if (col) col->InvalidateBounds();
+        // ★ ModelRenderer world matrix 캐시 매 프레임 재빌드
+        GET_SINGLE(InstancingManager)->SetDirty();
 
         if (t >= 1.f)
         {
             tf->SetLocalScale(Vec3(0.001f));
             if (col) col->InvalidateBounds();
+            GET_SINGLE(InstancingManager)->SetDirty();
             _tweenState = TweenState::None;
         }
     }
@@ -196,12 +201,14 @@ void OneBlockScript::TickTween(float dt)
         else                s = 0.9f + (t - 0.75f) / 0.25f * 0.1f;
 
         tf->SetLocalScale(Vec3(s));
-        if (col) col->InvalidateBounds(); // ★ 리스폰 중에도 콜라이더 추적
+        if (col) col->InvalidateBounds();
+        GET_SINGLE(InstancingManager)->SetDirty();
 
         if (t >= 1.f)
         {
             tf->SetLocalScale(Vec3(1.f));
-            if (col) col->InvalidateBounds(); // ★ 최종 1.0 스케일로 bounds 확정
+            if (col) col->InvalidateBounds();
+            GET_SINGLE(InstancingManager)->SetDirty();
             _tweenState = TweenState::None;
         }
     }
