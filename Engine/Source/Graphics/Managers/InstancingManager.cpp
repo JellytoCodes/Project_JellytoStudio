@@ -16,8 +16,16 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
     {
         if (_bDirty)
         {
-            // ModelRenderer / Anim 캐시 초기화
-            for (auto& [id, buf] : _buffers) buf->ClearData();
+            for (auto& [id, _] : _modelCache)
+            {
+                auto it = _buffers.find(id);
+                if (it != _buffers.end()) it->second->ClearData();
+            }
+            for (auto& [id, _] : _animCache)
+            {
+                auto it = _buffers.find(id);
+                if (it != _buffers.end()) it->second->ClearData();
+            }
             _modelCache.clear();
             _modelWorldCache.clear();
             _animCache.clear();
@@ -111,7 +119,7 @@ void InstancingManager::ClearData()
 
 void InstancingManager::RenderMeshRenderer()
 {
-    _stats.meshDrawCalls  = 0;
+    _stats.meshDrawCalls = 0;
     _stats.totalInstances = 0;
     for (auto& [id, entityVec] : _meshCache)
     {
@@ -138,7 +146,7 @@ void InstancingManager::RenderModelRenderer()
 
         entityVec[0]->GetComponent<ModelRenderer>()->RenderInstancing(it->second.get());
 
-        _stats.modelDrawCalls++;                        
+        _stats.modelDrawCalls++;
         _stats.totalInstances += it->second->GetCount();
     }
 }
