@@ -224,7 +224,7 @@ void ShadowPass::Render(const std::vector<Entity*>& entities, const Vec3& lightD
     dc->RSSetState(_rasterState.Get());
     dc->OMSetDepthStencilState(_depthState.Get(), 0);
 
-    std::unordered_map<InstanceID, std::pair<ModelRenderer*, std::vector<Matrix>>, InstanceIDHash> groups;
+    _groups.clear();
 
     for (Entity* e : entities)
     {
@@ -235,28 +235,27 @@ void ShadowPass::Render(const std::vector<Entity*>& entities, const Vec3& lightD
         if (!tr)    continue;
 
         const InstanceID id = modelR->GetInstanceID();
-        auto& [pModelR, matrices] = groups[id];
-        pModelR = modelR;
-        matrices.push_back(modelR->GetModelScaleMatrix() * tr->GetWorldMatrix());
+        auto& g = _groups[id];
+        g.pModelR = modelR;
+        g.matrices.push_back(modelR->GetModelScaleMatrix() * tr->GetWorldMatrix());
     }
 
-    for (auto& [id, pair] : groups)
+    for (auto& [id, g] : _groups)
     {
-        auto& [pModelR, matrices] = pair;
-        if (matrices.empty()) continue;
+        if (g.matrices.empty()) continue;
 
         auto& buf = _shadowBuffers[id];
         if (!buf) buf = std::make_unique<InstancingBuffer>();
 
         buf->ClearData();
-        for (const Matrix& m : matrices)
+        for (const Matrix& m : g.matrices)
         {
             InstancingData data;
             data.world = m;
             buf->AddData(data);
         }
         buf->UploadData();
-        pModelR->RenderRawInstanced(dc, buf.get());
+        g.pModelR->RenderRawInstanced(dc, buf.get());
     }
 
     dc->OMSetRenderTargets(1, savedRTV.GetAddressOf(), savedDSV.Get());

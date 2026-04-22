@@ -1,5 +1,4 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "Graphics/Graphics.h"
 #include "Scene.h"
 #include "Entity/Entity.h"
@@ -14,7 +13,7 @@
 
 Scene::Scene()
 {
-	_shadowPass = std::make_unique<ShadowPass>();
+    _shadowPass = std::make_unique<ShadowPass>();
     _shadowPass->Init();
 }
 Scene::~Scene() {}
@@ -37,7 +36,10 @@ void Scene::Update()
         _mainCamera->Update();
 
     for (auto& object : _objects)
+    {
+        if (object->GetComponent<Camera>() == _mainCamera) continue;
         object->Update();
+    }
 }
 
 void Scene::LateUpdate()
@@ -57,7 +59,7 @@ void Scene::Render()
     if (_mainCamera == nullptr) return;
 
     _mainCamera->SortEntities();
-        if (_mainLight)
+    if (_mainLight)
     {
         const Vec3 lightDir = _mainLight->GetLightDesc().direction;
         if (lightDir.LengthSquared() > 1e-6f)
@@ -121,115 +123,81 @@ void Scene::Remove(Entity* object)
     if (_mainCamera) _mainCamera->SetSortDirty();
 }
 
+bool Scene::BuildPickRay(int32 screenX, int32 screenY, Vec3& outOrigin, Vec3& outDir) const
+{
+    if (!_mainCamera) return false;
 
-// ── 피킹 (원본 동일 유지) ─────────────────────────────────────────────────
+    const float width = GET_SINGLE(Graphics)->GetViewport().GetWidth();
+    const float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
+
+    const Matrix& proj = _mainCamera->GetProjectionMatrix();
+    const Matrix  viewInv = _mainCamera->GetViewMatrix().Invert();
+
+    const float viewX = (+2.f * screenX / width - 1.f) / proj(0, 0);
+    const float viewY = (-2.f * screenY / height + 1.f) / proj(1, 1);
+
+    outOrigin = XMVector3TransformCoord(Vec4(0.f, 0.f, 0.f, 1.f), viewInv);
+    outDir = XMVector3TransformNormal(Vec4(viewX, viewY, 1.f, 0.f), viewInv);
+    outDir.Normalize();
+
+    return outDir.LengthSquared() > 1e-6f;
+}
 
 Entity* Scene::Pick(int32 screenX, int32 screenY)
 {
-    if (!_mainCamera) return nullptr;
+    Vec3 rayOrigin, rayDir;
+    if (!BuildPickRay(screenX, screenY, rayOrigin, rayDir)) return nullptr;
 
-    float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
-    float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
-
-    Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
-    Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
-
-    float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
-    float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
-
-    Vec4 rayOrigin4 = Vec4(0.f, 0.f, 0.f, 1.f);
-    Vec4 rayDir4    = Vec4(viewX, viewY, 1.f, 0.f);
-
-    Vec3 worldRayOrigin = XMVector3TransformCoord(rayOrigin4, viewMatrixInv);
-    Vec3 worldRayDir    = XMVector3TransformNormal(rayDir4, viewMatrixInv);
-    worldRayDir.Normalize();
-
-    if (worldRayDir.LengthSquared() < 1e-6f) return nullptr;
-
-    Ray ray = Ray(worldRayOrigin, worldRayDir);
-
-    Entity* picked  = nullptr;
+    Ray     ray(rayOrigin, rayDir);
+    Entity* picked = nullptr;
     float   minDist = FLT_MAX;
 
     for (auto& entity : _objects)
     {
         if (_mainCamera->IsCulled(entity->GetLayerIndex())) continue;
-
         auto collider = entity->GetComponent<BaseCollider>();
         if (!collider) continue;
 
         float dist = 0.f;
-        Ray   r    = ray;
+        Ray   r = ray;
         if (collider->Intersects(r, dist) && dist < minDist)
         {
             minDist = dist;
-            picked  = entity.get();
+            picked = entity.get();
         }
     }
-
     return picked;
 }
 
 bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY)
 {
-    if (!_mainCamera) return false;
-
-    float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
-    float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
-
-    Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
-    Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
-
-    float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
-    float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
-
-    Vec3 rayOrigin = XMVector3TransformCoord(Vec4(0, 0, 0, 1), viewMatrixInv);
-    Vec3 rayDir    = XMVector3TransformNormal(Vec4(viewX, viewY, 1, 0), viewMatrixInv);
-    rayDir.Normalize();
+    Vec3 rayOrigin, rayDir;
+    if (!BuildPickRay(screenX, screenY, rayOrigin, rayDir)) return false;
 
     if (fabsf(rayDir.y) < 1e-6f) return false;
 
-    float t = (groundY - rayOrigin.y) / rayDir.y;
+    const float t = (groundY - rayOrigin.y) / rayDir.y;
     if (t < 0.f) return false;
 
     outWorldPos = rayOrigin + rayDir * t;
     return true;
 }
 
-bool Scene::PickBlock(int32 screenX, int32 screenY,
-    CollisionChannel queryChan,
-    Entity*& outEntity,
-    Vec3&    outHitNormal,
-    float&   outDist)
+bool Scene::PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist)
 {
-    if (!_mainCamera) return false;
-
-    float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
-    float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
-
-    Matrix projMatrix    = _mainCamera->GetProjectionMatrix();
-    Matrix viewMatrixInv = _mainCamera->GetViewMatrix().Invert();
-
-    float viewX = (+2.f * screenX / width  - 1.f) / projMatrix(0, 0);
-    float viewY = (-2.f * screenY / height + 1.f) / projMatrix(1, 1);
-
-    Vec3 rayOrigin = XMVector3TransformCoord(Vec4(0, 0, 0, 1), viewMatrixInv);
-    Vec3 rayDir    = XMVector3TransformNormal(Vec4(viewX, viewY, 1, 0), viewMatrixInv);
-    rayDir.Normalize();
-
-    if (rayDir.LengthSquared() < 1e-6f) return false;
+    Vec3 rayOrigin, rayDir;
+    if (!BuildPickRay(screenX, screenY, rayOrigin, rayDir)) return false;
 
     Ray ray(rayOrigin, rayDir);
 
-    outEntity    = nullptr;
-    outDist      = FLT_MAX;
+    outEntity = nullptr;
+    outDist = FLT_MAX;
     outHitNormal = Vec3(0, 1, 0);
 
     for (auto& entity : _objects)
     {
         if (_mainCamera->IsCulled(entity->GetLayerIndex())) continue;
 
-        // [Fix A] GetComponent<AABBCollider>(): O(1)
         auto aabb = entity->GetComponent<AABBCollider>();
         if (!aabb) continue;
         if (!aabb->CanBePickedBy(queryChan)) continue;
@@ -239,8 +207,8 @@ bool Scene::PickBlock(int32 screenX, int32 screenY,
         Ray   r = ray;
         if (aabb->IntersectsWithNormal(r, dist, normal) && dist < outDist)
         {
-            outDist      = dist;
-            outEntity    = entity.get();
+            outDist = dist;
+            outEntity = entity.get();
             outHitNormal = normal;
         }
     }

@@ -132,7 +132,6 @@ void InstancingManager::RenderMeshRenderer()
         _stats.meshDrawCalls++;
         _stats.totalInstances += it->second->GetCount();
     }
-    _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
 }
 
 void InstancingManager::RenderModelRenderer()
