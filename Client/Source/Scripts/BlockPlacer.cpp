@@ -19,21 +19,19 @@
 #include "Graphics/Managers/InstancingManager.h"
 
 using SlotType = PaletteWidget::SlotType;
-using CH = CollisionChannel;
-using PF = PlaceFace;
-using CS = BlockPlacer::ColliderSize;
-
-// ── 정적 헬퍼 ─────────────────────────────────────────────────────────────
+using CH       = CollisionChannel;
+using PF       = PlaceFace;
+using CS       = BlockPlacer::ColliderSize;
 
 Vec3 BlockPlacer::GetHalfExtents(ColliderSize s)
 {
     switch (s)
     {
     case CS::Small: return Vec3(0.25f, 0.25f, 0.25f);
-    case CS::Unit:  return Vec3(0.5f, 0.5f, 0.5f);
-    case CS::Tall:  return Vec3(0.5f, 0.75f, 0.5f);
-    case CS::Wide:  return Vec3(1.0f, 0.25f, 0.5f);
-    default:        return Vec3(0.5f, 0.5f, 0.5f);
+    case CS::Unit:  return Vec3(0.5f,  0.5f,  0.5f);
+    case CS::Tall:  return Vec3(0.5f,  0.75f, 0.5f);
+    case CS::Wide:  return Vec3(1.0f,  0.25f, 0.5f);
+    default:        return Vec3(0.5f,  0.5f,  0.5f);
     }
 }
 
@@ -72,8 +70,6 @@ BlockPlacer::MapModelParams BlockPlacer::GetModelParams(SlotType type) const
     }
 }
 
-// ── 리소스 캐시 ───────────────────────────────────────────────────────────
-
 std::shared_ptr<Model> BlockPlacer::GetOrLoadModel(SlotType type)
 {
     const int idx = static_cast<int>(type);
@@ -87,7 +83,6 @@ std::shared_ptr<Model> BlockPlacer::GetOrLoadModel(SlotType type)
     model->SetTexturePath(L"../Resources/Textures/MapModel/");
     model->ReadModel(params.modelName);
     model->ReadMaterial(params.modelName);
-
     _modelCache[idx] = model;
     return model;
 }
@@ -99,14 +94,12 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
 
     mat = std::make_shared<Material>();
     mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl"));
-    auto& d = mat->GetMaterialDesc();
-    d.ambient = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
-        : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
+    auto& d   = mat->GetMaterialDesc();
+    d.ambient  = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
+                                 : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
     d.specular = d.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
     return mat;
 }
-
-// ── 생명주기 ─────────────────────────────────────────────────────────────
 
 BlockPlacer::BlockPlacer() : MonoBehaviour() {}
 
@@ -133,7 +126,7 @@ void BlockPlacer::OnDestroy()
 
 void BlockPlacer::SetPlacingMode(bool on)
 {
-    _placingMode = on;
+    _placingMode  = on;
     if (!on) HidePreview();
     if (_palette) _palette->SetPlacingMode(on);
     _previewDirty = true;
@@ -141,11 +134,10 @@ void BlockPlacer::SetPlacingMode(bool on)
 
 void BlockPlacer::Update()
 {
-    const float dt = GET_SINGLE(TimeManager)->GetDeltaTime();
+    const float dt    = GET_SINGLE(TimeManager)->GetDeltaTime();
+    auto*       input = GET_SINGLE(InputManager);
 
-    TickPlaceTweens(dt);  // ★ 배치 모드와 무관하게 매 프레임 실행
-
-    auto* input = GET_SINGLE(InputManager);
+    TickPlaceTweens(dt);
 
     if (input->GetButtonDown(KEY_TYPE::TAB))
         SetPlacingMode(!_placingMode);
@@ -164,82 +156,72 @@ void BlockPlacer::Update()
 
 void BlockPlacer::HandleInput()
 {
-    auto* input = GET_SINGLE(InputManager);
+    auto*  input = GET_SINGLE(InputManager);
     if (!input->IsMainWindowActive()) return;
 
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return;
 
-    const POINT mp = input->GetMousePos();
+    const POINT  mp = input->GetMousePos();
     const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
 
-    if (input->GetButtonDown(KEY_TYPE::LBUTTON))
+    if (!input->GetButtonDown(KEY_TYPE::LBUTTON)) return;
+
+    if (st == SlotType::Eraser)
     {
-        if (st == SlotType::Eraser)
+        Entity* hitEntity = nullptr;
+        Vec3    hitNormal;
+        float   hitDist;
+        if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming, hitEntity, hitNormal, hitDist))
+            TryRemoveEntity(hitEntity);
+        else if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Mushroom, hitEntity, hitNormal, hitDist))
+            TryRemoveEntity(hitEntity);
+        return;
+    }
+
+    const auto params = GetModelParams(st);
+    Entity*    hitEntity = nullptr;
+    Vec3       hitNormal;
+    float      hitDist   = FLT_MAX;
+    bool       hit       = false;
+
+    if (ChannelInMask(CH::Priming, params.pickableMask))
+    {
+        Entity* he = nullptr; Vec3 hn; float hd;
+        if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming, he, hn, hd))
         {
-            Entity* hitEntity = nullptr;
-            Vec3    hitNormal;
-            float   hitDist;
-
-            if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming,
-                hitEntity, hitNormal, hitDist))
-                TryRemoveEntity(hitEntity);
-
-            else if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Mushroom,
-                hitEntity, hitNormal, hitDist))
-                TryRemoveEntity(hitEntity);
-        }
-        else
-        {
-            const auto params = GetModelParams(st);
-
-            Entity* hitEntity = nullptr;
-            Vec3    hitNormal;
-            float   hitDist = FLT_MAX;
-            bool    hit = false;
-
-            if (ChannelInMask(CH::Priming, params.pickableMask))
-            {
-                Entity* he = nullptr; Vec3 hn; float hd;
-                if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming, he, hn, hd))
-                {
-                    hit = true; hitEntity = he; hitNormal = hn; hitDist = hd;
-                }
-            }
-
-            if (ChannelInMask(CH::Floor, params.pickableMask))
-            {
-                Entity* fe = nullptr; Vec3 fn; float fd;
-                if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Floor, fe, fn, fd))
-                    if (!hit || fd < hitDist)
-                    {
-                        hit = true; hitEntity = fe; hitNormal = fn; hitDist = fd;
-                    }
-            }
-
-            if (hit)
-                TryPlaceOnHit(hitEntity, hitNormal, st);
+            hit = true; hitEntity = he; hitNormal = hn; hitDist = hd;
         }
     }
+    if (ChannelInMask(CH::Floor, params.pickableMask))
+    {
+        Entity* fe = nullptr; Vec3 fn; float fd;
+        if (scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Floor, fe, fn, fd))
+            if (!hit || fd < hitDist)
+            {
+                hit = true; hitEntity = fe; hitNormal = fn; hitDist = fd;
+            }
+    }
+
+    if (hit)
+        TryPlaceOnHit(hitEntity, hitNormal, st);
 }
 
-bool BlockPlacer::CalcPlacePos(SlotType type,
-    Entity* hitEntity,
-    const Vec3& hitNormal,
-    Vec3& outEntityPos) const
+bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
+                                const Vec3& hitNormal, Vec3& outEntityPos) const
 {
-    const auto params = GetModelParams(type);
+    const auto params   = GetModelParams(type);
     const PlaceFace hitFace = NormalToFace(hitNormal);
     if (!FaceAllowed(hitFace, params.faceMask)) return false;
 
     const auto* hitAabb = hitEntity->GetComponent<AABBCollider>();
     if (!hitAabb) return false;
 
-    const BoundingBox& hitBox = const_cast<AABBCollider*>(hitAabb)->GetBoundingBox();
-    const Vec3 hitCenter(hitBox.Center.x, hitBox.Center.y, hitBox.Center.z);
-    const Vec3 hitExt(hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z);
+    const BoundingBox& hitBox    = const_cast<AABBCollider*>(hitAabb)->GetBoundingBox();
+    const Vec3         hitCenter = { hitBox.Center.x,  hitBox.Center.y,  hitBox.Center.z  };
+    const Vec3         hitExt    = { hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z };
+    const Vec3         newHalf   = GetHalfExtents(params.collider);
 
-    const Vec3 newHalf = GetHalfExtents(params.collider);
     Vec3 newColCenter;
     newColCenter.x = hitCenter.x + hitNormal.x * (hitExt.x + newHalf.x);
     newColCenter.y = hitCenter.y + hitNormal.y * (hitExt.y + newHalf.y);
@@ -256,18 +238,17 @@ void BlockPlacer::UpdatePreview()
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) { HidePreview(); return; }
 
-    const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
-    const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
+    const POINT   mp      = GET_SINGLE(InputManager)->GetMousePos();
+    const SlotType st     = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
     const bool     isErase = (st == SlotType::Eraser);
+    const bool mouseMoved  = (mp.x != _lastPreviewMouse.x || mp.y != _lastPreviewMouse.y);
 
-    const bool mouseMoved = (mp.x != _lastPreviewMouse.x || mp.y != _lastPreviewMouse.y);
     if (!mouseMoved && !_previewDirty) return;
-
     _lastPreviewMouse = mp;
-    _previewDirty = false;
+    _previewDirty     = false;
 
-    bool canAct = false;
-    Vec3 previewPos = Vec3(0.f, 0.f, 0.f);
+    bool canAct      = false;
+    Vec3 previewPos  = Vec3(0.f, 0.f, 0.f);
     Vec3 previewScale = Vec3(1.f, 0.06f, 1.f);
 
     if (isErase)
@@ -275,29 +256,26 @@ void BlockPlacer::UpdatePreview()
         Entity* hit = nullptr;
         Vec3    hn;
         float   hd;
-
         canAct = scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Priming, hit, hn, hd)
-            || scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Mushroom, hit, hn, hd);
-
+              || scene->PickBlock((int32)mp.x, (int32)mp.y, CH::Mushroom, hit, hn, hd);
         if (hit)
         {
-            AABBCollider* aabb = hit->GetComponent<AABBCollider>();
-            const BoundingBox& bb = aabb->GetBoundingBox();
-            previewPos = Vec3(bb.Center.x, bb.Center.y + bb.Extents.y, bb.Center.z);
+            AABBCollider*      aabb = hit->GetComponent<AABBCollider>();
+            const BoundingBox& bb   = aabb->GetBoundingBox();
+            previewPos   = Vec3(bb.Center.x, bb.Center.y + bb.Extents.y, bb.Center.z);
             previewScale = Vec3(bb.Extents.x * 2.f * 0.95f, 0.06f, bb.Extents.z * 2.f * 0.95f);
         }
     }
     else
     {
         const bool hasStock = !_pInventory || _pInventory->HasItem(st);
-
-        const auto params = GetModelParams(st);
-        const Vec3 newHalf = GetHalfExtents(params.collider);
+        const auto params   = GetModelParams(st);
+        const Vec3 newHalf  = GetHalfExtents(params.collider);
 
         Entity* hitEntity = nullptr;
         Vec3    hitNormal;
-        float   hitDist = FLT_MAX;
-        bool    hit = false;
+        float   hitDist   = FLT_MAX;
+        bool    hit       = false;
 
         {
             Entity* he = nullptr; Vec3 hn; float hd;
@@ -322,8 +300,8 @@ void BlockPlacer::UpdatePreview()
             Vec3 entityPos;
             if (CalcPlacePos(st, hitEntity, hitNormal, entityPos))
             {
-                canAct = hasStock;
-                previewPos = entityPos;
+                canAct       = hasStock;
+                previewPos   = entityPos;
                 previewScale = Vec3(newHalf.x * 2.f * 0.95f, 0.06f, newHalf.z * 2.f * 0.95f);
             }
         }
@@ -331,44 +309,51 @@ void BlockPlacer::UpdatePreview()
 
     _previewValid = canAct;
 
+    auto* instMgr = GET_SINGLE(InstancingManager);
+
     if (!_previewEntity)
     {
         auto owned = std::make_unique<Entity>(L"__Preview__");
         owned->AddComponent(std::make_unique<Transform>());
-
         auto mr = std::make_unique<MeshRenderer>();
         mr->SetPass(0);
         owned->AddComponent(std::move(mr));
-
         _previewEntity = owned.get();
         scene->Add(std::move(owned));
-
-        GET_SINGLE(InstancingManager)->SetMeshDirty();
+        instMgr->SetMeshDirty();
+        return;
     }
 
-    _previewEntity->GetComponent<Transform>()->SetLocalPosition(previewPos);
-    _previewEntity->GetComponent<Transform>()->SetLocalScale(previewScale);
+    auto* tf = _previewEntity->GetComponent<Transform>();
+    tf->SetLocalPosition(previewPos);
+    tf->SetLocalScale(previewScale);
 
-    if (auto* mr = _previewEntity->GetComponent<MeshRenderer>())
+    auto* mr = _previewEntity->GetComponent<MeshRenderer>();
+    if (mr)
     {
         mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube"));
         mr->SetMaterial(GetPreviewMat(canAct));
-    }
 
-    GET_SINGLE(InstancingManager)->SetMeshDirty();
+        instMgr->MarkMeshDirty(mr->GetInstanceID());
+    }
 }
 
 void BlockPlacer::HidePreview()
 {
     if (!_previewEntity) return;
 
-    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    Scene* scene  = GET_SINGLE(SceneManager)->GetCurrentScene();
+    auto*  instMgr = GET_SINGLE(InstancingManager);
+
+    auto* mr = _previewEntity->GetComponent<MeshRenderer>();
+    if (mr)
+        instMgr->MarkMeshDirty(mr->GetInstanceID());
+
+    if (scene)
         scene->Remove(_previewEntity);
 
     _previewEntity = nullptr;
-    _previewValid = false;
-
-    GET_SINGLE(InstancingManager)->SetMeshDirty();
+    _previewValid  = false;
 }
 
 bool BlockPlacer::TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, SlotType type)
@@ -383,24 +368,23 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return false;
     if (type == SlotType::Eraser) return false;
-
-    if (_pInventory && !_pInventory->ConsumeItem(type))
-        return false;
+    if (_pInventory && !_pInventory->ConsumeItem(type)) return false;
 
     std::shared_ptr<Model> model = GetOrLoadModel(type);
     if (!model) return false;
 
-    const auto params = GetModelParams(type);
+    const auto params  = GetModelParams(type);
     const Vec3 halfExt = GetHalfExtents(params.collider);
 
     auto blockEntity = std::make_unique<Entity>(L"MapBlock");
     blockEntity->AddComponent(std::make_unique<Transform>());
     blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
-    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(0.001f)); // ★ 트윈 시작 스케일
+    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(0.001f));
 
     auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
     mr->SetModel(model);
     mr->SetModelScale(params.modelScale);
+    const InstanceID instanceID = mr->GetInstanceID();
     blockEntity->AddComponent(std::move(mr));
 
     auto col = std::make_unique<AABBCollider>();
@@ -416,11 +400,10 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     scene->Add(std::move(blockEntity));
 
     _blockRecordMap[rawBlock] = { entityPos.x, entityPos.y, entityPos.z,
-                                  static_cast<int32>(type) };
-    _placeTweens.push_back({ rawBlock, 0.f }); // ★ 트윈 등록
+                                   static_cast<int32>(type) };
+    _placeTweens.push_back({ rawBlock, 0.f });
 
-    GET_SINGLE(InstancingManager)->SetDirty();
-    GET_SINGLE(InstancingManager)->SetMeshDirty();
+    GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
     return true;
 }
 
@@ -434,27 +417,29 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (_pInventory)
         _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
 
-    _blockRecordMap.erase(it);
+    auto* mr = entity->GetComponent<ModelRenderer>();
+    const InstanceID instanceID = mr ? mr->GetInstanceID() : InstanceID{ 0, 0 };
 
+    _blockRecordMap.erase(it);
     _placeTweens.erase(
         std::remove_if(_placeTweens.begin(), _placeTweens.end(),
             [entity](const PlaceTween& tw) { return tw.entity == entity; }),
         _placeTweens.end());
 
-    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
-    {
-        scene->Remove(entity);
-        GET_SINGLE(InstancingManager)->SetDirty();
-        GET_SINGLE(InstancingManager)->SetMeshDirty();
-        return true;
-    }
-    return false;
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    if (!scene) return false;
+
+    scene->Remove(entity);
+
+    if (instanceID.first != 0)
+        GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
+
+    return true;
 }
 
 bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
 {
     const SlotType type = static_cast<SlotType>(typeInt);
-
     if (typeInt < 0 || typeInt >= static_cast<int32>(SlotType::Count)) return false;
     if (type == SlotType::Eraser) return false;
 
@@ -464,7 +449,7 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return false;
 
-    const auto params = GetModelParams(type);
+    const auto params  = GetModelParams(type);
     const Vec3 halfExt = GetHalfExtents(params.collider);
     const Vec3 entityPos(x, y, z);
 
@@ -476,6 +461,7 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
     mr->SetModel(model);
     mr->SetModelScale(params.modelScale);
+    const InstanceID instanceID = mr->GetInstanceID();
     blockEntity->AddComponent(std::move(mr));
 
     auto col = std::make_unique<AABBCollider>();
@@ -492,8 +478,7 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
 
     _blockRecordMap[rawBlock] = { x, y, z, typeInt };
 
-    GET_SINGLE(InstancingManager)->SetDirty();
-    GET_SINGLE(InstancingManager)->SetMeshDirty();
+    GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
     return true;
 }
 
@@ -501,19 +486,18 @@ void BlockPlacer::TickPlaceTweens(float dt)
 {
     if (_placeTweens.empty()) return;
 
-    bool anyDirty = false;
+    auto* instMgr = GET_SINGLE(InstancingManager);
 
     _placeTweens.erase(
         std::remove_if(_placeTweens.begin(), _placeTweens.end(),
             [&](PlaceTween& tw) -> bool
             {
                 if (!tw.entity) return true;
-                if (_blockRecordMap.find(tw.entity) == _blockRecordMap.end())
-                    return true;
+                if (_blockRecordMap.find(tw.entity) == _blockRecordMap.end()) return true;
 
                 tw.elapsed += dt;
                 const float t = std::min(tw.elapsed / PlaceTween::kDuration, 1.f);
-                const float s = t * t * (3.f - 2.f * t);  // smoothstep
+                const float s = t * t * (3.f - 2.f * t);
 
                 if (auto* tf = tw.entity->GetComponent<Transform>())
                     tf->SetLocalScale(Vec3(s));
@@ -521,13 +505,12 @@ void BlockPlacer::TickPlaceTweens(float dt)
                 if (auto* col = tw.entity->GetComponent<AABBCollider>())
                     col->InvalidateBounds();
 
-                anyDirty = true;
+                if (auto* mr = tw.entity->GetComponent<ModelRenderer>())
+                    instMgr->MarkModelDirty(mr->GetInstanceID());
+
                 return t >= 1.f;
             }),
         _placeTweens.end());
-
-    if (anyDirty)
-        GET_SINGLE(InstancingManager)->SetDirty();
 }
 
 const std::vector<PlacedBlockRecord>& BlockPlacer::GetPlacedBlocks() const
@@ -542,7 +525,6 @@ const std::vector<PlacedBlockRecord>& BlockPlacer::GetPlacedBlocks() const
 void BlockPlacer::ClearAllBlocks()
 {
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-
     for (auto& [entity, rec] : _blockRecordMap)
     {
         if (_pInventory)
@@ -550,20 +532,18 @@ void BlockPlacer::ClearAllBlocks()
         if (scene) scene->Remove(entity);
     }
     _blockRecordMap.clear();
-    _placeTweens.clear();  // 진행 중인 트윈 전체 폐기
-
+    _placeTweens.clear();
     GET_SINGLE(InstancingManager)->SetDirty();
 }
 
 bool BlockPlacer::IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const
 {
     if (!_character) return false;
-
     auto* charCol = _character->GetComponent<AABBCollider>();
     if (!charCol) return false;
 
     BoundingBox box;
-    box.Center = colCenter;
+    box.Center  = colCenter;
     box.Extents = halfExt;
     return box.Intersects(charCol->GetBoundingBox());
 }
