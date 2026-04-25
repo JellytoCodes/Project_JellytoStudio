@@ -4,7 +4,7 @@ class VertexBuffer;
 
 struct InstancingData
 {
-	Matrix world;
+    Matrix world;
 };
 
 #define MAX_MESH_INSTANCE 10000
@@ -12,28 +12,40 @@ struct InstancingData
 class InstancingBuffer
 {
 public:
-	InstancingBuffer();
-	~InstancingBuffer();
+    static constexpr uint32 kRingCount = 3;
 
-	void ClearData();
-	void AddData(const InstancingData& data);
+    explicit InstancingBuffer(bool isDynamic = false);
+    ~InstancingBuffer() = default;
 
-	void UploadData();
-	void BindBuffer();
-	void PushData();  
-	bool IsUploaded() const { return _uploaded; }
-	void ResetUpload()  { _uploaded = false; }
+    InstancingBuffer(const InstancingBuffer&)            = delete;
+    InstancingBuffer& operator=(const InstancingBuffer&) = delete;
+    InstancingBuffer(InstancingBuffer&&)                 = default;
+    InstancingBuffer& operator=(InstancingBuffer&&)      = default;
 
-	uint32 GetCount() const { return static_cast<uint32>(_data.size()); }
+    void ClearData();
+    void AddData(const InstancingData& data);
 
-	VertexBuffer* GetBuffer() { return _instanceBuffer.get(); }
+    void UploadData();
+
+    void BindBuffer() const;
+
+    void PushData();
+
+    bool   IsUploaded() const { return _uploaded; }
+    void   ResetUpload()     { _uploaded = false; }
+    uint32 GetCount()  const { return static_cast<uint32>(_data.size()); }
 
 private:
-	void CreateBuffer(uint32 maxCount);
+    void CreateRingBuffers(uint32 maxCount);
 
-	uint32							_maxCount = 0;
+    ComPtr<ID3D11Buffer> _ringBuffers[kRingCount];
+    uint32               _maxCount    = 0;
+    uint32               _frameIndex  = 0;
+    uint32               _currentSlot = 0;
 
-	std::unique_ptr<VertexBuffer>	_instanceBuffer;
-	std::vector<InstancingData>		_data;
-	bool							_uploaded = false;
+    std::vector<InstancingData> _data;
+
+    bool _isDynamic = false;
+    bool _dirty     = true; 
+    bool _uploaded  = false;
 };
