@@ -182,6 +182,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Pipeline\ShaderPass.cpp" />
     <ClCompile Include="Source\Pipeline\ShaderTechnique.cpp" />
     <ClCompile Include="Source\Scene\BlockPlacerInterface.cpp" />
+    <ClCompile Include="Source\Scene\ChunkManager.cpp" />
     <ClCompile Include="Source\Scene\SceneSerializer.cpp" />
     <ClCompile Include="Source\Pipeline\InstancingBuffer.cpp" />
     <ClCompile Include="Source\Types\KeyEnums.cpp" />
@@ -257,6 +258,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Pipeline\ShaderPass.h" />
     <ClInclude Include="Source\Pipeline\ShaderTechnique.h" />
     <ClInclude Include="Source\Scene\BlockPlacerInterface.h" />
+    <ClInclude Include="Source\Scene\ChunkManager.h" />
     <ClInclude Include="Source\Scene\SceneSerializer.h" />
     <ClInclude Include="Source\Pipeline\InstancingBuffer.h" />
     <ClInclude Include="Source\Types\KeyEnums.h" />

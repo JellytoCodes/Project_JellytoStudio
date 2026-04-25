@@ -12,6 +12,7 @@
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 #include "Scene/SceneSerializer.h"
+#include "Scene/ChunkManager.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Resource/Mesh.h"
 #include "Resource/Material.h"
@@ -94,7 +95,7 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
 
     mat = std::make_shared<Material>();
     mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl"));
-    auto& d   = mat->GetMaterialDesc();
+    auto& d    = mat->GetMaterialDesc();
     d.ambient  = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
                                  : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
     d.specular = d.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
@@ -162,7 +163,7 @@ void BlockPlacer::HandleInput()
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return;
 
-    const POINT  mp = input->GetMousePos();
+    const POINT    mp = input->GetMousePos();
     const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
 
     if (!input->GetButtonDown(KEY_TYPE::LBUTTON)) return;
@@ -179,7 +180,7 @@ void BlockPlacer::HandleInput()
         return;
     }
 
-    const auto params = GetModelParams(st);
+    const auto params    = GetModelParams(st);
     Entity*    hitEntity = nullptr;
     Vec3       hitNormal;
     float      hitDist   = FLT_MAX;
@@ -210,7 +211,7 @@ void BlockPlacer::HandleInput()
 bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
                                 const Vec3& hitNormal, Vec3& outEntityPos) const
 {
-    const auto params   = GetModelParams(type);
+    const auto      params  = GetModelParams(type);
     const PlaceFace hitFace = NormalToFace(hitNormal);
     if (!FaceAllowed(hitFace, params.faceMask)) return false;
 
@@ -238,17 +239,17 @@ void BlockPlacer::UpdatePreview()
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) { HidePreview(); return; }
 
-    const POINT   mp      = GET_SINGLE(InputManager)->GetMousePos();
-    const SlotType st     = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
-    const bool     isErase = (st == SlotType::Eraser);
-    const bool mouseMoved  = (mp.x != _lastPreviewMouse.x || mp.y != _lastPreviewMouse.y);
+    const POINT    mp       = GET_SINGLE(InputManager)->GetMousePos();
+    const SlotType st       = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
+    const bool     isErase  = (st == SlotType::Eraser);
+    const bool     mouseMoved = (mp.x != _lastPreviewMouse.x || mp.y != _lastPreviewMouse.y);
 
     if (!mouseMoved && !_previewDirty) return;
     _lastPreviewMouse = mp;
     _previewDirty     = false;
 
-    bool canAct      = false;
-    Vec3 previewPos  = Vec3(0.f, 0.f, 0.f);
+    bool canAct       = false;
+    Vec3 previewPos   = Vec3(0.f, 0.f, 0.f);
     Vec3 previewScale = Vec3(1.f, 0.06f, 1.f);
 
     if (isErase)
@@ -333,7 +334,6 @@ void BlockPlacer::UpdatePreview()
     {
         mr->SetMesh(GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube"));
         mr->SetMaterial(GetPreviewMat(canAct));
-
         instMgr->MarkMeshDirty(mr->GetInstanceID());
     }
 }
@@ -342,7 +342,7 @@ void BlockPlacer::HidePreview()
 {
     if (!_previewEntity) return;
 
-    Scene* scene  = GET_SINGLE(SceneManager)->GetCurrentScene();
+    Scene* scene   = GET_SINGLE(SceneManager)->GetCurrentScene();
     auto*  instMgr = GET_SINGLE(InstancingManager);
 
     auto* mr = _previewEntity->GetComponent<MeshRenderer>();
@@ -399,6 +399,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     Entity* rawBlock = blockEntity.get();
     scene->Add(std::move(blockEntity));
 
+    GET_SINGLE(ChunkManager)->Register(rawBlock);
+
     _blockRecordMap[rawBlock] = { entityPos.x, entityPos.y, entityPos.z,
                                    static_cast<int32>(type) };
     _placeTweens.push_back({ rawBlock, 0.f });
@@ -417,8 +419,10 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (_pInventory)
         _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
 
-    auto* mr = entity->GetComponent<ModelRenderer>();
+    auto*            mr         = entity->GetComponent<ModelRenderer>();
     const InstanceID instanceID = mr ? mr->GetInstanceID() : InstanceID{ 0, 0 };
+
+    GET_SINGLE(ChunkManager)->Unregister(entity);
 
     _blockRecordMap.erase(it);
     _placeTweens.erase(
@@ -476,6 +480,8 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     Entity* rawBlock = blockEntity.get();
     scene->Add(std::move(blockEntity));
 
+    GET_SINGLE(ChunkManager)->Register(rawBlock);
+
     _blockRecordMap[rawBlock] = { x, y, z, typeInt };
 
     GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
@@ -531,6 +537,9 @@ void BlockPlacer::ClearAllBlocks()
             _pInventory->AddItem(static_cast<SlotType>(rec.type), 1);
         if (scene) scene->Remove(entity);
     }
+
+    GET_SINGLE(ChunkManager)->Clear();
+
     _blockRecordMap.clear();
     _placeTweens.clear();
     GET_SINGLE(InstancingManager)->SetDirty();

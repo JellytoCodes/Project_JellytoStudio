@@ -1,6 +1,5 @@
 #include "Framework.h"
 #include "Camera.h"
-
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
@@ -10,67 +9,48 @@
 #include "Graphics/Managers/InstancingManager.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/ChunkManager.h"
 
-Matrix Camera::S_MatView = Matrix::Identity;
+Matrix Camera::S_MatView       = Matrix::Identity;
 Matrix Camera::S_MatProjection = Matrix::Identity;
 
 Camera::Camera() : Super(ComponentType::Camera)
 {
-    _width = MAIN_WINDOW_WIDTH;
+    _width  = MAIN_WINDOW_WIDTH;
     _height = MAIN_WINDOW_HEIGHT;
 }
 
-Camera::~Camera()
-{
-	
-}
-
-void Camera::Awake()
-{
-	
-}
-
-void Camera::Start()
-{
-	
-}
-
-void Camera::LateUpdate()
-{
-	
-}
-
-void Camera::OnDestroy()
-{
-	
-}
+Camera::~Camera() {}
+void Camera::Awake()      {}
+void Camera::Start()      {}
+void Camera::LateUpdate() {}
+void Camera::OnDestroy()  {}
 
 void Camera::Update()
 {
     UpdateMatrix();
 
-    const Vec3  curPos = GetTransform()->GetPosition();
-    const float curYaw = GetTransform()->GetRotation().y;
-
+    const Vec3  curPos   = GetTransform()->GetPosition();
+    const float curYaw   = GetTransform()->GetRotation().y;
     const float moveDelta = (curPos - _prevCamPos).LengthSquared();
-    const float rotDelta = fabsf(curYaw - _prevCamYaw);
+    const float rotDelta  = fabsf(curYaw - _prevCamYaw);
 
     constexpr float kMoveThreshold = 0.0025f;
-    constexpr float kRotThreshold = 0.001f;
+    constexpr float kRotThreshold  = 0.001f;
 
     if (moveDelta > kMoveThreshold || rotDelta > kRotThreshold)
     {
-        _sortDirty = true;
-        _prevCamPos = curPos;
-        _prevCamYaw = curYaw;
+        _sortDirty   = true;
+        _prevCamPos  = curPos;
+        _prevCamYaw  = curYaw;
     }
 }
 
 void Camera::UpdateMatrix()
 {
-    const Vec3 eye = GetTransform()->GetPosition();
+    const Vec3 eye   = GetTransform()->GetPosition();
     const Vec3 focus = eye + GetTransform()->GetLook();
-    const Vec3 up = GetTransform()->GetUp();
+    const Vec3 up    = GetTransform()->GetUp();
 
     _matView = ::XMMatrixLookAtLH(eye, focus, up);
 
@@ -90,7 +70,7 @@ void Camera::SortEntities()
     const auto& entities = scene->GetEntities();
 
     BoundingFrustum worldFrustum;
-    bool frustumValid = false;
+    bool            frustumValid = false;
 
     if (_width > 0.f && _height > 0.f)
     {
@@ -99,6 +79,7 @@ void Camera::SortEntities()
 
         XMVECTOR det;
         XMMATRIX viewInv = XMMatrixInverse(&det, _matView);
+
         float detF;
         XMStoreFloat(&detF, det);
 
@@ -112,26 +93,48 @@ void Camera::SortEntities()
     std::vector<Entity*> newForward;
     newForward.reserve(entities.size());
 
-    for (const auto& entity : entities)
+    auto* chunkMgr = GET_SINGLE(ChunkManager);
+
+    if (frustumValid)
     {
-        if (IsCulled(entity->GetLayerIndex())) continue;
+        chunkMgr->CollectVisible(worldFrustum, newForward);
 
-        const bool hasRenderer =
-            entity->GetComponent<MeshRenderer>() != nullptr ||
-            entity->GetComponent<ModelRenderer>() != nullptr ||
-            entity->GetComponent<ModelAnimator>() != nullptr;
-        if (!hasRenderer) continue;
-
-        if (frustumValid)
+        for (const auto& entity : entities)
         {
+            if (chunkMgr->IsManaged(entity.get())) continue;
+            if (IsCulled(entity->GetLayerIndex()))  continue;
+
+            const bool hasRenderer =
+                entity->GetComponent<MeshRenderer>()   != nullptr ||
+                entity->GetComponent<ModelRenderer>()  != nullptr ||
+                entity->GetComponent<ModelAnimator>()  != nullptr;
+
+            if (!hasRenderer) continue;
+
             if (auto* aabb = entity->GetComponent<AABBCollider>())
             {
                 if (worldFrustum.Contains(aabb->GetBoundingBox()) == DirectX::DISJOINT)
                     continue;
             }
-        }
 
-        newForward.push_back(entity.get());
+            newForward.push_back(entity.get());
+        }
+    }
+    else
+    {
+        for (const auto& entity : entities)
+        {
+            if (IsCulled(entity->GetLayerIndex())) continue;
+
+            const bool hasRenderer =
+                entity->GetComponent<MeshRenderer>()   != nullptr ||
+                entity->GetComponent<ModelRenderer>()  != nullptr ||
+                entity->GetComponent<ModelAnimator>()  != nullptr;
+
+            if (!hasRenderer) continue;
+
+            newForward.push_back(entity.get());
+        }
     }
 
     size_t newHash = newForward.size();
@@ -145,21 +148,20 @@ void Camera::SortEntities()
     if (newHash != _visibilityHash)
     {
         _visibilityHash = newHash;
-        _vecForward = std::move(newForward);
-
+        _vecForward     = std::move(newForward);
         GET_SINGLE(InstancingManager)->SetDirty();
         GET_SINGLE(InstancingManager)->SetMeshDirty();
     }
+
     _cullStats.totalEntities   = static_cast<uint32>(entities.size());
     _cullStats.visibleEntities = static_cast<uint32>(_vecForward.size());
     _cullStats.culledEntities  = _cullStats.totalEntities - _cullStats.visibleEntities;
-
     _sortDirty = false;
 }
 
 void Camera::RenderForward()
 {
-    S_MatView = _matView;
+    S_MatView       = _matView;
     S_MatProjection = _matProjection;
     GET_SINGLE(InstancingManager)->Render(_vecForward);
 }
