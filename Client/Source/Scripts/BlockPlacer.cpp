@@ -239,9 +239,9 @@ void BlockPlacer::UpdatePreview()
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) { HidePreview(); return; }
 
-    const POINT    mp       = GET_SINGLE(InputManager)->GetMousePos();
-    const SlotType st       = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
-    const bool     isErase  = (st == SlotType::Eraser);
+    const POINT    mp        = GET_SINGLE(InputManager)->GetMousePos();
+    const SlotType st        = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
+    const bool     isErase   = (st == SlotType::Eraser);
     const bool     mouseMoved = (mp.x != _lastPreviewMouse.x || mp.y != _lastPreviewMouse.y);
 
     if (!mouseMoved && !_previewDirty) return;
@@ -356,6 +356,42 @@ void BlockPlacer::HidePreview()
     _previewValid  = false;
 }
 
+Entity* BlockPlacer::SpawnBlockEntity(const Vec3& pos, SlotType type,
+                                       const Vec3& initialScale)
+{
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    if (!scene) return nullptr;
+
+    std::shared_ptr<Model> model = GetOrLoadModel(type);
+    if (!model) return nullptr;
+
+    const auto params  = GetModelParams(type);
+    const Vec3 halfExt = GetHalfExtents(params.collider);
+
+    auto entity = std::make_unique<Entity>(L"MapBlock");
+    entity->AddComponent(std::make_unique<Transform>());
+    entity->GetComponent<Transform>()->SetLocalPosition(pos);
+    entity->GetComponent<Transform>()->SetLocalScale(initialScale);
+
+    auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
+    mr->SetModel(model);
+    mr->SetModelScale(params.modelScale);
+    entity->AddComponent(std::move(mr));
+
+    auto col = std::make_unique<AABBCollider>();
+    col->SetShowDebug(false);
+    col->SetBoxExtents(halfExt);
+    col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f));
+    col->SetOwnChannel(params.ownChannel);
+    col->SetPickableMask(params.pickableMask);
+    col->SetStatic(true);
+    entity->AddComponent(std::move(col));
+
+    Entity* raw = entity.get();
+    scene->Add(std::move(entity));
+    return raw;
+}
+
 bool BlockPlacer::TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, SlotType type)
 {
     Vec3 entityPos;
@@ -365,47 +401,25 @@ bool BlockPlacer::TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, SlotTy
 
 bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
 {
-    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-    if (!scene) return false;
     if (type == SlotType::Eraser) return false;
     if (_pInventory && !_pInventory->ConsumeItem(type)) return false;
 
-    std::shared_ptr<Model> model = GetOrLoadModel(type);
-    if (!model) return false;
+    Entity* rawBlock = SpawnBlockEntity(entityPos, type, Vec3(0.001f));
+    if (!rawBlock) return false;
 
-    const auto params  = GetModelParams(type);
-    const Vec3 halfExt = GetHalfExtents(params.collider);
-
-    auto blockEntity = std::make_unique<Entity>(L"MapBlock");
-    blockEntity->AddComponent(std::make_unique<Transform>());
-    blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
-    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(0.001f));
-
-    auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
-    mr->SetModel(model);
-    mr->SetModelScale(params.modelScale);
-    const InstanceID instanceID = mr->GetInstanceID();
-    blockEntity->AddComponent(std::move(mr));
-
-    auto col = std::make_unique<AABBCollider>();
-    col->SetShowDebug(false);
-    col->SetBoxExtents(halfExt);
-    col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f));
-    col->SetOwnChannel(params.ownChannel);
-    col->SetPickableMask(params.pickableMask);
-    col->SetStatic(true);
-    blockEntity->AddComponent(std::move(col));
-
-    Entity* rawBlock = blockEntity.get();
-    scene->Add(std::move(blockEntity));
+    auto* mr         = rawBlock->GetComponent<ModelRenderer>();
+    const InstanceID instID = mr ? mr->GetInstanceID() : InstanceID{ 0, 0 };
 
     GET_SINGLE(ChunkManager)->Register(rawBlock);
 
     _blockRecordMap[rawBlock] = { entityPos.x, entityPos.y, entityPos.z,
                                    static_cast<int32>(type) };
+    _placedCacheDirty = true;
     _placeTweens.push_back({ rawBlock, 0.f });
 
-    GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
+    if (instID.first != 0)
+        GET_SINGLE(InstancingManager)->MarkModelDirty(instID);
+
     return true;
 }
 
@@ -425,6 +439,8 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     GET_SINGLE(ChunkManager)->Unregister(entity);
 
     _blockRecordMap.erase(it);
+    _placedCacheDirty = true;
+
     _placeTweens.erase(
         std::remove_if(_placeTweens.begin(), _placeTweens.end(),
             [entity](const PlaceTween& tw) { return tw.entity == entity; }),
@@ -443,48 +459,25 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 
 bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
 {
-    const SlotType type = static_cast<SlotType>(typeInt);
     if (typeInt < 0 || typeInt >= static_cast<int32>(SlotType::Count)) return false;
+
+    const SlotType type = static_cast<SlotType>(typeInt);
     if (type == SlotType::Eraser) return false;
 
-    std::shared_ptr<Model> model = GetOrLoadModel(type);
-    if (!model) return false;
+    Entity* rawBlock = SpawnBlockEntity(Vec3(x, y, z), type, Vec3(1.f));
+    if (!rawBlock) return false;
 
-    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-    if (!scene) return false;
-
-    const auto params  = GetModelParams(type);
-    const Vec3 halfExt = GetHalfExtents(params.collider);
-    const Vec3 entityPos(x, y, z);
-
-    auto blockEntity = std::make_unique<Entity>(L"MapBlock");
-    blockEntity->AddComponent(std::make_unique<Transform>());
-    blockEntity->GetComponent<Transform>()->SetLocalPosition(entityPos);
-    blockEntity->GetComponent<Transform>()->SetLocalScale(Vec3(1.f));
-
-    auto mr = std::make_unique<ModelRenderer>(_blockShader, false);
-    mr->SetModel(model);
-    mr->SetModelScale(params.modelScale);
-    const InstanceID instanceID = mr->GetInstanceID();
-    blockEntity->AddComponent(std::move(mr));
-
-    auto col = std::make_unique<AABBCollider>();
-    col->SetShowDebug(false);
-    col->SetBoxExtents(halfExt);
-    col->SetOffsetPosition(Vec3(0.f, halfExt.y, 0.f));
-    col->SetOwnChannel(params.ownChannel);
-    col->SetPickableMask(params.pickableMask);
-    col->SetStatic(true);
-    blockEntity->AddComponent(std::move(col));
-
-    Entity* rawBlock = blockEntity.get();
-    scene->Add(std::move(blockEntity));
+    auto* mr          = rawBlock->GetComponent<ModelRenderer>();
+    const InstanceID instID = mr ? mr->GetInstanceID() : InstanceID{ 0, 0 };
 
     GET_SINGLE(ChunkManager)->Register(rawBlock);
 
     _blockRecordMap[rawBlock] = { x, y, z, typeInt };
+    _placedCacheDirty = true;
 
-    GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
+    if (instID.first != 0)
+        GET_SINGLE(InstancingManager)->MarkModelDirty(instID);
+
     return true;
 }
 
@@ -521,10 +514,14 @@ void BlockPlacer::TickPlaceTweens(float dt)
 
 const std::vector<PlacedBlockRecord>& BlockPlacer::GetPlacedBlocks() const
 {
+    if (!_placedCacheDirty) return _placedCellsCache;
+
     _placedCellsCache.clear();
     _placedCellsCache.reserve(_blockRecordMap.size());
     for (const auto& [entity, rec] : _blockRecordMap)
         _placedCellsCache.push_back(rec);
+
+    _placedCacheDirty = false;
     return _placedCellsCache;
 }
 
@@ -542,6 +539,7 @@ void BlockPlacer::ClearAllBlocks()
 
     _blockRecordMap.clear();
     _placeTweens.clear();
+    _placedCacheDirty = true;
     GET_SINGLE(InstancingManager)->SetDirty();
 }
 
