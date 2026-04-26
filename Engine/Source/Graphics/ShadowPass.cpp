@@ -193,6 +193,8 @@ void ShadowPass::Init()
     _shadowVP.Height   = static_cast<float>(kShadowMapSize);
     _shadowVP.MinDepth = 0.f;
     _shadowVP.MaxDepth = 1.f;
+
+    _shadowDesc.texelSize = 1.0f / static_cast<float>(kShadowMapSize);
 }
 
 void ShadowPass::CompileDepthShaders()

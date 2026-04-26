@@ -27,8 +27,8 @@ InventoryWidget::InventoryWidget(const std::wstring& name)
     : Super(name)
 {
     const float totalH = kGridPanelH + kPanelGap + kHotbarPanelH;
-    const float startX = (static_cast<float>(MAIN_WINDOW_WIDTH)  - kGridPanelW)  * 0.5f;
-    const float startY = (static_cast<float>(MAIN_WINDOW_HEIGHT) - totalH)       * 0.5f;
+    const float startX = (static_cast<float>(kWindowWidth)  - kGridPanelW)  * 0.5f;
+    const float startY = (static_cast<float>(kWindowHeight) - totalH)       * 0.5f;
     SetScreenPos(startX, startY);
 }
 
@@ -73,8 +73,8 @@ void InventoryWidget::DrawBackground()
     const float totalH = kGridPanelH + kPanelGap + kHotbarPanelH;
 
     ui->AddRect(0.f, 0.f,
-        static_cast<float>(MAIN_WINDOW_WIDTH),
-        static_cast<float>(MAIN_WINDOW_HEIGHT),
+        static_cast<float>(kWindowWidth),
+        static_cast<float>(kWindowHeight),
         Color(0.f, 0.f, 0.f, 0.55f));
 
     ui->AddRect(sx, sy, kGridPanelW, kGridPanelH,

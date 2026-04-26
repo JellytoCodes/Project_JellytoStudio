@@ -6,7 +6,7 @@ class Graphics
     DECLARE_SINGLE(Graphics);
 
 public:
-    void Initialize(HWND hwnd);
+    void Initialize(HWND hwnd, UINT width, UINT height);
 
     void RenderBegin();
     void RenderEnd();
@@ -14,16 +14,12 @@ public:
     ComPtr<ID3D11Device>        GetDevice() { return _device; }
     ComPtr<ID3D11DeviceContext> GetDeviceContext() { return _deviceContext; }
 
-    void     SetViewport(float width, float height,
-        float x = 0, float y = 0,
-        float minDepth = 0, float maxDepth = 1);
-    Viewport& GetViewport() { return _vp; }
+    void        SetViewport(float width, float height, float x = 0, float y = 0, float minDepth = 0, float maxDepth = 1);
+    Viewport&   GetViewport() { return _vp; }
 
     void SetRasterizerState(ID3D11RasterizerState* state);
     void SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencilRef);
-    void SetBlendState(ID3D11BlendState* state,
-        const FLOAT* blendFactor,
-        UINT                     sampleMask);
+    void SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask);
 
     void InvalidateStateCache();
 
@@ -52,7 +48,6 @@ private:
         FLOAT                    blendFactor[4] = { 0, 0, 0, 0 };
         UINT                     sampleMask = 0xFFFFFFFF;
 
-        // 포인터 비교로 충분 — 같은 State 객체면 같은 설정
         bool rsValid = false;
         bool dssValid = false;
         bool blendValid = false;

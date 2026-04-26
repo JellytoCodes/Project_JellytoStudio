@@ -5,7 +5,8 @@ cbuffer ShadowBuffer : register(b0)
 {
     matrix LightVP;
     float  ShadowBias;
-    float3 ShadowPad;
+    float  ShadowTexelSize;
+    float2 ShadowPad;
 }
 
 cbuffer GlobalBuffer : register(b1)
@@ -42,9 +43,8 @@ float ComputeShadowFactor(float3 worldPos)
     if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f)
         return 1.0f;
 
-    float depth     = proj.z - ShadowBias;
-    float shadow    = 0.0f;
-    float texelSize = 1.0f / 1024.0f;
+    float depth  = proj.z - ShadowBias;
+    float shadow = 0.0f;
 
     [unroll]
     for (int x = -1; x <= 1; x++)
@@ -54,7 +54,7 @@ float ComputeShadowFactor(float3 worldPos)
         {
             shadow += ShadowMap.SampleCmpLevelZero(
                 ShadowSampler,
-                uv + float2(x, y) * texelSize,
+                uv + float2(x, y) * ShadowTexelSize,
                 depth);
         }
     }
@@ -195,27 +195,27 @@ BlendState AdditiveBlendAlphaToCoverageEnable
     RenderTargetWriteMask[0] = 15;
 };
 
-#define PASS_VP(name, vs, ps)               \
-pass name                                   \
-{                                           \
-    SetVertexShader(CompileShader(vs_5_0, vs()));   \
-    SetPixelShader(CompileShader(ps_5_0, ps()));    \
+#define PASS_VP(name, vs, ps)                           \
+pass name                                               \
+{                                                       \
+    SetVertexShader(CompileShader(vs_5_0, vs()));       \
+    SetPixelShader(CompileShader(ps_5_0, ps()));        \
 }
 
-#define PASS_RS_VP(name, rs, vs, ps)        \
-pass name                                   \
-{                                           \
-    SetRasterizerState(rs);                 \
-    SetVertexShader(CompileShader(vs_5_0, vs()));   \
-    SetPixelShader(CompileShader(ps_5_0, ps()));    \
+#define PASS_RS_VP(name, rs, vs, ps)                    \
+pass name                                               \
+{                                                       \
+    SetRasterizerState(rs);                             \
+    SetVertexShader(CompileShader(vs_5_0, vs()));       \
+    SetPixelShader(CompileShader(ps_5_0, ps()));        \
 }
 
-#define PASS_BS_VP(name, bs, vs, ps)        \
-pass name                                   \
-{                                           \
-    SetBlendState(bs, float4(0, 0, 0, 0), 0xFF);   \
-    SetVertexShader(CompileShader(vs_5_0, vs()));   \
-    SetPixelShader(CompileShader(ps_5_0, ps()));    \
+#define PASS_BS_VP(name, bs, vs, ps)                    \
+pass name                                               \
+{                                                       \
+    SetBlendState(bs, float4(0, 0, 0, 0), 0xFF);       \
+    SetVertexShader(CompileShader(vs_5_0, vs()));       \
+    SetPixelShader(CompileShader(ps_5_0, ps()));        \
 }
 
 float3 CameraPosition()

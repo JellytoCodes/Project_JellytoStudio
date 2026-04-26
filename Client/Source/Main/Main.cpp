@@ -19,15 +19,13 @@
     static const wchar_t* APP_NAME = L"Jellyto Studio v0.1";
 #endif
 
-int APIENTRY wWinMain(
-    _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
-    _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
     ApplicationDesc desc;
     desc.appName   = APP_NAME;
     desc.hInstance = hInstance;
-    desc.width     = MAIN_WINDOW_WIDTH;
-    desc.height    = MAIN_WINDOW_HEIGHT;
+    desc.width     = kWindowWidth;
+    desc.height    = kWindowHeight;
     desc.isCreateWindow = isCreateWindow;
     desc.app       = std::make_shared<AppType>();
 

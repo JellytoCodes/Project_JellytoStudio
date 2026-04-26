@@ -105,7 +105,7 @@ void EditorApp::CreateHUD()
 	Scene* scene = _scene.get();
 
 	std::unique_ptr<Widget> hud = std::make_unique<Widget>(L"HUD");
-	float cx = MAIN_WINDOW_WIDTH * 0.5f - 130.f;
+	float cx = kWindowWidth * 0.5f - 130.f;
 	hud->SetScreenPos(cx, 12.f);
 
 	std::unique_ptr<UIText> timeText = std::make_unique<UIText>();

@@ -35,9 +35,7 @@ bool Application::Initialize(const ApplicationDesc& desc)
 	if (auto item = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow"))
 		GET_SINGLE(InputManager)->AddAllowedWindow(item->GetHWnd());
 
-	GET_SINGLE(UIManager)->Init(
-		static_cast<float>(_desc.width),
-		static_cast<float>(_desc.height));
+	GET_SINGLE(UIManager)->Init(static_cast<float>(_desc.width), static_cast<float>(_desc.height));
 
 	_desc.app->Init();
 	return true;
@@ -187,9 +185,7 @@ ATOM Application::MyRegisterClass()
 
 BOOL Application::InitInstance()
 {
-	RECT wr = { 0, 0,
-		static_cast<LONG>(_desc.width),
-		static_cast<LONG>(_desc.height) };
+	RECT wr = { 0, 0, static_cast<LONG>(_desc.width), static_cast<LONG>(_desc.height) };
 	::AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, TRUE);
 
 	_desc.hWnd = ::CreateWindowW(
@@ -204,6 +200,6 @@ BOOL Application::InitInstance()
 	CreateMainMenu();
 	::ShowWindow(_desc.hWnd, SW_SHOWNORMAL);
 	::UpdateWindow(_desc.hWnd);
-	GET_SINGLE(Graphics)->Initialize(_desc.hWnd);
+	GET_SINGLE(Graphics)->Initialize(_desc.hWnd, _desc.width, _desc.height);
 	return TRUE;
 }
