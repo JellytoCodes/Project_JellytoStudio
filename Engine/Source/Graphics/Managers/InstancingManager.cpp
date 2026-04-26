@@ -81,13 +81,9 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         {
             auto& buf = _buffers[id];
             if (!buf)
-            {
-                buf = std::make_unique<InstancingBuffer>(/*isDynamic=*/false);
-            }
+                buf = std::make_unique<InstancingBuffer>(false);
             else
-            {
                 buf->ClearData();
-            }
 
             for (const InstancingData& d : dataVec)
                 buf->AddData(d);
@@ -123,7 +119,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
 
             auto& buf = _buffers[dirtyId];
             if (!buf)
-                buf = std::make_unique<InstancingBuffer>(/*isDynamic=*/false);
+                buf = std::make_unique<InstancingBuffer>(false);
             else
                 buf->ClearData();
 
@@ -142,7 +138,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         {
             auto& buf = _buffers[id];
             if (!buf)
-                buf = std::make_unique<InstancingBuffer>(/*isDynamic=*/false);
+                buf = std::make_unique<InstancingBuffer>(false);
             else
                 buf->ClearData();
 
@@ -178,7 +174,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
 
             auto& buf = _buffers[dirtyId];
             if (!buf)
-                buf = std::make_unique<InstancingBuffer>(/*isDynamic=*/false);
+                buf = std::make_unique<InstancingBuffer>(false);
             else
                 buf->ClearData();
 
@@ -191,13 +187,46 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         _partialDirtyModel.clear();
     }
 
-    _stats = RenderStats{};  // 통계 초기화
+    _stats = RenderStats{};
 
     RenderMeshRenderer();
     RenderModelRenderer();
     RenderAnimRenderer();
 
     _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
+
+    PruneEmptyGroups();
+}
+
+void InstancingManager::PruneEmptyGroups()
+{
+    for (auto it = _modelCache.begin(); it != _modelCache.end();)
+    {
+        if (it->second.empty())
+        {
+            _buffers.erase(it->first);
+            _modelWorldCache.erase(it->first);
+            it = _modelCache.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    for (auto it = _meshCache.begin(); it != _meshCache.end();)
+    {
+        if (it->second.empty())
+        {
+            _buffers.erase(it->first);
+            _meshWorldCache.erase(it->first);
+            it = _meshCache.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
 }
 
 void InstancingManager::ClearData()
@@ -262,7 +291,7 @@ void InstancingManager::RenderAnimRenderer()
             InstancingData data;
             data.world = tr->GetWorldMatrix();
 
-            AddData(id, data, /*isDynamic=*/true);
+            AddData(id, data, true);
 
             anim->UpdateTweenData();
             tweenDesc.tweens[i] = anim->GetTweenDesc();
@@ -288,11 +317,11 @@ void InstancingManager::AddData(InstanceID instanceID, const InstancingData& dat
 
 void InstancingManager::DumpInstancingStats() const
 {
-    ::OutputDebugStringW(L"\n========== [InstancingManager Phase2 Stats] ==========\n");
+    ::OutputDebugStringW(L"\n========== [InstancingManager Stats] ==========\n");
 
     wchar_t buf[512];
 
-    swprintf_s(buf, L"[Phase2] Ring Buffer 슬롯: %u | 정적버퍼 Map 절감: dirty 없는 프레임 Map=0\n",
+    swprintf_s(buf, L"Ring Buffer 슬롯: %u (Dynamic only) | Static 버퍼: UpdateSubresource\n",
         InstancingBuffer::kRingCount);
     ::OutputDebugStringW(buf);
 
@@ -321,7 +350,7 @@ void InstancingManager::DumpInstancingStats() const
         L"MeshRenderer 그룹: %zu | Mesh 인스턴스: %zu\n"
         L"최종 DrawCall: Model=%zu + Mesh=%zu = %zu\n"
         L"인스턴싱 절감률: %.1f%% (%zu Entity → %zu DrawCall)\n"
-        L"======================================================\n",
+        L"================================================\n",
         _meshCache.size(), totalMesh,
         _modelCache.size(), _meshCache.size(), _modelCache.size() + _meshCache.size(),
         (totalModel > 0 ? (1.0 - static_cast<double>(_modelCache.size()) / totalModel) * 100.0 : 0.0),

@@ -46,6 +46,8 @@ private:
     void RenderModelRenderer();
     void RenderAnimRenderer ();
 
+    void PruneEmptyGroups();
+
     void AddData(InstanceID instanceID, const InstancingData& data, bool isDynamic = false);
 
     using BufferMap   = std::unordered_map<InstanceID, std::unique_ptr<InstancingBuffer>, InstanceIDHash>;
@@ -53,20 +55,20 @@ private:
     using WorldCache  = std::unordered_map<InstanceID, std::vector<InstancingData>,       InstanceIDHash>;
     using DirtySet    = std::unordered_set<InstanceID, InstanceIDHash>;
 
-    BufferMap   _buffers;           
+    BufferMap   _buffers;
 
-    EntityCache _meshCache;         
-    EntityCache _modelCache;        
-    EntityCache _animCache;         
+    EntityCache _meshCache;
+    EntityCache _modelCache;
+    EntityCache _animCache;
 
-    WorldCache  _meshWorldCache;    
-    WorldCache  _modelWorldCache;   
+    WorldCache  _meshWorldCache;
+    WorldCache  _modelWorldCache;
 
-    bool _bDirty    = true;         
-    bool _meshDirty = true;         
+    bool _bDirty    = true;
+    bool _meshDirty = true;
 
-    DirtySet _partialDirtyMesh;     
-    DirtySet _partialDirtyModel;    
+    DirtySet _partialDirtyMesh;
+    DirtySet _partialDirtyModel;
 
     RenderStats _stats;
 };

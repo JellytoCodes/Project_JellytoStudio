@@ -1,14 +1,15 @@
-﻿#include "Framework.h"
+﻿
+#include "Framework.h"
 #include "InstancingBuffer.h"
 #include "Graphics/Graphics.h"
 
 InstancingBuffer::InstancingBuffer(bool isDynamic)
     : _isDynamic(isDynamic)
 {
-    CreateRingBuffers(MAX_MESH_INSTANCE);
+    CreateBuffers(MAX_MESH_INSTANCE);
 }
 
-void InstancingBuffer::CreateRingBuffers(uint32 maxCount)
+void InstancingBuffer::CreateBuffers(uint32 maxCount)
 {
     _maxCount = maxCount;
 
@@ -18,16 +19,27 @@ void InstancingBuffer::CreateRingBuffers(uint32 maxCount)
     auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
 
     D3D11_BUFFER_DESC desc = {};
-    desc.ByteWidth      = sizeof(InstancingData) * maxCount;
-    desc.Usage          = D3D11_USAGE_DYNAMIC;
-    desc.BindFlags      = D3D11_BIND_VERTEX_BUFFER;
-    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    desc.ByteWidth  = sizeof(InstancingData) * maxCount;
+    desc.BindFlags  = D3D11_BIND_VERTEX_BUFFER;
 
-    for (uint32 i = 0; i < kRingCount; i++)
+    if (_isDynamic)
     {
-        _ringBuffers[i].Reset();
-        const HRESULT hr = device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf());
-        CHECK(hr);
+        desc.Usage          = D3D11_USAGE_DYNAMIC;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+        for (uint32 i = 0; i < kRingCount; ++i)
+        {
+            _ringBuffers[i].Reset();
+            CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf()));
+        }
+    }
+    else
+    {
+        desc.Usage          = D3D11_USAGE_DEFAULT;
+        desc.CPUAccessFlags = 0;
+
+        _ringBuffers[0].Reset();
+        CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
     }
 
     _frameIndex  = 0;
@@ -54,32 +66,45 @@ void InstancingBuffer::UploadData()
     const uint32 count = GetCount();
     if (count == 0) return;
 
-    if (!_isDynamic && !_dirty) return;
+    if (!_dirty) return;
 
     if (count > _maxCount)
     {
         const uint32 newCount = max(_maxCount * 2, count);
-        CreateRingBuffers(newCount);
+        CreateBuffers(newCount);
     }
-
-    _currentSlot = _frameIndex % kRingCount;
-    ++_frameIndex;
 
     auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
 
-    D3D11_MAPPED_SUBRESOURCE mapped = {};
-    const HRESULT hr = ctx->Map(
-        _ringBuffers[_currentSlot].Get(),
-        0,
-        D3D11_MAP_WRITE_DISCARD,
-        0,
-        &mapped
-    );
-    CHECK(hr);
+    if (_isDynamic)
+    {
+        _currentSlot = _frameIndex % kRingCount;
+        ++_frameIndex;
 
-    ::memcpy(mapped.pData, _data.data(), sizeof(InstancingData) * count);
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        CHECK(ctx->Map(
+            _ringBuffers[_currentSlot].Get(),
+            0,
+            D3D11_MAP_WRITE_DISCARD,
+            0,
+            &mapped));
 
-    ctx->Unmap(_ringBuffers[_currentSlot].Get(), 0);
+        ::memcpy(mapped.pData, _data.data(), sizeof(InstancingData) * count);
+
+        ctx->Unmap(_ringBuffers[_currentSlot].Get(), 0);
+    }
+    else
+    {
+        _currentSlot = 0;
+
+        ctx->UpdateSubresource(
+            _ringBuffers[0].Get(),
+            0,
+            nullptr,
+            _data.data(),
+            sizeof(InstancingData) * count,
+            0);
+    }
 
     _dirty    = false;
     _uploaded = true;
@@ -94,7 +119,11 @@ void InstancingBuffer::BindBuffer() const
     const UINT stride = sizeof(InstancingData);
     const UINT offset = 0;
 
-    ctx->IASetVertexBuffers(1, 1, _ringBuffers[_currentSlot].GetAddressOf(), &stride, &offset);
+    ctx->IASetVertexBuffers(
+        1, 1,
+        _ringBuffers[_currentSlot].GetAddressOf(),
+        &stride,
+        &offset);
 }
 
 void InstancingBuffer::PushData()

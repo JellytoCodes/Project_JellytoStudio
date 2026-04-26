@@ -26,9 +26,7 @@ public:
     void AddData(const InstancingData& data);
 
     void UploadData();
-
     void BindBuffer() const;
-
     void PushData();
 
     bool   IsUploaded() const { return _uploaded; }
@@ -36,7 +34,7 @@ public:
     uint32 GetCount()  const { return static_cast<uint32>(_data.size()); }
 
 private:
-    void CreateRingBuffers(uint32 maxCount);
+    void CreateBuffers(uint32 maxCount);
 
     ComPtr<ID3D11Buffer> _ringBuffers[kRingCount];
     uint32               _maxCount    = 0;
@@ -46,6 +44,6 @@ private:
     std::vector<InstancingData> _data;
 
     bool _isDynamic = false;
-    bool _dirty     = true; 
+    bool _dirty     = true;
     bool _uploaded  = false;
 };

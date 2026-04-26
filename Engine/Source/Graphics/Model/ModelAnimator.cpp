@@ -11,7 +11,7 @@
 #include "Scene/SceneManager.h"
 #include "Scene/Scene.h"
 #include "Entity/Components/Light.h"
-#include "Utils/Converter.h"   // [Phase 1] NormalizeBoneName 폴백 조회용
+#include "Utils/Converter.h"
 #include "Utils/Utils.h"
 
 ModelAnimator::ModelAnimator(std::shared_ptr<Shader> shader)
