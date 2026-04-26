@@ -128,6 +128,24 @@ void ModelAnimator::RenderInstancing(InstancingBuffer* buffer)
     }
 }
 
+void ModelAnimator::RenderRawSkinnedInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer)
+{
+    if (_model == nullptr) return;
+    if (_texture == nullptr) CreateTexture();
+    if (buffer->GetCount() == 0) return;
+ 
+    buffer->BindBuffer();
+ 
+    const auto& meshes = _model->GetMeshes();
+    for (auto& mesh : meshes)
+    {
+        mesh->vertexBuffer->PushData(dc);
+        mesh->indexBuffer->PushData(dc);
+ 
+        dc->DrawIndexedInstanced(mesh->indexBuffer->GetCount(),buffer->GetCount(), 0, 0, 0);
+    }
+}
+
 InstanceID ModelAnimator::GetInstanceID()
 {
     return std::make_pair(
