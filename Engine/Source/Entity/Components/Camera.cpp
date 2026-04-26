@@ -28,8 +28,6 @@ void Camera::OnDestroy()  {}
 
 void Camera::Update()
 {
-    UpdateMatrix();
-
     const Vec3  curPos   = GetTransform()->GetPosition();
     const float curYaw   = GetTransform()->GetRotation().y;
     const float moveDelta = (curPos - _prevCamPos).LengthSquared();
@@ -40,9 +38,9 @@ void Camera::Update()
 
     if (moveDelta > kMoveThreshold || rotDelta > kRotThreshold)
     {
-        _sortDirty   = true;
-        _prevCamPos  = curPos;
-        _prevCamYaw  = curYaw;
+        _sortDirty  = true;
+        _prevCamPos = curPos;
+        _prevCamYaw = curYaw;
     }
 }
 
@@ -62,6 +60,8 @@ void Camera::UpdateMatrix()
 
 void Camera::SortEntities()
 {
+    UpdateMatrix();
+
     if (!_sortDirty) return;
 
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
