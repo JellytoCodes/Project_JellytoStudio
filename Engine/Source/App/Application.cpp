@@ -9,6 +9,7 @@
 #include "ToolWindow.h"
 #include "ItemWindow.h"
 #include "DetailWindow.h"
+#include "Audio/AudioManager.h"
 #include "Graphics/Graphics.h"
 #include "UI/UIManager.h"
 
@@ -39,6 +40,9 @@ bool Application::Initialize(const ApplicationDesc& desc)
     GET_SINGLE(UIManager)->Init(
         GET_SINGLE(DisplayContext)->GetWidthF(),
         GET_SINGLE(DisplayContext)->GetHeightF());
+
+    //GET_SINGLE(AudioManager)->Init(L"../Resources/Audio/");
+    //GET_SINGLE(AudioManager)->PlayBGM();
 
     _desc.app->Init();
     return true;

@@ -18,6 +18,7 @@
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
 #include "Graphics/Managers/InstancingManager.h"
+#include "Audio/AudioManager.h"
 
 using SlotType = PaletteWidget::SlotType;
 using CH       = CollisionChannel;
@@ -420,6 +421,8 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     if (instID.first != 0)
         GET_SINGLE(InstancingManager)->MarkModelDirty(instID);
 
+    //GET_SINGLE(AudioManager)->PlayOneShot3D(SoundEvent::BlockPlace, entityPos);
+
     return true;
 }
 
@@ -433,6 +436,7 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (_pInventory)
         _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
 
+    const Vec3       removedPos = { it->second.x, it->second.y, it->second.z };
     auto*            mr         = entity->GetComponent<ModelRenderer>();
     const InstanceID instanceID = mr ? mr->GetInstanceID() : InstanceID{ 0, 0 };
 
@@ -453,6 +457,8 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 
     if (instanceID.first != 0)
         GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
+
+    //GET_SINGLE(AudioManager)->PlayOneShot3D(SoundEvent::BlockPlace, removedPos);
 
     return true;
 }
