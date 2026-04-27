@@ -163,6 +163,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\App\Interfaces\IWindow.cpp" />
     <ClCompile Include="Source\App\ToolWindow.cpp" />
     <ClCompile Include="Source\App\Managers\WindowManager.cpp" />
+    <ClCompile Include="Source\Core\DisplayContext.cpp" />
     <ClCompile Include="Source\Entity\Actor.cpp" />
     <ClCompile Include="Source\Entity\Components\AnimStateMachine.cpp" />
     <ClCompile Include="Source\Entity\Components\Collider\CollisionChannel.cpp" />
@@ -239,6 +240,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\App\Interfaces\IWindow.h" />
     <ClInclude Include="Source\App\ToolWindow.h" />
     <ClInclude Include="Source\App\Managers\WindowManager.h" />
+    <ClInclude Include="Source\Core\DisplayContext.h" />
     <ClInclude Include="Source\Entity\Actor.h" />
     <ClInclude Include="Source\Entity\Components\AnimStateMachine.h" />
     <ClInclude Include="Source\Entity\Components\Collider\CollisionChannel.h" />

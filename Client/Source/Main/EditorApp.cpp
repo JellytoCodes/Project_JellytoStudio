@@ -22,6 +22,7 @@
 #include "UI/Components/UIText.h"
 #include "UI/Components/UIButton.h"
 #include "Scene/SceneSerializer.h"
+#include "Core/DisplayContext.h"
 
 EditorApp::EditorApp()
 {
@@ -105,7 +106,7 @@ void EditorApp::CreateHUD()
 	Scene* scene = _scene.get();
 
 	std::unique_ptr<Widget> hud = std::make_unique<Widget>(L"HUD");
-	float cx = kWindowWidth * 0.5f - 130.f;
+	float cx = GET_SINGLE(DisplayContext)->GetWidthF() * 0.5f - 130.f;
 	hud->SetScreenPos(cx, 12.f);
 
 	std::unique_ptr<UIText> timeText = std::make_unique<UIText>();

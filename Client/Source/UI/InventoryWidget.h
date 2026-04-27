@@ -26,7 +26,7 @@ public:
 
 private:
     // ── DrawUI 서브루틴 ───────────────────────────────────────────
-    void DrawBackground();
+    void DrawBackground(float scrW, float scrH);
     void DrawInventoryGrid();
     void DrawHotbarMirror();
     void DrawSingleSlot(float x, float y, float w, float h, const InventorySlotData& slot, bool selected, bool isHotbar);

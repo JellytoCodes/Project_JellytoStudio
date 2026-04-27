@@ -1,8 +1,8 @@
 ﻿#include "pch.h"
 #include "InventoryWidget.h"
-
 #include "UI/PaletteWidget.h"
 #include "UI/UIManager.h"
+#include "Core/DisplayContext.h"
 #include "Core/Managers/InputManager.h"
 #include "Data/BlockDataTable.h"
 
@@ -22,68 +22,64 @@ Color InventoryWidget::GetSlotColor(SlotType type)
     return rec->color;
 }
 
-// ── 생성자 ────────────────────────────────────────────────────────────────────
 InventoryWidget::InventoryWidget(const std::wstring& name)
     : Super(name)
 {
-    const float totalH = kGridPanelH + kPanelGap + kHotbarPanelH;
-    const float startX = (static_cast<float>(kWindowWidth)  - kGridPanelW)  * 0.5f;
-    const float startY = (static_cast<float>(kWindowHeight) - totalH)       * 0.5f;
-    SetScreenPos(startX, startY);
 }
 
-// ── SetOpen ───────────────────────────────────────────────────────────────────
 void InventoryWidget::SetOpen(bool open)
 {
     _isOpen = open;
 }
 
-// ── Update ────────────────────────────────────────────────────────────────────
 void InventoryWidget::Update()
 {
     HandleInput();
 }
 
-// ── HandleInput ───────────────────────────────────────────────────────────────
 void InventoryWidget::HandleInput()
 {
     auto* input = GET_SINGLE(InputManager);
-
     if (input->GetButtonDown(KEY_TYPE::I))
         SetOpen(!_isOpen);
 }
 
-// ── DrawUI ────────────────────────────────────────────────────────────────────
 void InventoryWidget::DrawUI()
 {
-    if (!_isOpen) return;
+    if (!_isOpen)    return;
     if (!_pInventory) return;
 
-    DrawBackground();
+    const float scrW   = GET_SINGLE(DisplayContext)->GetWidthF();
+    const float scrH   = GET_SINGLE(DisplayContext)->GetHeightF();
+    const float totalH = kGridPanelH + kPanelGap + kHotbarPanelH;
+
+    SetScreenPos((scrW - kGridPanelW) * 0.5f,
+                 (scrH - totalH)      * 0.5f);
+
+    DrawBackground(scrW, scrH);
     DrawInventoryGrid();
     DrawHotbarMirror();
 }
 
-// ── DrawBackground ────────────────────────────────────────────────────────────
-void InventoryWidget::DrawBackground()
+void InventoryWidget::DrawBackground(float scrW, float scrH)
 {
     auto* ui = GET_SINGLE(UIManager);
-    const float sx = GetScreenX();
-    const float sy = GetScreenY();
+
+    const float sx     = GetScreenX();
+    const float sy     = GetScreenY();
     const float totalH = kGridPanelH + kPanelGap + kHotbarPanelH;
 
-    ui->AddRect(0.f, 0.f,
-        static_cast<float>(kWindowWidth),
-        static_cast<float>(kWindowHeight),
-        Color(0.f, 0.f, 0.f, 0.55f));
+    ui->AddRect(0.f, 0.f, scrW, scrH, Color(0.f, 0.f, 0.f, 0.55f));
 
     ui->AddRect(sx, sy, kGridPanelW, kGridPanelH,
         Color(0.08f, 0.09f, 0.11f, 0.96f));
+
     ui->AddRect(sx, sy + kGridPanelH + kPanelGap, kHotbarPanelW, kHotbarPanelH,
         Color(0.06f, 0.07f, 0.09f, 0.96f));
 
     ui->AddRectBorder(sx, sy, kGridPanelW, kGridPanelH,
         Color(0.35f, 0.35f, 0.45f, 0.80f), 2.f);
+
     ui->AddRectBorder(sx, sy + kGridPanelH + kPanelGap, kHotbarPanelW, kHotbarPanelH,
         Color(0.35f, 0.35f, 0.45f, 0.80f), 2.f);
 
@@ -91,72 +87,68 @@ void InventoryWidget::DrawBackground()
         sx + kGridPanelPad, sy + kGridPanelPad * 0.5f,
         kGridPanelW - kGridPanelPad * 2, 24.f,
         Color(0.85f, 0.85f, 1.f, 1.f), 16);
+
     ui->AddText(L"I : 닫기",
         sx + kGridPanelW - 90.f, sy + kGridPanelPad * 0.5f,
         80.f, 20.f,
         Color(0.5f, 0.5f, 0.6f, 0.9f), 13);
 }
 
-// ── DrawInventoryGrid ─────────────────────────────────────────────────────────
 void InventoryWidget::DrawInventoryGrid()
 {
-    const float sx = GetScreenX() + kGridPanelPad;
-    const float sy = GetScreenY() + kGridPanelPad + 28.f;
-
+    const float sx      = GetScreenX() + kGridPanelPad;
+    const float sy      = GetScreenY() + kGridPanelPad + 28.f;
     const int32 selSlot = _pPalette ? _pPalette->GetSelectedSlot() : -1;
 
     for (int32 i = 0; i < InventoryData::kTotalSlots; ++i)
     {
-        const int32 col = i % InventoryData::kGridCols;
-        const int32 row = i / InventoryData::kGridCols;
-
+        const int32 col   = i % InventoryData::kGridCols;
+        const int32 row   = i / InventoryData::kGridCols;
         const float slotX = sx + col * (kGridSlotW + kGridSlotGap);
         const float slotY = sy + row * (kGridSlotH + kGridSlotGap);
 
-        const InventorySlotData slot    = _pInventory->GetGridSlot(i);
+        const InventorySlotData slot     = _pInventory->GetGridSlot(i);
         const bool              selected = (i < InventoryData::kHotbarSlots && i == selSlot);
 
         DrawSingleSlot(slotX, slotY, kGridSlotW, kGridSlotH,
-                       slot, selected, /*isHotbar=*/false);
+                       slot, selected, false);
     }
 }
 
-// ── DrawHotbarMirror ──────────────────────────────────────────────────────────
 void InventoryWidget::DrawHotbarMirror()
 {
-    const float panelY = GetScreenY() + kGridPanelH + kPanelGap;
-    const float sx     = GetScreenX() + kHotbarPad;
-    const float sy     = panelY       + kHotbarPad;
-
+    const float panelY  = GetScreenY() + kGridPanelH + kPanelGap;
+    const float sx      = GetScreenX() + kHotbarPad;
+    const float sy      = panelY       + kHotbarPad;
     const int32 selSlot = _pPalette ? _pPalette->GetSelectedSlot() : -1;
 
     for (int32 i = 0; i < InventoryData::kHotbarSlots; ++i)
     {
-        const float slotX = sx + i * (kHotbarSlotW + kHotbarSlotGap);
-
+        const float slotX    = sx + i * (kHotbarSlotW + kHotbarSlotGap);
         const InventorySlotData slot     = _pInventory->GetHotbarSlot(i);
         const bool              selected = (i == selSlot);
 
         DrawSingleSlot(slotX, sy, kHotbarSlotW, kHotbarSlotH,
-                       slot, selected, /*isHotbar=*/true);
+                       slot, selected, true);
     }
 }
 
-// ── DrawSingleSlot ────────────────────────────────────────────────────────────
-void InventoryWidget::DrawSingleSlot(float x, float y, float w, float h, const InventorySlotData& slot, bool selected, bool isHotbar)
+void InventoryWidget::DrawSingleSlot(float x, float y, float w, float h,
+                                      const InventorySlotData& slot,
+                                      bool selected, bool isHotbar)
 {
     auto* ui = GET_SINGLE(UIManager);
 
     const bool isEmpty = (slot.type == SlotType::Count);
-
-    Color bg = isEmpty ? Color(0.10f, 0.10f, 0.12f, 0.80f) : GetSlotColor(slot.type);
-
+    Color      bg      = isEmpty ? Color(0.10f, 0.10f, 0.12f, 0.80f)
+                                 : GetSlotColor(slot.type);
     if (selected)
     {
         bg.R(std::min(1.f, bg.R() + 0.30f));
         bg.G(std::min(1.f, bg.G() + 0.30f));
         bg.B(std::min(1.f, bg.B() + 0.30f));
     }
+
     ui->AddRect(x, y, w, h, bg);
 
     const Color borderCol = selected
@@ -169,14 +161,12 @@ void InventoryWidget::DrawSingleSlot(float x, float y, float w, float h, const I
     DrawSlotLabel(x, y, w, h, slot, isHotbar);
 }
 
-// ── DrawSlotLabel ─────────────────────────────────────────────────────────────
-void InventoryWidget::DrawSlotLabel(float x, float y, float w, float h, const InventorySlotData& slot, bool isHotbar)
+void InventoryWidget::DrawSlotLabel(float x, float y, float w, float h,
+                                     const InventorySlotData& slot, bool isHotbar)
 {
     auto* ui = GET_SINGLE(UIManager);
 
-    // ★ BlockDataTable 조회: 컴파일 없이 레이블 변경 가능
     const wchar_t* name = GetSlotLabel(slot.type);
-
     ui->AddText(name,
         x + 4.f, y + 4.f,
         w - 8.f, 18.f,
