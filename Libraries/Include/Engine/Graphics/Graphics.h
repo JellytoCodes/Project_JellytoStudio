@@ -23,6 +23,8 @@ public:
 
     void InvalidateStateCache();
 
+    Vec2 GetWindowSize() const { return windowSize; }
+
 private:
     void CreateDeviceAndSwapChain();
     void CreateRenderTargetView();
@@ -53,4 +55,6 @@ private:
         bool blendValid = false;
     };
     ShadowStateCache _stateCache;
+
+    Vec2 windowSize = {};
 };

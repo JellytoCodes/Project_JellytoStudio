@@ -5,10 +5,14 @@ void Graphics::Initialize(HWND hwnd, UINT width, UINT height)
 {
 	_hwnd = hwnd;
 
+	windowSize.x = width;
+	windowSize.y = height;
+
+	SetViewport(windowSize.x, windowSize.y);
+
 	CreateDeviceAndSwapChain();
 	CreateRenderTargetView();
 	CreateDepthStencilView();
-	SetViewport(width, height);
 }
 
 void Graphics::RenderBegin()
@@ -30,8 +34,8 @@ void Graphics::CreateDeviceAndSwapChain()
 {
 	DXGI_SWAP_CHAIN_DESC desc = {};
 	{
-		desc.BufferDesc.Width = _vp.GetWidth();
-		desc.BufferDesc.Height = _vp.GetHeight();
+		desc.BufferDesc.Width = windowSize.x;
+		desc.BufferDesc.Height = windowSize.y;
 		desc.BufferDesc.RefreshRate.Numerator = 60;
 		desc.BufferDesc.RefreshRate.Denominator = 1;
 		desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -81,8 +85,8 @@ void Graphics::CreateDepthStencilView()
 	{
 		D3D11_TEXTURE2D_DESC desc = {};
 
-		desc.Width = static_cast<uint32>(_vp.GetWidth());
-		desc.Height = static_cast<uint32>(_vp.GetHeight());
+		desc.Width = static_cast<uint32>(windowSize.x);
+		desc.Height = static_cast<uint32>(windowSize.y);
 		desc.MipLevels = 1;
 		desc.ArraySize = 1;
 		desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;

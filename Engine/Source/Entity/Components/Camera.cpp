@@ -4,6 +4,7 @@
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
 #include "Entity/Components/Collider/AABBCollider.h"
+#include "Graphics/Graphics.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Managers/InstancingManager.h"
@@ -16,8 +17,8 @@ Matrix Camera::S_MatProjection = Matrix::Identity;
 
 Camera::Camera() : Super(ComponentType::Camera)
 {
-    _width  = MAIN_WINDOW_WIDTH;
-    _height = MAIN_WINDOW_HEIGHT;
+    _width  = GET_SINGLE(Graphics)->GetWindowSize().x;
+    _height = GET_SINGLE(Graphics)->GetWindowSize().y;
 }
 
 Camera::~Camera() {}

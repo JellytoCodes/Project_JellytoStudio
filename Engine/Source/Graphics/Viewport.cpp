@@ -4,7 +4,7 @@
 
 Viewport::Viewport()
 {
-	Set(MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT);
+	
 }
 
 Viewport::Viewport(float width, float height, float x, float y, float minDepth, float maxDepth)
