@@ -421,7 +421,7 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& entityPos, SlotType type)
     if (instID.first != 0)
         GET_SINGLE(InstancingManager)->MarkModelDirty(instID);
 
-    //GET_SINGLE(AudioManager)->PlayOneShot3D(SoundEvent::BlockPlace, entityPos);
+    //GET_SINGLE(AudioManager)->PlayOneShot3D(L"BlockPlace", entityPos);
 
     return true;
 }
@@ -458,7 +458,7 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (instanceID.first != 0)
         GET_SINGLE(InstancingManager)->MarkModelDirty(instanceID);
 
-    //GET_SINGLE(AudioManager)->PlayOneShot3D(SoundEvent::BlockPlace, removedPos);
+    //GET_SINGLE(AudioManager)->PlayOneShot3D(L"BlockRemove", removedPos);
 
     return true;
 }

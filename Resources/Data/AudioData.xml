@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    AudioDataTable
+    ==============
+    AudioManager 가 FMOD Sound 를 로드하기 위한 데이터 테이블.
+
+    새 사운드 추가 방법:
+      1. 아래 <Clip> 요소를 한 줄 추가  (key 는 고유해야 함)
+      2. 호출 측에서 해당 key 문자열로 재생
+         → SoundEvent enum / AudioManager.cpp 수정 불필요
+
+    Attributes
+    ----------
+    key      : 고유 문자열 식별자 — 호출 측에서 이 값을 그대로 사용
+               e.g. GET_SINGLE(AudioManager)->PlayOneShot3D(L"BlockPlace", pos)
+    path     : 오디오 루트 디렉터리 기준 상대 경로
+    is3D     : 3D 공간 사운드 여부  (true / false)
+    isLoop   : 반복 재생 여부        (true / false)
+    minDist  : 3D 최소 감쇠 거리    (is3D=false 시 무시됨)
+    maxDist  : 3D 최대 감쇠 거리    (is3D=false 시 무시됨)
+-->
+
+<AudioDataTable>
+    <Clips>
+
+        <!-- ── SFX ─────────────────────────────────────────────────── -->
+
+        <Clip key="BlockPlace"
+              path="SFX/block_place.wav"
+              is3D="true"
+              isLoop="false"
+              minDist="1.0"
+              maxDist="30.0"/>
+
+        <Clip key="BlockRemove"
+              path="SFX/block_remove.wav"
+              is3D="true"
+              isLoop="false"
+              minDist="1.0"
+              maxDist="30.0"/>
+
+        <Clip key="UIClick"
+              path="SFX/ui_click.wav"
+              is3D="false"
+              isLoop="false"/>
+
+        <!-- ── BGM ─────────────────────────────────────────────────── -->
+
+        <Clip key="BGM_Main"
+              path="BGM/bgm_main.wav"
+              is3D="false"
+              isLoop="true"/>
+
+    </Clips>
+</AudioDataTable>

@@ -93,10 +93,12 @@ using namespace DirectX;
 #pragma comment(lib, "DirectXTex/DirectXTex_debug.lib")
 #pragma comment(lib, "FX11/Effects11d.lib")
 #pragma comment(lib, "Assimp/assimp-vc143-mtd.lib")
+#pragma comment(lib, "FMOD/fmodL-vc.lib")
 #else
 #pragma comment(lib, "DirectXTex/DirectXTex.lib")
 #pragma comment(lib, "FX11/Effects11.lib")
 #pragma comment(lib, "Assimp/assimp-vc143-mt.lib")
+#pragma comment(lib, "FMOD/fmod-vc.lib")
 #endif
 
 ///////////////////////////////////////////////////

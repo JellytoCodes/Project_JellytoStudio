@@ -164,8 +164,8 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\App\ToolWindow.cpp" />
     <ClCompile Include="Source\App\Managers\WindowManager.cpp" />
     <ClCompile Include="Source\Audio\AudioClip.cpp" />
+    <ClCompile Include="Source\Audio\AudioDataTable.cpp" />
     <ClCompile Include="Source\Audio\AudioManager.cpp" />
-    <ClCompile Include="Source\Audio\SoundEvent.cpp" />
     <ClCompile Include="Source\Core\DisplayContext.cpp" />
     <ClCompile Include="Source\Entity\Actor.cpp" />
     <ClCompile Include="Source\Entity\Components\AnimStateMachine.cpp" />
@@ -244,8 +244,8 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\App\ToolWindow.h" />
     <ClInclude Include="Source\App\Managers\WindowManager.h" />
     <ClInclude Include="Source\Audio\AudioClip.h" />
+    <ClInclude Include="Source\Audio\AudioDataTable.h" />
     <ClInclude Include="Source\Audio\AudioManager.h" />
-    <ClInclude Include="Source\Audio\SoundEvent.h" />
     <ClInclude Include="Source\Core\DisplayContext.h" />
     <ClInclude Include="Source\Entity\Actor.h" />
     <ClInclude Include="Source\Entity\Components\AnimStateMachine.h" />

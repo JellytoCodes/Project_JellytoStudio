@@ -9,6 +9,7 @@
 #include "ToolWindow.h"
 #include "ItemWindow.h"
 #include "DetailWindow.h"
+#include "Audio/AudioDataTable.h"
 #include "Audio/AudioManager.h"
 #include "Graphics/Graphics.h"
 #include "UI/UIManager.h"
@@ -37,12 +38,11 @@ bool Application::Initialize(const ApplicationDesc& desc)
     if (auto item = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow"))
         GET_SINGLE(InputManager)->AddAllowedWindow(item->GetHWnd());
 
-    GET_SINGLE(UIManager)->Init(
-        GET_SINGLE(DisplayContext)->GetWidthF(),
-        GET_SINGLE(DisplayContext)->GetHeightF());
+    GET_SINGLE(UIManager)->Init(GET_SINGLE(DisplayContext)->GetWidthF(), GET_SINGLE(DisplayContext)->GetHeightF());
 
-    //GET_SINGLE(AudioManager)->Init(L"../Resources/Audio/");
-    //GET_SINGLE(AudioManager)->PlayBGM();
+    GET_SINGLE(AudioDataTable)->Load(L"../Resources/Data/AudioData.xml");
+    GET_SINGLE(AudioManager)->Init(L"../Resources/Audio/");
+    GET_SINGLE(AudioManager)->PlayBGM(L"BGM_Main");
 
     _desc.app->Init();
     return true;
@@ -79,6 +79,7 @@ void Application::Update()
     _desc.app->Update();
     _desc.app->Render();
     GET_SINGLE(SceneManager)->Render();
+    GET_SINGLE(AudioManager)->Update();
     GET_SINGLE(Graphics)->RenderEnd();
 }
 
