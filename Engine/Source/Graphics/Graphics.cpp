@@ -40,15 +40,9 @@ void Graphics::ResizeBuffers(UINT width, UINT height)
 void Graphics::RenderBegin()
 {
     InvalidateStateCache();
-    _deviceContext->OMSetRenderTargets(
-        1,
-        _renderTargetView.GetAddressOf(),
-        _depthStencilView.Get());
+    _deviceContext->OMSetRenderTargets(1, _renderTargetView.GetAddressOf(), _depthStencilView.Get());
     _deviceContext->ClearRenderTargetView(_renderTargetView.Get(), _clearColor);
-    _deviceContext->ClearDepthStencilView(
-        _depthStencilView.Get(),
-        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-        1, 0);
+    _deviceContext->ClearDepthStencilView(_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
     _vp.RSSetViewport(_deviceContext);
 }
 
@@ -76,7 +70,8 @@ void Graphics::CreateDeviceAndSwapChain()
     desc.Windowed                           = TRUE;
     desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
 
-    HRESULT hr = ::D3D11CreateDeviceAndSwapChain(
+    
+    CHECK(::D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
         nullptr,
@@ -88,21 +83,14 @@ void Graphics::CreateDeviceAndSwapChain()
         _swapChain.GetAddressOf(),
         _device.GetAddressOf(),
         nullptr,
-        _deviceContext.GetAddressOf());
-    CHECK(hr);
+        _deviceContext.GetAddressOf()));
 }
 
 void Graphics::CreateRenderTargetView()
 {
     ComPtr<ID3D11Texture2D> backBuffer;
-    CHECK(_swapChain->GetBuffer(
-        0,
-        __uuidof(ID3D11Texture2D),
-        reinterpret_cast<void**>(backBuffer.GetAddressOf())));
-    CHECK(_device->CreateRenderTargetView(
-        backBuffer.Get(),
-        nullptr,
-        _renderTargetView.GetAddressOf()));
+    CHECK(_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(backBuffer.GetAddressOf())));
+    CHECK(_device->CreateRenderTargetView(backBuffer.Get(), nullptr, _renderTargetView.GetAddressOf()));
 }
 
 void Graphics::CreateDepthStencilView()
@@ -124,16 +112,11 @@ void Graphics::CreateDepthStencilView()
         desc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
         desc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
         desc.Texture2D.MipSlice = 0;
-        CHECK(_device->CreateDepthStencilView(
-            _depthStencilTexture.Get(),
-            &desc,
-            _depthStencilView.GetAddressOf()));
+        CHECK(_device->CreateDepthStencilView(_depthStencilTexture.Get(), &desc, _depthStencilView.GetAddressOf()));
     }
 }
 
-void Graphics::SetViewport(float width, float height,
-                            float x, float y,
-                            float minDepth, float maxDepth)
+void Graphics::SetViewport(float width, float height, float x, float y, float minDepth, float maxDepth)
 {
     _vp.Set(width, height, x, y, minDepth, maxDepth);
 }
@@ -165,8 +148,7 @@ void Graphics::SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencil
     _stateCache.dssValid   = true;
 }
 
-void Graphics::SetBlendState(ID3D11BlendState* state,
-                              const FLOAT* blendFactor, UINT sampleMask)
+void Graphics::SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask)
 {
     const bool factorSame = (::memcmp(
         _stateCache.blendFactor,
