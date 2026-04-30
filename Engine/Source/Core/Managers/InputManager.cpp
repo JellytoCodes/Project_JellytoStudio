@@ -1,3 +1,4 @@
+
 #include "Framework.h"
 #include "InputManager.h"
 
@@ -11,7 +12,6 @@ void InputManager::Update()
 {
 	HWND activeHwnd = ::GetActiveWindow();
 
-	// 메인 윈도우 또는 허용된 서브 윈도우가 활성화된 경우에만 입력 처리
 	bool isAllowed = (activeHwnd == _hwnd);
 	if (!isAllowed)
 	{

@@ -26,8 +26,8 @@ void AnimStateMachine::RegisterClip(AnimState state, int32 clipIndex)
 
 void AnimStateMachine::SetState(AnimState state)
 {
-    if (_currentState == AnimState::Die) return; // 사망 불가역
-    if (_currentState == state)          return; // 동일 상태 무시
+    if (_currentState == AnimState::Die) return;
+    if (_currentState == state)          return;
 
     _currentState = state;
     ApplyClip(state);
@@ -42,14 +42,12 @@ void AnimStateMachine::ApplyClip(AnimState state)
     if (animator == nullptr) return;
 
     int32 clipIdx = _clipMap[static_cast<int>(state)];
-    if (clipIdx < 0) return; // 미등록
+    if (clipIdx < 0) return;
 
     TweenDesc& tween = animator->GetTweenDesc();
 
-    // 이미 재생 중인 클립이면 무시
     if (tween.curr.animIndex == clipIdx) return;
 
-    // next 슬롯으로 블렌딩 전환
     tween.next.animIndex = clipIdx;
     tween.next.currFrame = 0;
     tween.next.nextFrame = 1;

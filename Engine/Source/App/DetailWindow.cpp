@@ -1,7 +1,8 @@
-﻿#include "Framework.h"
+﻿
+#include "Framework.h"
 #include "DetailWindow.h"
 
-#include "Scene/Scene.h"
+
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Camera.h"
@@ -10,8 +11,7 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
-
-// ── 생성 ─────────────────────────────────────────────────────────────────
+#include "Scene/Scene.h"
 
 bool DetailWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
@@ -60,8 +60,6 @@ void DetailWindow::Toggle()
 {
 	_visible ? Hide() : Show();
 }
-
-// ── UI 빌드 ───────────────────────────────────────────────────────────────
 
 void DetailWindow::BuildUI()
 {
@@ -147,8 +145,6 @@ void DetailWindow::BuildUI()
 		LX, y, W, 28, _hWnd, (HMENU)(INT_PTR)ID_BTN_APPLY, _hInstance, nullptr);
 }
 
-// ── 씬 / Dirty 관리 ───────────────────────────────────────────────────────
-
 void DetailWindow::SetScene(Scene* scene)
 {
 	_scene = scene;
@@ -166,11 +162,9 @@ void DetailWindow::MarkDirty()
 void DetailWindow::RefreshEntityList()
 {
 	if (!_hEntityList) return;
-	// Dirty가 아니면 재구성하지 않음 (스크롤 유지, 편집 중 덮어쓰기 방지)
 	if (!_listDirty) return;
 	_listDirty = false;
 
-	// 스크롤 top 위치 + 선택 index 기억
 	int prevTop = (int)::SendMessage(_hEntityList, LB_GETTOPINDEX, 0, 0);
 	int prevSel = (int)::SendMessage(_hEntityList, LB_GETCURSEL, 0, 0);
 	Entity* prevSelected = _selectedEntity;
@@ -223,18 +217,14 @@ void DetailWindow::RefreshEntityList()
 	swprintf_s(buf, L"오브젝트 [%d개]  (✔=피킹가능)", (int)_entitySnapshot.size());
 	::SetWindowTextW(_hEntityCount, buf);
 
-	// 스크롤 위치 복원
 	if (prevTop >= 0)
 		::SendMessage(_hEntityList, LB_SETTOPINDEX, prevTop, 0);
 
-	// 선택 복원 (Entity 포인터 기준으로 새 인덱스 찾아서 복원)
 	if (newSelIdx >= 0)
 		::SendMessage(_hEntityList, LB_SETCURSEL, newSelIdx, 0);
 	else if (prevSel >= 0 && prevSel < (int)_entitySnapshot.size())
 		::SendMessage(_hEntityList, LB_SETCURSEL, prevSel, 0);
 }
-
-// ── 목록 클릭 → Entity 정보 표시 ─────────────────────────────────────────
 
 void DetailWindow::OnEntityListClicked()
 {
@@ -292,8 +282,6 @@ void DetailWindow::FillDetailFromEntity(Entity* entity)
 	UpdateDetail(info);
 }
 
-// ── UpdateDetail / ClearDetail ────────────────────────────────────────────
-
 void DetailWindow::UpdateDetail(const DetailInfo& info)
 {
 	if (!_hWnd) return;
@@ -323,7 +311,6 @@ void DetailWindow::UpdateDetail(const DetailInfo& info)
 	SetF(_hFrameRate, info.frameRate);
 	SetF(_hDuration, info.duration);
 
-	// Transform Edit: 편집 중(포커스 있음)이면 덮어쓰지 않음
 	if (!IsTransformEditFocused())
 	{
 		SetF(_hPosX, info.tx); SetF(_hPosY, info.ty); SetF(_hPosZ, info.tz);
@@ -346,8 +333,6 @@ void DetailWindow::ClearDetail()
 	Set(_hRotX, L"0.000"); Set(_hRotY, L"0.000"); Set(_hRotZ, L"0.000");
 	Set(_hSclX, L"1.000"); Set(_hSclY, L"1.000"); Set(_hSclZ, L"1.000");
 }
-
-// ── Transform 편집 ────────────────────────────────────────────────────────
 
 bool DetailWindow::IsTransformEditFocused() const
 {
@@ -387,8 +372,6 @@ void DetailWindow::ApplyTransform()
 	tf->SetLocalScale(scl);
 }
 
-// ── SelectEntity ──────────────────────────────────────────────────────────
-
 void DetailWindow::SelectEntity(Entity* entity)
 {
 	_selectedEntity = entity;
@@ -404,8 +387,6 @@ void DetailWindow::SelectEntity(Entity* entity)
 		}
 	}
 }
-
-// ── WndProc ───────────────────────────────────────────────────────────────
 
 void DetailWindow::RegisterWindowClass(HINSTANCE hInstance)
 {
@@ -439,13 +420,12 @@ LRESULT CALLBACK DetailWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			return 0;
 
 		case WM_COMMAND:
-			// Apply 버튼
 			if (LOWORD(wParam) == ID_BTN_APPLY && HIWORD(wParam) == BN_CLICKED)
 			{
 				self->ApplyTransform();
 				return 0;
 			}
-			// Entity 목록 선택
+
 			if (LOWORD(wParam) == ID_LIST_ENTITY && HIWORD(wParam) == LBN_SELCHANGE)
 			{
 				self->OnEntityListClicked();
@@ -453,7 +433,6 @@ LRESULT CALLBACK DetailWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 			}
 			break;
 
-			// Edit 컨트롤에서 Enter → Apply
 		case WM_KEYDOWN:
 			if (wParam == VK_RETURN && self->IsTransformEditFocused())
 			{

@@ -4,8 +4,6 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 
-// ── 창 생성 ──────────────────────────────────────────────────────────────
-
 bool ItemWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
 	if (_created) return true;
@@ -32,19 +30,16 @@ bool ItemWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 
 	if (!_hWnd) return false;
 
-	// 클라이언트 크기 얻기
 	RECT cr = {};
 	::GetClientRect(_hWnd, &cr);
 	int cW = cr.right, cH = cr.bottom;
 
-	// ── 그리드 패널 (스크롤 가능, 상단) ─────────────────────────
 	int gridPanelH = cH - PANEL_H;
 	_hGridPanel = ::CreateWindowW(GRID_CLASS_NAME, nullptr,
 		WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_CLIPCHILDREN,
 		0, 0, cW, gridPanelH,
-		_hWnd, nullptr, hInstance, this); // this 전달
+		_hWnd, nullptr, hInstance, this);
 
-	// ── 하단 고정 패널 ───────────────────────────────────────────
 	BuildBottomPanel(cW, cH);
 
 	_created = true;
@@ -71,8 +66,6 @@ void ItemWindow::Toggle()
 	_visible ? Hide() : Show();
 }
 
-// ── Actor 등록 ────────────────────────────────────────────────────────────
-
 void ItemWindow::RegisterActor(const std::wstring& name, ActorFactory factory)
 {
 	_catalog.push_back({ name, std::move(factory) });
@@ -83,8 +76,6 @@ void ItemWindow::RegisterActor(const std::wstring& name, ActorFactory factory)
 	}
 }
 
-// ── 하단 고정 패널 ────────────────────────────────────────────────────────
-
 void ItemWindow::BuildBottomPanel(int clientW, int clientH)
 {
 	const int panelY = clientH - PANEL_H;
@@ -93,13 +84,11 @@ void ItemWindow::BuildBottomPanel(int clientW, int clientH)
 	const int EW = 60;
 	const int EH = 24;
 
-	// 구분선
 	::CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ,
 		0, panelY, clientW, 2, _hWnd, nullptr, _hInstance, nullptr);
 
 	int y = panelY + 8;
 
-	// 선택된 Actor 레이블
 	_hSelLabel = ::CreateWindowW(L"STATIC", L"선택된 Actor: 없음",
 		WS_CHILD | WS_VISIBLE | SS_LEFT,
 		M, y, clientW - M * 2, EH, _hWnd, nullptr, _hInstance, nullptr);
@@ -140,7 +129,6 @@ void ItemWindow::BuildBottomPanel(int clientW, int clientH)
 	Lbl(L"Scale Z", c4, y); Edt(_hSZ, L"1.0", c5, y, ID_EDIT_SZ);
 	y += 34;
 
-	// 배치 버튼 (중앙 정렬)
 	const int btnW = 140, btnH = 32;
 	int btnX = (clientW - btnW) / 2;
 	_hBtnPlace = ::CreateWindowW(L"BUTTON", L"씬에 배치",
@@ -148,8 +136,6 @@ void ItemWindow::BuildBottomPanel(int clientW, int clientH)
 		btnX, y, btnW, btnH,
 		_hWnd, (HMENU)(INT_PTR)ID_BTN_PLACE, _hInstance, nullptr);
 }
-
-// ── 스크롤 범위 갱신 ─────────────────────────────────────────────────────
 
 int ItemWindow::GetGridContentHeight() const
 {
@@ -176,13 +162,10 @@ void ItemWindow::UpdateScrollRange()
 	::SetScrollInfo(_hGridPanel, SB_VERT, &si, TRUE);
 }
 
-// ── 그리드 패널 페인트 ───────────────────────────────────────────────────
-
 void ItemWindow::OnGridPaint(HDC hdc)
 {
 	const int M = GRID_MARGIN;
 
-	// 카탈로그 레이블
 	RECT lblRect = { M, M - _scrollY, M + COLS * CELL_W, M + GRID_LBL_H - _scrollY };
 	wchar_t lbl[64];
 	swprintf_s(lbl, L"Actor 카탈로그 [%d개]  (클릭하여 선택)", (int)_catalog.size());
@@ -196,7 +179,6 @@ void ItemWindow::OnGridPaint(HDC hdc)
 	::SelectObject(hdc, oldFont);
 	::DeleteObject(lblFont);
 
-	// Actor 셀
 	for (int i = 0; i < (int)_catalog.size(); i++)
 	{
 		int col = i % COLS;
@@ -209,7 +191,6 @@ void ItemWindow::OnGridPaint(HDC hdc)
 
 void ItemWindow::DrawActorCell(HDC hdc, int idx, int x, int y, bool selected)
 {
-	// ── 아이콘 박스 ──────────────────────────────────────────────
 	RECT iconRect = { x, y, x + ICON_SIZE, y + ICON_SIZE };
 
 	COLORREF bgColor = selected ? RGB(210, 230, 255) : RGB(245, 245, 245);
@@ -226,7 +207,6 @@ void ItemWindow::DrawActorCell(HDC hdc, int idx, int x, int y, bool selected)
 	::SelectObject(hdc, old);
 	::DeleteObject(pen);
 
-	// ── 이니셜 (첫 글자, 크게) ───────────────────────────────────
 	const std::wstring& name = _catalog[idx].first;
 	wchar_t initial[2] = { name.empty() ? L'?' : name[0], L'\0' };
 
@@ -240,7 +220,6 @@ void ItemWindow::DrawActorCell(HDC hdc, int idx, int x, int y, bool selected)
 	::SelectObject(hdc, oldF);
 	::DeleteObject(iFont);
 
-	// ── 이름 텍스트 (아이콘 아래) ────────────────────────────────
 	RECT nameRect = { x, y + ICON_SIZE + 4, x + ICON_SIZE, y + ICON_SIZE + NAME_HEIGHT + 4 };
 
 	HFONT nFont = ::CreateFontW(18, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
@@ -253,8 +232,6 @@ void ItemWindow::DrawActorCell(HDC hdc, int idx, int x, int y, bool selected)
 	::SelectObject(hdc, oldN);
 	::DeleteObject(nFont);
 }
-
-// ── 그리드 클릭 / 히트 테스트 ────────────────────────────────────────────
 
 int ItemWindow::HitTestGrid(int mouseX, int mouseY)
 {
@@ -272,7 +249,6 @@ int ItemWindow::HitTestGrid(int mouseX, int mouseY)
 
 	int idx = row * COLS + col;
 
-	// 아이콘 박스 안인지 확인 (패딩 영역 제외)
 	int localX = relX - col * CELL_W;
 	int localY = relY - row * CELL_H;
 	if (localX > ICON_SIZE || localY > ICON_SIZE) return -1;
@@ -299,8 +275,6 @@ void ItemWindow::OnGridLButtonDown(int mouseX, int mouseY)
 	::InvalidateRect(_hGridPanel, nullptr, FALSE);
 }
 
-// ── 배치 ─────────────────────────────────────────────────────────────────
-
 void ItemWindow::OnPlace()
 {
 	if (_selectedIdx < 0 || _selectedIdx >= (int)_catalog.size())
@@ -319,7 +293,6 @@ void ItemWindow::OnPlace()
 		return;
 	}
 
-	// 팩토리로 새 Actor 인스턴스 생성 (같은 타입 여러 개 배치 가능)
 	auto actor = _catalog[_selectedIdx].second();
 	if (!actor->Spawn(scene))
 	{
@@ -327,7 +300,6 @@ void ItemWindow::OnPlace()
 		return;
 	}
 
-	// Transform 적용
 	auto entity = actor->GetEntity();
 	if (entity && entity->GetComponent<Transform>())
 	{
@@ -344,7 +316,7 @@ void ItemWindow::OnPlace()
 		tf->SetLocalScale(scl);
 	}
 
-	_placedActors.push_back(std::move(actor)); // 배치 목록에 보관
+	_placedActors.push_back(std::move(actor));
 }
 
 float ItemWindow::ReadFloat(HWND hEdit, float fallback)
@@ -355,8 +327,6 @@ float ItemWindow::ReadFloat(HWND hEdit, float fallback)
 	try { return std::stof(buf); }
 	catch (...) { return fallback; }
 }
-
-// ── 윈도우 클래스 등록 ───────────────────────────────────────────────────
 
 void ItemWindow::RegisterWindowClass(HINSTANCE hInstance)
 {
@@ -383,8 +353,6 @@ void ItemWindow::RegisterGridClass(HINSTANCE hInstance)
 	wcex.lpszClassName = GRID_CLASS_NAME;
 	::RegisterClassExW(&wcex);
 }
-
-// ── 그리드 패널 WndProc ──────────────────────────────────────────────────
 
 LRESULT CALLBACK ItemWindow::GridWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -449,7 +417,7 @@ LRESULT CALLBACK ItemWindow::GridWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPA
 			::SendMessage(hWnd, WM_VSCROLL,
 				delta > 0 ? MAKEWPARAM(SB_LINEDOWN, 0) : MAKEWPARAM(SB_LINEUP, 0),
 				0);
-			// 여러 틱 처리
+
 			int absDelta = abs(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
 			for (int i = 1; i < absDelta; i++)
 				::SendMessage(hWnd, WM_VSCROLL,
@@ -464,8 +432,6 @@ LRESULT CALLBACK ItemWindow::GridWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPA
 	}
 	return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
-
-// ── 메인 WndProc ─────────────────────────────────────────────────────────
 
 LRESULT CALLBACK ItemWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {

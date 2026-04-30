@@ -7,78 +7,80 @@ class Scene;
 class ItemWindow : public IWindow
 {
 public:
-	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
+	virtual bool										Create(HINSTANCE hInstance, HWND hMainWnd) override;
 
-	virtual void Show()   override;
-	virtual void Hide()   override;
-	virtual void Toggle() override;
-	virtual bool IsVisible() const override { return _visible; }
-	virtual HWND GetHWnd()   const override { return _hWnd; }
+	virtual void										Show()   override;
+	virtual void										Hide()   override;
+	virtual void										Toggle() override;
+	virtual bool										IsVisible() const override { return _visible; }
+	virtual HWND										GetHWnd()   const override { return _hWnd; }
 
-	void SetScene(Scene* scene) { _scene = scene; }
+	void												SetScene(Scene* scene) { _scene = scene; }
 
-	using ActorFactory = std::function<std::unique_ptr<Actor>()>;
-	void RegisterActor(const std::wstring& name, ActorFactory factory);
+	using												ActorFactory = std::function<std::unique_ptr<Actor>()>;
+	void												RegisterActor(const std::wstring& name, ActorFactory factory);
 
 private:
-	static constexpr int COLS        = 4;
-	static constexpr int ICON_SIZE   = 200;
-	static constexpr int NAME_HEIGHT = 28;
-	static constexpr int CELL_PAD    = 10;
-	static constexpr int CELL_W      = ICON_SIZE + CELL_PAD;
-	static constexpr int CELL_H      = ICON_SIZE + NAME_HEIGHT + CELL_PAD;
-	static constexpr int GRID_MARGIN = 10;
-	static constexpr int GRID_LBL_H  = 28;
-	static constexpr int PANEL_H     = 190;
+	static constexpr int								COLS        = 4;
+	static constexpr int								ICON_SIZE   = 200;
+	static constexpr int								NAME_HEIGHT = 28;
+	static constexpr int								CELL_PAD    = 10;
+	static constexpr int								CELL_W      = ICON_SIZE + CELL_PAD;
+	static constexpr int								CELL_H      = ICON_SIZE + NAME_HEIGHT + CELL_PAD;
+	static constexpr int								GRID_MARGIN = 10;
+	static constexpr int								GRID_LBL_H  = 28;
+	static constexpr int								PANEL_H     = 190;
 
-	void BuildBottomPanel(int clientW, int clientH);
+	static constexpr wchar_t							CLASS_NAME[] = L"JellytoItemWindow";
+	static constexpr wchar_t							GRID_CLASS_NAME[] = L"JellytoItemGrid";
 
-	static LRESULT CALLBACK GridWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	void OnGridPaint(HDC hdc);
-	void DrawActorCell(HDC hdc, int idx, int x, int y, bool selected);
-	void OnGridLButtonDown(int mouseX, int mouseY);
-	int  HitTestGrid(int mouseX, int mouseY);
-	void UpdateScrollRange();
-	int  GetGridContentHeight() const;
+	static constexpr int								ID_BTN_PLACE = 403;
+	static constexpr int								ID_EDIT_PX = 410;
+	static constexpr int								ID_EDIT_PY = 411;
+	static constexpr int								ID_EDIT_PZ = 412;
+	static constexpr int								ID_EDIT_RX = 413;
+	static constexpr int								ID_EDIT_RY = 414;
+	static constexpr int								ID_EDIT_RZ = 415;
+	static constexpr int								ID_EDIT_SX = 416;
+	static constexpr int								ID_EDIT_SY = 417;
+	static constexpr int								ID_EDIT_SZ = 418;
 
-	void OnPlace();
-	float ReadFloat(HWND hEdit, float fallback = 0.f);
+	void												BuildBottomPanel(int clientW, int clientH);
 
-	void RegisterWindowClass(HINSTANCE hInstance);
-	void RegisterGridClass(HINSTANCE hInstance);
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static												LRESULT CALLBACK GridWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	void												OnGridPaint(HDC hdc);
+	void												DrawActorCell(HDC hdc, int idx, int x, int y, bool selected);
+	void												OnGridLButtonDown(int mouseX, int mouseY);
+	int													HitTestGrid(int mouseX, int mouseY);
+	void												UpdateScrollRange();
+	int													GetGridContentHeight() const;
 
-	HWND      _hWnd      = nullptr;
-	HINSTANCE _hInstance = nullptr;
-	bool      _visible   = false;
-	bool      _created   = false;
-	HWND      _hGridPanel = nullptr;
-	int       _scrollY    = 0;
+	void												OnPlace();
+	float												 ReadFloat(HWND hEdit, float fallback = 0.f);
 
-	Scene* _scene = nullptr;
+	void												RegisterWindowClass(HINSTANCE hInstance);
+	void												RegisterGridClass(HINSTANCE hInstance);
+	static LRESULT CALLBACK								WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	std::vector<std::pair<std::wstring, ActorFactory>> _catalog;
-	std::vector<std::unique_ptr<Actor>> _placedActors;
+	HWND												_hWnd      = nullptr;
+	HINSTANCE											_hInstance = nullptr;
+	bool												_visible   = false;
+	bool												_created   = false;
+	HWND												_hGridPanel = nullptr;
+	int													_scrollY    = 0;
 
-	int _selectedIdx = -1;
+	Scene*												_scene = nullptr;
 
-	HWND _hSelLabel = nullptr;
-	HWND _hPX = nullptr, _hPY = nullptr, _hPZ = nullptr;
-	HWND _hRX = nullptr, _hRY = nullptr, _hRZ = nullptr;
-	HWND _hSX = nullptr, _hSY = nullptr, _hSZ = nullptr;
-	HWND _hBtnPlace = nullptr;
+	std::vector<std::pair<std::wstring, ActorFactory>>	_catalog;
+	std::vector<std::unique_ptr<Actor>>					_placedActors;
 
-	static constexpr wchar_t CLASS_NAME[] = L"JellytoItemWindow";
-	static constexpr wchar_t GRID_CLASS_NAME[] = L"JellytoItemGrid";
+	int													_selectedIdx = -1;
 
-	static constexpr int ID_BTN_PLACE = 403;
-	static constexpr int ID_EDIT_PX = 410;
-	static constexpr int ID_EDIT_PY = 411;
-	static constexpr int ID_EDIT_PZ = 412;
-	static constexpr int ID_EDIT_RX = 413;
-	static constexpr int ID_EDIT_RY = 414;
-	static constexpr int ID_EDIT_RZ = 415;
-	static constexpr int ID_EDIT_SX = 416;
-	static constexpr int ID_EDIT_SY = 417;
-	static constexpr int ID_EDIT_SZ = 418;
+	HWND												_hSelLabel = nullptr;
+	HWND												_hPX = nullptr, _hPY = nullptr, _hPZ = nullptr;
+	HWND												_hRX = nullptr, _hRY = nullptr, _hRZ = nullptr;
+	HWND												_hSX = nullptr, _hSY = nullptr, _hSZ = nullptr;
+	HWND												_hBtnPlace = nullptr;
+
+
 };

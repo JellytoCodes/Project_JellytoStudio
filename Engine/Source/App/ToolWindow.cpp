@@ -8,8 +8,6 @@
 #pragma comment(lib, "comdlg32.lib")
 #pragma comment(lib, "shell32.lib")
 
-// ── 생성 ────────────────────────────────────────────────────────────────
-
 bool ToolWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
 	if (_created) return true;
@@ -59,8 +57,6 @@ void ToolWindow::Toggle()
 	_visible ? Hide() : Show();
 }
 
-// ── 서브 윈도우 메뉴바 ───────────────────────────────────────────────────
-
 void ToolWindow::CreateSubMenu()
 {
 	HMENU hBar = ::CreateMenu();
@@ -76,8 +72,6 @@ void ToolWindow::CreateSubMenu()
 
 	::SetMenu(_hWnd, hBar);
 }
-
-// ── 패널 전환 ────────────────────────────────────────────────────────────
 
 void ToolWindow::SwitchPanel(ActivePanel panel)
 {
@@ -109,23 +103,19 @@ void ToolWindow::ClearPanel()
 	_hClipCount      = nullptr;
 }
 
-// ── 헬퍼 ─────────────────────────────────────────────────────────────────
-
 namespace
 {
-HWND MakeCtrl(HWND parent, HINSTANCE hi,
-	const wchar_t* cls, const wchar_t* text,
-	DWORD style, int x, int y, int w, int h, int id,
-	std::vector<HWND>& reg)
-{
-	HWND hw = ::CreateWindowW(cls, text, WS_CHILD | WS_VISIBLE | style,
-		x, y, w, h, parent, (HMENU)(INT_PTR)id, hi, nullptr);
-	reg.push_back(hw);
-	return hw;
+	HWND MakeCtrl(HWND parent, HINSTANCE hi,
+		const wchar_t* cls, const wchar_t* text,
+		DWORD style, int x, int y, int w, int h, int id,
+		std::vector<HWND>& reg)
+	{
+		HWND hw = ::CreateWindowW(cls, text, WS_CHILD | WS_VISIBLE | style,
+			x, y, w, h, parent, (HMENU)(INT_PTR)id, hi, nullptr);
+		reg.push_back(hw);
+		return hw;
+	}
 }
-}
-
-// ── FBX 컨버터 패널 ─────────────────────────────────────────────────────
 
 void ToolWindow::BuildFbxConverterPanel()
 {
@@ -166,8 +156,6 @@ void ToolWindow::BuildFbxConverterPanel()
 	_hStatusLabel = C(L"STATIC", L"", SS_CENTER,
 		M, 296, TW + BW + 4, 22, ID_LABEL_STATUS);
 }
-
-// ── FBX 컨버터 이벤트 ────────────────────────────────────────────────────
 
 void ToolWindow::OnBrowseModelFbx()
 {
@@ -332,17 +320,12 @@ void ToolWindow::BuildModelBrowserPanel()
 	RefreshModelList();
 }
 
-
-// ── 모델 브라우저 이벤트 ─────────────────────────────────────────────────
-
 void ToolWindow::RefreshModelList()
 {
 	if (!_hListMesh || !_hListClip) return;
 	::SendMessage(_hListMesh, LB_RESETCONTENT, 0, 0);
 	::SendMessage(_hListClip, LB_RESETCONTENT, 0, 0);
 
-	// ../Resources/ 전체를 재귀 탐색 (.mesh / .clip 모두 수집)
-	// 파일명만 표시하면 어느 경로인지 모르므로 Resources 기준 상대경로 표시
 	std::filesystem::path baseDir = L"../Resources";
 	int meshCnt = 0, clipCnt = 0;
 
@@ -381,8 +364,6 @@ void ToolWindow::RefreshModelList()
 	if (_hClipCount) ::SetWindowTextW(_hClipCount, buf);
 }
 
-// ── 윈도우 등록 / WndProc ────────────────────────────────────────────────
-
 void ToolWindow::RegisterWindowClass(HINSTANCE hInstance)
 {
 	WNDCLASSEXW wcex   = {};
@@ -415,7 +396,7 @@ LRESULT CALLBACK ToolWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			return 0;
 
 		case WM_COMMAND:
-			// 메뉴 패널 전환
+
 			switch ((SubMenuCmd)LOWORD(wParam))
 			{
 			case SubMenuCmd::ShowFbxConverter:
@@ -423,7 +404,7 @@ LRESULT CALLBACK ToolWindow::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
 			case SubMenuCmd::ShowModelBrowser:
 				self->SwitchPanel(ActivePanel::ModelBrowser); return 0;
 			}
-			// 패널 내부 버튼
+
 			switch (LOWORD(wParam))
 			{
 			case ID_BTN_MODEL_FBX: self->OnBrowseModelFbx(); return 0;

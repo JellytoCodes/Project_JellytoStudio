@@ -1,2 +1,3 @@
-﻿#include "Framework.h"
+﻿
+#include "Framework.h"
 #include "IWindow.h"

@@ -1,17 +1,20 @@
+
 #include "Framework.h"
 #include "Application.h"
-#include "Core/Interfaces/IExecute.h"
-#include "Core/DisplayContext.h"
-#include "Scene/SceneManager.h"
-#include "Core/Managers/InputManager.h"
-#include "Core/Managers/TimeManager.h"
-#include "Managers/WindowManager.h"
-#include "ToolWindow.h"
-#include "ItemWindow.h"
-#include "DetailWindow.h"
+
 #include "Audio/AudioDataTable.h"
 #include "Audio/AudioManager.h"
+
+#include "Core/Interfaces/IExecute.h"
+#include "Core/DisplayContext.h"
+#include "Core/Managers/InputManager.h"
+#include "Core/Managers/TimeManager.h"
+#include "DetailWindow.h"
 #include "Graphics/Graphics.h"
+#include "ItemWindow.h"
+#include "Managers/WindowManager.h"
+#include "Scene/SceneManager.h"
+#include "ToolWindow.h"
 #include "UI/UIManager.h"
 
 bool Application::Initialize(const ApplicationDesc& desc)
@@ -71,16 +74,25 @@ void Application::Shutdown() {}
 void Application::Update()
 {
     GET_SINGLE(Graphics)->RenderBegin();
+    
+	/*----------- Begin ------------*/
     GET_SINGLE(TimeManager)->Update();
     GET_SINGLE(InputManager)->Update();
-    UpdateWindowTitle();
-    GET_SINGLE(SceneManager)->Update();
-    HandleShortcuts();
-    _desc.app->Update();
+    
+	UpdateWindowTitle();
+    
+	GET_SINGLE(SceneManager)->Update();
+    
+	HandleShortcuts();
+    
+	_desc.app->Update();
     _desc.app->Render();
-    GET_SINGLE(SceneManager)->Render();
+    
+	GET_SINGLE(SceneManager)->Render();
     GET_SINGLE(AudioManager)->Update();
-    GET_SINGLE(Graphics)->RenderEnd();
+    /*------------ End -------------*/
+
+	GET_SINGLE(Graphics)->RenderEnd();
 }
 
 void Application::OnResize(UINT width, UINT height)
@@ -90,9 +102,7 @@ void Application::OnResize(UINT width, UINT height)
         height == GET_SINGLE(DisplayContext)->GetHeight()) return;
 
     GET_SINGLE(DisplayContext)->SetSize(width, height);
-    GET_SINGLE(UIManager)->SetScreenSize(
-        static_cast<float>(width),
-        static_cast<float>(height));
+    GET_SINGLE(UIManager)->SetScreenSize(static_cast<float>(width), static_cast<float>(height));
     GET_SINGLE(Graphics)->ResizeBuffers(width, height);
 }
 
