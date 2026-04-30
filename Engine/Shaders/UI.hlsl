@@ -1,10 +1,7 @@
-// UI.hlsl
-// IMGUI 방식과 동일: 동일 DeviceContext, DepthWrite OFF, AlphaBlend ON
-// 픽셀 좌표 → NDC 변환은 VS에서 처리 (별도 카메라 불필요)
 
 cbuffer UIBuffer
 {
-    float2 ScreenSize; // (width, height)
+    float2 ScreenSize;
     float2 _pad;
 };
 
@@ -57,7 +54,7 @@ struct VS_OUT
 VS_OUT VS(VS_IN input)
 {
     VS_OUT output;
-    // 픽셀 좌표 → NDC: x=px/w*2-1, y=1-py/h*2
+
     output.pos   = float4(
         input.pos.x / ScreenSize.x * 2.0f - 1.0f,
         1.0f - input.pos.y / ScreenSize.y * 2.0f,
@@ -67,13 +64,11 @@ VS_OUT VS(VS_IN input)
     return output;
 }
 
-// Pass 0: 단색 (버튼 배경, 패널)
 float4 PS_Color(VS_OUT input) : SV_TARGET
 {
     return input.color;
 }
 
-// Pass 1: 텍스처 (텍스트 비트맵)
 float4 PS_Tex(VS_OUT input) : SV_TARGET
 {
     return UITexture.Sample(LinearSampler, input.uv) * input.color;
@@ -81,7 +76,7 @@ float4 PS_Tex(VS_OUT input) : SV_TARGET
 
 technique11 T0
 {
-    pass P0   // 단색
+    pass P0
     {
         SetRasterizerState(NoCull);
         SetDepthStencilState(NoDepth, 0);
@@ -89,7 +84,7 @@ technique11 T0
         SetVertexShader(CompileShader(vs_5_0, VS()));
         SetPixelShader (CompileShader(ps_5_0, PS_Color()));
     }
-    pass P1   // 텍스처
+    pass P1
     {
         SetRasterizerState(NoCull);
         SetDepthStencilState(NoDepth, 0);
