@@ -1,5 +1,6 @@
 #include "Framework.h"
 #include "Entity/Components/MeshRenderer.h"
+
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Light.h"
@@ -12,8 +13,7 @@
 
 MeshRenderer::MeshRenderer()
     : Super(ComponentType::MeshRenderer)
-{
-}
+{}
 
 MeshRenderer::~MeshRenderer() {}
 
@@ -28,11 +28,13 @@ bool MeshRenderer::FillPacket(const Matrix& matWorld, RenderPacket& outPacket) c
     if (_mesh == nullptr || _material == nullptr)
         return false;
 
-    outPacket.instanceID = GetInstanceID();
-    outPacket.pMesh      = _mesh.get();
-    outPacket.pMaterial  = _material.get();
-    outPacket.pass       = _pass;
-    outPacket.matWorld   = matWorld;
+    outPacket.instanceID    = GetInstanceID();
+    outPacket.pMesh         = _mesh.get();
+    outPacket.pMaterial     = _material.get();
+    outPacket.pass          = _pass;
+    outPacket.matWorld      = matWorld;
+
+    outPacket.materialIndex = _materialIndex;
 
     return true;
 }
@@ -56,19 +58,19 @@ void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
     _material->Update();
 
     auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
+
     _mesh->GetVertexBuffer()->PushData(dc);
     _mesh->GetIndexBuffer()->PushData(dc);
 
     buffer->PushData();
 
-    shader->DrawIndexedInstanced(0, _pass,
+    shader->DrawIndexedInstanced(
+        0, _pass,
         _mesh->GetIndexBuffer()->GetCount(),
         buffer->GetCount());
 }
 
 InstanceID MeshRenderer::GetInstanceID() const
 {
-    return std::make_pair(
-        reinterpret_cast<uint64>(_mesh.get()),
-        reinterpret_cast<uint64>(_material.get()));
+    return std::make_pair(reinterpret_cast<uint64>(_mesh.get()), reinterpret_cast<uint64>(_material.get()));
 }

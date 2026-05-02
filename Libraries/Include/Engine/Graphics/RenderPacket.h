@@ -7,12 +7,16 @@ using InstanceID = std::pair<uint64, uint64>;
 
 struct RenderPacket
 {
-    InstanceID  instanceID = { 0, 0 };
+    InstanceID  instanceID    = { 0, 0 };
 
-    Mesh*       pMesh      = nullptr;
-    Material*   pMaterial  = nullptr;
-    uint8       pass       = 0;
-    Matrix      matWorld   = Matrix::Identity;
+    Mesh*       pMesh         = nullptr;
+    Material*   pMaterial     = nullptr;
+
+    uint8       pass          = 0;
+
+    Matrix      matWorld      = Matrix::Identity;
+
+    uint32      materialIndex = 0;
 
     bool IsValid() const
     {

@@ -1,11 +1,12 @@
 ﻿
 #include "Framework.h"
 #include "Model.h"
-#include "Utils/Utils.h"
-#include "Utils/FileUtils.h"
+
+#include "Graphics/Model/ModelAnimation.h"
 #include "Resource/Material.h"
 #include "Resource/Managers/ResourceManager.h"
-#include "Graphics/Model/ModelAnimation.h"
+#include "Utils/Utils.h"
+#include "Utils/FileUtils.h"
 
 Model::Model() = default;
 Model::~Model() = default;

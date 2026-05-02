@@ -17,28 +17,28 @@ public:
 	ModelRenderer(std::shared_ptr<Shader> shader, bool bIsSkinned = true);
 	virtual ~ModelRenderer();
 
-	void Awake() override;
-	void Start() override;
+	virtual void										Awake() override;
+	virtual void										Start() override;
 
-	void SetModel(std::shared_ptr<Model> model);
-	void SetPass(uint8 pass) { _pass = pass; }
+	void												SetModel(std::shared_ptr<Model> model);
+	void												SetPass(uint8 pass)									{ _pass = pass; }
 
-	void SetModelScale(const Vec3& scale)	{ _modelScale = scale; }
-	Vec3   GetModelScale()      const		{ return _modelScale; }
-	Matrix GetModelScaleMatrix()const		{ return Matrix::CreateScale(_modelScale); }
+	void												SetModelScale(const Vec3& scale)					{ _modelScale = scale; }
+	Vec3												GetModelScale()      const							{ return _modelScale; }
+	Matrix												GetModelScaleMatrix()const							{ return Matrix::CreateScale(_modelScale); }
 
-	void RenderInstancing(InstancingBuffer* buffer);
-	void RenderRawInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer);
+	void												RenderInstancing(InstancingBuffer* buffer);
+	void												RenderRawInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer);
 
-	InstanceID GetInstanceID();
+	InstanceID											GetInstanceID();
 
 private:
-	std::unique_ptr<ConstantBuffer<TransformData>>	_constantBuffer;
+	std::unique_ptr<ConstantBuffer<TransformData>>		_constantBuffer;
 
-	std::shared_ptr<Shader>							_shader;
-	std::shared_ptr<Model>							_model;
-	uint8											_pass    = 0;
+	std::shared_ptr<Shader>								_shader;
+	std::shared_ptr<Model>								_model;
+	uint8												_pass    = 0;
 	
-	Vec3											_modelScale = Vec3(1.f, 1.f, 1.f);
-	bool											_bIsSkinned;
+	Vec3												_modelScale = Vec3(1.f, 1.f, 1.f);
+	bool												_bIsSkinned;
 };

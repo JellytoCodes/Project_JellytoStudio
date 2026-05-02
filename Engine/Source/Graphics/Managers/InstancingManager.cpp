@@ -1,5 +1,6 @@
 ﻿#include "Framework.h"
 #include "InstancingManager.h"
+
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
@@ -51,7 +52,12 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             if (tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
             {
                 InstancingData data;
-                data.world = packet.matWorld;
+                data.world         = packet.matWorld;
+                data.materialIndex = packet.materialIndex;
+                data._instPad[0]   = 0u;
+                data._instPad[1]   = 0u;
+                data._instPad[2]   = 0u;
+
                 _meshWorldCache[id].push_back(data);
             }
         }
@@ -61,8 +67,12 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             {
                 const InstanceID id = modelR->GetInstanceID();
                 InstancingData data;
-                data.world = modelR->GetModelScaleMatrix()
-                    * entity->GetComponent<Transform>()->GetWorldMatrix();
+                data.world         = modelR->GetModelScaleMatrix()
+                                   * entity->GetComponent<Transform>()->GetWorldMatrix();
+                data.materialIndex = 0u;
+                data._instPad[0]   = 0u;
+                data._instPad[1]   = 0u;
+                data._instPad[2]   = 0u;
 
                 _modelCache[id].push_back(entity);
                 _modelWorldCache[id].push_back(data);
@@ -112,7 +122,11 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 if (mr && tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
                 {
                     InstancingData data;
-                    data.world = packet.matWorld;
+                    data.world         = packet.matWorld;
+                    data.materialIndex = packet.materialIndex;  // [NEW]
+                    data._instPad[0]   = 0u;
+                    data._instPad[1]   = 0u;
+                    data._instPad[2]   = 0u;
                     worldVec.push_back(data);
                 }
             }
@@ -166,8 +180,12 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 if (auto* modelR = entity->GetComponent<ModelRenderer>())
                 {
                     InstancingData data;
-                    data.world = modelR->GetModelScaleMatrix()
-                        * entity->GetComponent<Transform>()->GetWorldMatrix();
+                    data.world         = modelR->GetModelScaleMatrix()
+                                       * entity->GetComponent<Transform>()->GetWorldMatrix();
+                    data.materialIndex = 0u;
+                    data._instPad[0]   = 0u;
+                    data._instPad[1]   = 0u;
+                    data._instPad[2]   = 0u;
                     worldVec.push_back(data);
                 }
             }
@@ -208,10 +226,7 @@ void InstancingManager::PruneEmptyGroups()
             _modelWorldCache.erase(it->first);
             it = _modelCache.erase(it);
         }
-        else
-        {
-            ++it;
-        }
+        else { ++it; }
     }
 
     for (auto it = _meshCache.begin(); it != _meshCache.end();)
@@ -222,10 +237,7 @@ void InstancingManager::PruneEmptyGroups()
             _meshWorldCache.erase(it->first);
             it = _meshCache.erase(it);
         }
-        else
-        {
-            ++it;
-        }
+        else { ++it; }
     }
 }
 
@@ -284,12 +296,16 @@ void InstancingManager::RenderAnimRenderer()
         InstancedTweenDesc tweenDesc;
         for (int32 i = 0; i < static_cast<int32>(entityVec.size()); i++)
         {
-            Entity*   entity = entityVec[i];
-            auto*     anim   = entity->GetComponent<ModelAnimator>();
-            auto*     tr     = entity->GetComponent<Transform>();
+            Entity* entity = entityVec[i];
+            auto*   anim   = entity->GetComponent<ModelAnimator>();
+            auto*   tr     = entity->GetComponent<Transform>();
 
             InstancingData data;
-            data.world = tr->GetWorldMatrix();
+            data.world         = tr->GetWorldMatrix();
+            data.materialIndex = 0u;
+            data._instPad[0]   = 0u;
+            data._instPad[1]   = 0u;
+            data._instPad[2]   = 0u;
 
             AddData(id, data, true);
 
@@ -301,7 +317,6 @@ void InstancingManager::RenderAnimRenderer()
         anim->GetShader()->PushTweenData(tweenDesc);
 
         InstancingBuffer* buffer = _buffers[id].get();
-
         anim->RenderInstancing(buffer);
     }
 }
@@ -321,39 +336,31 @@ void InstancingManager::DumpInstancingStats() const
 
     wchar_t buf[512];
 
-    swprintf_s(buf, L"Ring Buffer 슬롯: %u (Dynamic only) | Static 버퍼: UpdateSubresource\n",
-        InstancingBuffer::kRingCount);
+    swprintf_s(buf,
+        L"Ring Buffer 슬롯: %u | "
+        L"블록 DrawCall 최적화: 7 → %zu (Texture2DArray 머지)\n",
+        InstancingBuffer::kRingCount,
+        _meshCache.size());
     ::OutputDebugStringW(buf);
-
-    swprintf_s(buf, L"ModelRenderer 그룹 수 (= DrawCall 하한): %zu\n", _modelCache.size());
-    ::OutputDebugStringW(buf);
-
-    size_t totalModel = 0;
-    for (const auto& [id, v] : _modelCache)
-    {
-        totalModel += v.size();
-
-        bool uploaded = false;
-        const auto it = _buffers.find(id);
-        if (it != _buffers.end()) uploaded = it->second->IsUploaded();
-
-        swprintf_s(buf, L"  model=%llx shader=%llx | instances=%zu | uploaded=%s\n",
-            id.first, id.second, v.size(), uploaded ? L"OK" : L"X");
-        ::OutputDebugStringW(buf);
-    }
 
     size_t totalMesh = 0;
     for (const auto& [id, v] : _meshCache)
         totalMesh += v.size();
 
+    size_t totalModel = 0;
+    for (const auto& [id, v] : _modelCache)
+        totalModel += v.size();
+
     swprintf_s(buf,
-        L"MeshRenderer 그룹: %zu | Mesh 인스턴스: %zu\n"
-        L"최종 DrawCall: Model=%zu + Mesh=%zu = %zu\n"
-        L"인스턴싱 절감률: %.1f%% (%zu Entity → %zu DrawCall)\n"
+        L"MeshRenderer 그룹: %zu | 블록 인스턴스: %zu\n"
+        L"ModelRenderer 그룹: %zu | 모델 인스턴스: %zu\n"
+        L"최종 DrawCall: Mesh=%zu + Model=%zu = %zu\n"
+        L"인스턴싱 절감: %.1f%% (%zu Entity → %zu DrawCall)\n"
         L"================================================\n",
         _meshCache.size(), totalMesh,
-        _modelCache.size(), _meshCache.size(), _modelCache.size() + _meshCache.size(),
-        (totalModel > 0 ? (1.0 - static_cast<double>(_modelCache.size()) / totalModel) * 100.0 : 0.0),
-        totalModel, _modelCache.size());
+        _modelCache.size(), totalModel,
+        _meshCache.size(), _modelCache.size(), _meshCache.size() + _modelCache.size(),
+        (totalMesh > 0 ? (1.0 - static_cast<double>(_meshCache.size()) / totalMesh) * 100.0 : 0.0),
+        totalMesh, _meshCache.size());
     ::OutputDebugStringW(buf);
 }

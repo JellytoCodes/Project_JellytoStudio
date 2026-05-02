@@ -6,30 +6,30 @@ class Graphics
     DECLARE_SINGLE(Graphics);
 
 public:
-    void Initialize(HWND hwnd, UINT width, UINT height);
-    void RenderBegin();
-    void RenderEnd();
-    void ResizeBuffers(UINT width, UINT height);
+    void                                Initialize(HWND hwnd, UINT width, UINT height);
+    void                                RenderBegin();
+    void                                RenderEnd();
+    void                                ResizeBuffers(UINT width, UINT height);
 
-    ComPtr<ID3D11Device>        GetDevice()        { return _device;        }
-    ComPtr<ID3D11DeviceContext> GetDeviceContext() { return _deviceContext; }
+    ComPtr<ID3D11Device>                GetDevice()         { return _device;        }
+    ComPtr<ID3D11DeviceContext>         GetDeviceContext()  { return _deviceContext; }
 
-    void      SetViewport(float width, float height, float x = 0, float y = 0, float minDepth = 0, float maxDepth = 1);
-    Viewport& GetViewport() { return _vp; }
+    void                                SetViewport(float width, float height, float x = 0, float y = 0, float minDepth = 0, float maxDepth = 1);
+    Viewport&                           GetViewport()       { return _vp; }
 
-    void SetRasterizerState  (ID3D11RasterizerState* state);
-    void SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencilRef);
-    void SetBlendState       (ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask);
-    void InvalidateStateCache();
+    void                                SetRasterizerState(ID3D11RasterizerState* state);
+    void                                SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencilRef);
+    void                                SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask);
+    void                                InvalidateStateCache();
 
-    Vec2 GetWindowSize() const { return _windowSize; }
+    Vec2                                GetWindowSize() const { return _windowSize; }
 
 private:
-    void CreateDeviceAndSwapChain();
-    void CreateRenderTargetView();
-    void CreateDepthStencilView();
+    void                                CreateDeviceAndSwapChain();
+    void                                CreateRenderTargetView();
+    void                                CreateDepthStencilView();
 
-    HWND _hwnd = {};
+    HWND                                _hwnd = {};
 
     ComPtr<ID3D11Device>                _device;
     ComPtr<ID3D11DeviceContext>         _deviceContext;

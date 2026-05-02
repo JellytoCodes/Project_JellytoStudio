@@ -314,6 +314,11 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\UI\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\BlockMeshShader.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="Shaders\ColliderDebug.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>

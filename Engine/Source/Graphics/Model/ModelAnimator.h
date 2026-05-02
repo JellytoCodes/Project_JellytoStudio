@@ -18,33 +18,33 @@ public:
     ModelAnimator(std::shared_ptr<Shader> shader);
     virtual ~ModelAnimator();
 
-    void SetModel(std::shared_ptr<Model> model);
-    void SetPass(uint8 pass) { _pass = pass; }
+    void                                SetModel(std::shared_ptr<Model> model);
+    void                                SetPass(uint8 pass)         { _pass = pass; }
 
-    std::shared_ptr<Shader> GetShader() { return _shader; }
-    std::shared_ptr<Model>  GetModel()  { return _model;  }
+    std::shared_ptr<Shader>             GetShader()                 { return _shader; }
+    std::shared_ptr<Model>              GetModel()                  { return _model;  }
 
-    virtual void Update() override;
-    void UpdateTweenData();
-    void RenderInstancing(InstancingBuffer* buffer);
-    void RenderRawSkinnedInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer);
+    virtual void                        Update() override;
+    void                                UpdateTweenData();
+    void                                RenderInstancing(InstancingBuffer* buffer);
+    void                                RenderRawSkinnedInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer);
 
-    InstanceID GetInstanceID();
-    TweenDesc& GetTweenDesc() { return _tweenDesc; }
+    InstanceID                          GetInstanceID();
+    TweenDesc&                          GetTweenDesc()              { return _tweenDesc; }
 
-    ID3D11ShaderResourceView* GetTransformSRV() const { return _srv.Get(); }
+    ID3D11ShaderResourceView*           GetTransformSRV() const     { return _srv.Get(); }
 
 private:
-    void PressedKeyForCheckFrame();
-    void CreateTexture();
-    void CreateAnimationTransform(uint32 index);
+    void                                PressedKeyForCheckFrame();
+    void                                CreateTexture();
+    void                                CreateAnimationTransform(uint32 index);
 
     std::vector<AnimTransform>          _animTransforms;
     ComPtr<ID3D11Texture2D>             _texture;
     ComPtr<ID3D11ShaderResourceView>    _srv;
 
-    uint8                       _pass   = 0;
-    std::shared_ptr<Shader>     _shader;
-    std::shared_ptr<Model>      _model;
-    TweenDesc                   _tweenDesc;
+    uint8                               _pass   = 0;
+    std::shared_ptr<Shader>             _shader;
+    std::shared_ptr<Model>              _model;
+    TweenDesc                           _tweenDesc;
 };

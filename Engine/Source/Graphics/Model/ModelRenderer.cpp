@@ -47,7 +47,7 @@ void ModelRenderer::RenderInstancing(InstancingBuffer* buffer)
 
 	if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
-        if (auto* sp = scene->GetShadowPass())  // getter 필요 (아래 참조)
+        if (auto* sp = scene->GetShadowPass())
             _shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
     }
 
