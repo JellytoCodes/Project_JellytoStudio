@@ -1,9 +1,11 @@
 
 #include "Framework.h"
 #include "ResourceManager.h"
+
 #include "Graphics/Graphics.h"
 #include "Resource/Texture.h"
 #include "Resource/Mesh.h"
+#include "Resource/TextureArray.h"
 
 void ResourceManager::Init()
 {
@@ -20,6 +22,16 @@ std::shared_ptr<Texture> ResourceManager::GetOrAddTexture(const std::wstring& ke
 		return nullptr;
 
 	return Load<Texture>(key, path);
+}
+
+std::shared_ptr<TextureArray> ResourceManager::CreateTextureArray(const std::wstring& key, const std::wstring* paths, uint32 count)
+{
+	if (auto cached = Get<TextureArray>(key)) return cached;
+
+    auto ta = TextureArray::Create(paths, count);
+    ta->SetName(key);
+    Add(key, ta);
+    return ta;
 }
 
 void ResourceManager::CreateDefaultMesh()

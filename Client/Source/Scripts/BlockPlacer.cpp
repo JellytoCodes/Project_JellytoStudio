@@ -15,7 +15,7 @@
 #include "Resource/Mesh.h"
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
-#include "Graphics/Graphics.h"
+#include "Resource/TextureArray.h"
 #include "Graphics/Managers/InstancingManager.h"
 // #include "Audio/AudioManager.h"
 
@@ -24,7 +24,7 @@ using CH       = CollisionChannel;
 using PF       = PlaceFace;
 using CS       = BlockPlacer::ColliderSize;
 
-static const wchar_t* kBlockTexturePaths[] =
+static const std::wstring kBlockTexturePaths[] =
 {
     L"../Resources/Textures/MapModel/Main_texture.png",  // SlotType::Mushroom1 = 0
     L"../Resources/Textures/MapModel/Main_texture.png",  // SlotType::Mushroom2 = 1
@@ -32,12 +32,9 @@ static const wchar_t* kBlockTexturePaths[] =
     L"../Resources/Textures/MapModel/Main_texture.png",   // SlotType::Priming1  = 3
     L"../Resources/Textures/MapModel/Main_texture.png",   // SlotType::Priming2  = 4
     L"../Resources/Textures/MapModel/Main_texture.png",   // SlotType::Priming3  = 5
-    L"../Resources/Textures/MapModel/Main_texture.png",       // SlotType::Bridge    = 6
+    L"../Resources/Textures/MapModel/Main_texture.png",   // SlotType::Bridge    = 6
     L"../Resources/Textures/MapModel/Main_texture.png",   // SlotType::Eraser    = 7 (더미)
 };
-static_assert(
-    _countof(kBlockTexturePaths) == static_cast<uint32>(SlotType::Count),
-    "kBlockTexturePaths 항목 수가 SlotType::Count 와 일치해야 합니다.");
 
 Vec3 BlockPlacer::GetHalfExtents(ColliderSize s)
 {
@@ -90,98 +87,6 @@ BlockPlacer::MapModelParams BlockPlacer::GetModelParams(SlotType type) const
     }
 }
 
-ComPtr<ID3D11ShaderResourceView> BlockPlacer::BuildBlockTextureArray(ID3D11Device* device, ID3D11DeviceContext* ctx) const
-{
-    constexpr uint32 kSliceCount = static_cast<uint32>(SlotType::Count);
-
-    ComPtr<ID3D11Texture2D> sliceTextures[kSliceCount];
-    D3D11_TEXTURE2D_DESC    slice0Desc = {};
-
-    for (uint32 i = 0; i < kSliceCount; ++i)
-    {
-        ComPtr<ID3D11Resource> res;
-
-        DirectX::ScratchImage image;
-        HRESULT hr = S_OK;
-
-        hr = DirectX::LoadFromWICFile(
-            kBlockTexturePaths[i], 
-            DirectX::WIC_FLAGS_NONE, 
-            nullptr, 
-            image
-        );
-
-        if (SUCCEEDED(hr))
-        {
-            hr = DirectX::CreateTexture(
-                device,
-                image.GetImages(),
-                image.GetImageCount(),
-                image.GetMetadata(),
-                res.GetAddressOf()
-            );
-        }
-
-        if (FAILED(hr))
-        {
-            sliceTextures[i] = sliceTextures[max(0u, i - 1u)];
-            assert(sliceTextures[i] != nullptr && "첫 번째 텍스처 로드 실패");
-            continue;
-        }
-
-        hr = res.As(&sliceTextures[i]);
-        assert(SUCCEEDED(hr));
-
-        if (i == 0)
-            sliceTextures[0]->GetDesc(&slice0Desc);
-    }
-
-    D3D11_TEXTURE2D_DESC arrayDesc   = slice0Desc;
-    arrayDesc.ArraySize              = kSliceCount;
-    arrayDesc.Usage                  = D3D11_USAGE_DEFAULT;
-    arrayDesc.BindFlags              = D3D11_BIND_SHADER_RESOURCE;
-    arrayDesc.CPUAccessFlags         = 0;
-    arrayDesc.MiscFlags              = 0;
-
-    ComPtr<ID3D11Texture2D> textureArray;
-    HRESULT hr = device->CreateTexture2D(&arrayDesc, nullptr,
-                                          textureArray.GetAddressOf());
-    if (FAILED(hr))
-    {
-        assert(false && "Texture2DArray 생성 실패. 텍스처 해상도/포맷 일치 확인.");
-        return nullptr;
-    }
-
-    for (uint32 i = 0; i < kSliceCount; ++i)
-    {
-        for (uint32 mip = 0; mip < slice0Desc.MipLevels; ++mip)
-        {
-            ctx->CopySubresourceRegion(
-                textureArray.Get(),
-                D3D11CalcSubresource(mip, i, slice0Desc.MipLevels),
-                0, 0, 0,                  
-                sliceTextures[i].Get(),
-                D3D11CalcSubresource(mip, 0, slice0Desc.MipLevels),
-                nullptr);                  
-        }
-    }
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc         = {};
-    srvDesc.Format                                  = arrayDesc.Format;
-    srvDesc.ViewDimension                           = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-    srvDesc.Texture2DArray.MostDetailedMip          = 0;
-    srvDesc.Texture2DArray.MipLevels                = arrayDesc.MipLevels;
-    srvDesc.Texture2DArray.FirstArraySlice          = 0;
-    srvDesc.Texture2DArray.ArraySize                = kSliceCount;
-
-    ComPtr<ID3D11ShaderResourceView> srv;
-    hr = device->CreateShaderResourceView(textureArray.Get(), &srvDesc,
-                                           srv.GetAddressOf());
-    assert(SUCCEEDED(hr) && "Texture2DArray SRV 생성 실패.");
-
-    return srv;
-}
-
 std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
 {
     auto& mat = ok ? _previewMatOk : _previewMatBad;
@@ -200,17 +105,15 @@ BlockPlacer::BlockPlacer() : MonoBehaviour() {}
 
 void BlockPlacer::Awake()
 {
-    auto* graphics = GET_SINGLE(Graphics);
-    auto* device   = graphics->GetDevice().Get();
-    auto* ctx      = graphics->GetDeviceContext().Get();
+
 
     _pBlockShader = std::make_shared<Shader>(L"../Engine/Shaders/BlockMeshShader.hlsl");
 
-    _pBlockTextureArray = BuildBlockTextureArray(device, ctx);
+    auto ta = GET_SINGLE(ResourceManager)->CreateTextureArray(L"Block_UberTextureArray", kBlockTexturePaths, static_cast<uint32>(PaletteWidget::SlotType::Count));
 
     _pBlockUberMaterial = std::make_shared<Material>();
     _pBlockUberMaterial->SetShader(_pBlockShader);
-    _pBlockUberMaterial->SetTextureArray(_pBlockTextureArray);
+    _pBlockUberMaterial->SetTextureArray(ta);
 
     auto& desc    = _pBlockUberMaterial->GetMaterialDesc();
     desc.ambient  = Vec4(0.3f, 0.3f, 0.3f, 1.f);
@@ -219,7 +122,7 @@ void BlockPlacer::Awake()
     desc.emissive = Vec4(0.f,  0.f,  0.f,  0.f);
 
     _pBlockCubeMesh = GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube");
-    assert(_pBlockCubeMesh != nullptr && "Cube 메시 로드 실패.");
+    assert(_pBlockCubeMesh && "Cube 메시 로드 실패");
 }
 
 void BlockPlacer::Start()

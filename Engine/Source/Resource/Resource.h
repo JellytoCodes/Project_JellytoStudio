@@ -8,6 +8,7 @@ enum class ResourceType : int8
 	Texture,
 	Material,
 	Animation,
+	TextureArray,
 
 	End
 };

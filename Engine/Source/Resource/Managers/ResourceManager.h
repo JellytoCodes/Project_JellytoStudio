@@ -6,6 +6,7 @@ class Shader;
 class Texture;
 class Mesh;
 class Material;
+class TextureArray;
 
 class ResourceManager
 {
@@ -27,6 +28,8 @@ public:
 
 	template<typename T>
 	ResourceType GetResourceType() const;
+
+	std::shared_ptr<TextureArray> CreateTextureArray(const std::wstring& key, const std::wstring* paths, uint32 count);
 
 private:
 	void CreateDefaultMesh();
@@ -87,6 +90,7 @@ ResourceType ResourceManager::GetResourceType() const
 	if (std::is_same_v<T, Texture>)  return ResourceType::Texture;
 	if (std::is_same_v<T, Mesh>)     return ResourceType::Mesh;
 	if (std::is_same_v<T, Material>) return ResourceType::Material;
+	if (std::is_same_v<T, TextureArray>) return ResourceType::TextureArray;
 
 	assert(false);
 	return ResourceType::None;

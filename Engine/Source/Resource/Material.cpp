@@ -3,6 +3,7 @@
 
 #include "Resource/Texture.h"
 #include "Pipeline/Shader.h"
+#include "Resource/TextureArray.h"
 
 Material::Material()
     : Super(ResourceType::Material)
@@ -26,7 +27,6 @@ void Material::SetShader(std::shared_ptr<Shader> shader)
 void Material::Update()
 {
     if (_shader == nullptr) return;
-
     _shader->PushMaterialData(_desc);
 
     if (_diffuseEffectBuffer)
@@ -38,8 +38,8 @@ void Material::Update()
     if (_specularEffectBuffer)
         _specularEffectBuffer->SetResource(_specularMap ? _specularMap->GetComPtr().Get() : nullptr);
 
-    if (_textureArrayEffectBuffer && _textureArraySRV)
-        _textureArrayEffectBuffer->SetResource(_textureArraySRV.Get());
+    if (_textureArrayEffectBuffer && _textureArray)
+        _textureArrayEffectBuffer->SetResource(_textureArray->GetSRV().Get());
 }
 
 std::unique_ptr<Material> Material::Clone() const
@@ -54,6 +54,6 @@ std::unique_ptr<Material> Material::Clone() const
     material->_normalEffectBuffer        = _normalEffectBuffer;
     material->_specularEffectBuffer      = _specularEffectBuffer;
     material->_textureArrayEffectBuffer  = _textureArrayEffectBuffer;
-    material->_textureArraySRV           = _textureArraySRV;         
+    material->_textureArray              = _textureArray;         
     return material;
 }

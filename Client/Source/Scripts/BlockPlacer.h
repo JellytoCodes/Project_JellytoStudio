@@ -54,8 +54,6 @@ private:
 
     MapModelParams GetModelParams(PaletteWidget::SlotType type) const;
 
-    ComPtr<ID3D11ShaderResourceView> BuildBlockTextureArray(ID3D11Device* device, ID3D11DeviceContext* ctx) const;
-
     std::shared_ptr<Material> GetPreviewMat(bool ok);
 
     bool CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity,
@@ -66,8 +64,7 @@ private:
     void UpdatePreview();
     void HidePreview();
 
-    bool   TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal,
-                         PaletteWidget::SlotType type);
+    bool   TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
     bool   TryRemoveEntity(Entity* entity);
 
     Entity* SpawnBlockEntity(const Vec3& pos, PaletteWidget::SlotType type, const Vec3& initialScale, const Vec3& finalScale);
@@ -94,8 +91,6 @@ private:
     std::shared_ptr<Mesh>     _pBlockCubeMesh;    
     std::shared_ptr<Shader>   _pBlockShader;      
     std::shared_ptr<Material> _pBlockUberMaterial;
-
-    ComPtr<ID3D11ShaderResourceView> _pBlockTextureArray;
 
     POINT _lastPreviewMouse = { -1, -1 };
     bool  _previewDirty     = true;
