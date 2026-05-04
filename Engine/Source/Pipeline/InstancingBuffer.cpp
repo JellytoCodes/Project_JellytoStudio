@@ -1,5 +1,4 @@
-﻿
-#include "Framework.h"
+﻿#include "Framework.h"
 #include "InstancingBuffer.h"
 #include "Graphics/Graphics.h"
 
@@ -19,8 +18,8 @@ void InstancingBuffer::CreateBuffers(uint32 maxCount)
     auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
 
     D3D11_BUFFER_DESC desc = {};
-    desc.ByteWidth  = sizeof(InstancingData) * maxCount;
-    desc.BindFlags  = D3D11_BIND_VERTEX_BUFFER;
+    desc.ByteWidth = sizeof(InstancingData) * maxCount;
+    desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
     if (_isDynamic)
     {
@@ -48,6 +47,35 @@ void InstancingBuffer::CreateBuffers(uint32 maxCount)
     _uploaded    = false;
 }
 
+void InstancingBuffer::PromoteToDynamic()
+{
+    if (_isDynamic) return;
+
+    _isDynamic = true;
+
+    auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
+
+    D3D11_BUFFER_DESC desc = {};
+    desc.ByteWidth      = sizeof(InstancingData) * _maxCount;
+    desc.BindFlags      = D3D11_BIND_VERTEX_BUFFER;
+    desc.Usage          = D3D11_USAGE_DYNAMIC;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    for (uint32 i = 0; i < kRingCount; ++i)
+    {
+        _ringBuffers[i].Reset();
+        CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf()));
+    }
+
+    _frameIndex  = 0;
+    _currentSlot = 0;
+    _dirty       = true;
+    _uploaded    = false;
+
+    if (!_data.empty())
+        UploadData();
+}
+
 void InstancingBuffer::ClearData()
 {
     _data.clear();
@@ -65,13 +93,43 @@ void InstancingBuffer::UploadData()
 {
     const uint32 count = GetCount();
     if (count == 0) return;
-
-    if (!_dirty) return;
+    if (!_dirty)   return;
 
     if (count > _maxCount)
     {
-        const uint32 newCount = max(_maxCount * 2, count);
-        CreateBuffers(newCount);
+        std::vector<InstancingData> saved = std::move(_data);
+
+        const uint32 newCount = max(_maxCount * 2u, count);
+        _maxCount = newCount;
+
+        auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
+
+        D3D11_BUFFER_DESC desc = {};
+        desc.ByteWidth = sizeof(InstancingData) * newCount;
+        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+        if (_isDynamic)
+        {
+            desc.Usage          = D3D11_USAGE_DYNAMIC;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+            for (uint32 i = 0; i < kRingCount; ++i)
+            {
+                _ringBuffers[i].Reset();
+                CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf()));
+            }
+        }
+        else
+        {
+            desc.Usage          = D3D11_USAGE_DEFAULT;
+            desc.CPUAccessFlags = 0;
+            _ringBuffers[0].Reset();
+            CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
+        }
+
+        _data = std::move(saved);
+        _data.reserve(newCount);
+        _frameIndex  = 0;
+        _currentSlot = 0;
     }
 
     auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
@@ -96,7 +154,6 @@ void InstancingBuffer::UploadData()
     else
     {
         _currentSlot = 0;
-
         ctx->UpdateSubresource(
             _ringBuffers[0].Get(),
             0,

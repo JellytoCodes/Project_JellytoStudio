@@ -15,10 +15,13 @@ struct InstanceIDHash
 
 struct RenderStats
 {
-    uint32 modelDrawCalls = 0;
-    uint32 meshDrawCalls  = 0;
-    uint32 totalDrawCalls = 0;
-    uint32 totalInstances = 0;
+    uint32 modelDrawCalls  = 0;
+    uint32 meshDrawCalls   = 0;
+    uint32 totalDrawCalls  = 0;
+    uint32 totalInstances  = 0;
+    
+    uint32 dynamicBuffers  = 0;
+    uint32 staticBuffers   = 0;
 };
 
 class InstancingManager
@@ -26,47 +29,55 @@ class InstancingManager
     DECLARE_SINGLE(InstancingManager);
 
 public:
-    const           RenderStats& GetStats() const { return _stats; }
+    const RenderStats& GetStats() const { return _stats; }
 
-    void            Render  (std::vector<Entity*>& entities);
-    void            ClearData();
+    void Render   (std::vector<Entity*>& entities);
+    void ClearData();
 
-    void            SetDirty    () { _bDirty    = true; }
-    void            SetMeshDirty() { _meshDirty = true; }
+    void SetDirty    () { _bDirty    = true; }
+    void SetMeshDirty() { _meshDirty = true; }
 
-    void            MarkMeshDirty (InstanceID id) { _partialDirtyMesh.insert(id);  }
-    void            MarkModelDirty(InstanceID id) { _partialDirtyModel.insert(id); }
+    void MarkMeshDirty(InstanceID id)
+    {
+        _partialDirtyMesh.insert(id);
+        _dynamicMeshIds.insert(id);
+    }
 
-    void            DumpInstancingStats() const;
+    void MarkModelDirty(InstanceID id) { _partialDirtyModel.insert(id); }
+
+    void DumpInstancingStats() const;
 
 private:
-    void            RenderMeshRenderer ();
-    void            RenderModelRenderer();
-    void            RenderAnimRenderer ();
+    void RenderMeshRenderer ();
+    void RenderModelRenderer();
+    void RenderAnimRenderer ();
 
-    void            PruneEmptyGroups();
+    void PruneEmptyGroups();
 
-    void            AddData(InstanceID instanceID, const InstancingData& data, bool isDynamic = false);
+    void AddData(InstanceID instanceID, const InstancingData& data, bool isDynamic = false);
 
-    using           BufferMap   = std::unordered_map<InstanceID, std::unique_ptr<InstancingBuffer>, InstanceIDHash>;
-    using           EntityCache = std::unordered_map<InstanceID, std::vector<Entity*>,              InstanceIDHash>;
-    using           WorldCache  = std::unordered_map<InstanceID, std::vector<InstancingData>,       InstanceIDHash>;
-    using           DirtySet    = std::unordered_set<InstanceID, InstanceIDHash>;
+    InstancingBuffer& GetOrCreateMeshBuffer(const InstanceID& id);
 
-    BufferMap       _buffers;
+    using BufferMap   = std::unordered_map<InstanceID, std::unique_ptr<InstancingBuffer>, InstanceIDHash>;
+    using EntityCache = std::unordered_map<InstanceID, std::vector<Entity*>,              InstanceIDHash>;
+    using WorldCache  = std::unordered_map<InstanceID, std::vector<InstancingData>,       InstanceIDHash>;
+    using DirtySet    = std::unordered_set<InstanceID, InstanceIDHash>;
 
-    EntityCache     _meshCache;
-    EntityCache     _modelCache;
-    EntityCache     _animCache;
+    BufferMap   _buffers;
 
-    WorldCache      _meshWorldCache;
-    WorldCache      _modelWorldCache;
+    EntityCache _meshCache;
+    EntityCache _modelCache;
+    EntityCache _animCache;
 
-    bool            _bDirty    = true;
-    bool            _meshDirty = true;
+    WorldCache  _meshWorldCache;
+    WorldCache  _modelWorldCache;
 
-    DirtySet        _partialDirtyMesh;
-    DirtySet        _partialDirtyModel;
+    bool _bDirty    = true;
+    bool _meshDirty = true;
 
-    RenderStats     _stats;
+    DirtySet _partialDirtyMesh;
+    DirtySet _partialDirtyModel;
+    DirtySet _dynamicMeshIds;
+
+    RenderStats _stats;
 };
