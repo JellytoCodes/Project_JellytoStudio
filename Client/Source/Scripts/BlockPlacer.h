@@ -29,10 +29,10 @@ public:
     virtual void LateUpdate() override {}
     virtual void OnDestroy()  override;
 
-    void SetPalette(PaletteWidget* palette)         { _palette    = palette;    }
-    void SetSavePath(const std::wstring& path)      { _savePath   = path;       }
-    void SetCharacterEntity(Entity* character)      { _character  = character;  }
-    void SetInventoryData(InventoryData* inventory) { _pInventory = inventory;  }
+    void SetPalette(PaletteWidget* palette) { _palette = palette; }
+    void SetSavePath(const std::wstring& path) { _savePath = path; }
+    void SetCharacterEntity(Entity* character) { _character = character; }
+    void SetInventoryData(InventoryData* inventory) { _pInventory = inventory; }
 
     bool IsPlacingMode() const { return _placingMode; }
     void SetPlacingMode(bool on);
@@ -57,11 +57,26 @@ private:
     std::shared_ptr<Material> GetPreviewMat(bool ok);
 
     bool CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity,
-                      const Vec3& hitNormal, Vec3& outEntityPos) const;
+        const Vec3& hitNormal, Vec3& outEntityPos) const;
     bool IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
 
-    void HandleInput();
-    void UpdatePreview();
+    struct FramePickResult
+    {
+        struct Hit
+        {
+            bool    valid = false;
+            Entity* entity = nullptr;
+            Vec3    normal = Vec3(0, 1, 0);
+            float   dist = FLT_MAX;
+        };
+        Hit   priming;
+        Hit   floor;
+        Hit   mushroom;
+        POINT mousePos = { -1, -1 };
+    };
+
+    void HandleInput(const FramePickResult& pick);
+    void UpdatePreview(const FramePickResult& pick);
     void HidePreview();
 
     bool   TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
@@ -71,31 +86,31 @@ private:
 
     struct PlaceTween
     {
-        Entity* entity     = nullptr;
-        float   elapsed    = 0.f;
+        Entity* entity = nullptr;
+        float   elapsed = 0.f;
         Vec3    finalScale = Vec3(1.f);
         static constexpr float kDuration = 0.18f;
     };
     void TickPlaceTweens(float dt);
 
-    PaletteWidget* _palette       = nullptr;
-    Entity*        _character     = nullptr;
-    Entity*        _previewEntity = nullptr;
-    bool           _placingMode   = false;
-    bool           _previewValid  = false;
-    std::wstring   _savePath      = L"../Saved/scene.xml";
+    PaletteWidget*              _palette = nullptr;
+    Entity*                     _character = nullptr;
+    Entity*                     _previewEntity = nullptr;
+    bool                        _placingMode = false;
+    bool                        _previewValid = false;
+    std::wstring                _savePath = L"../Saved/scene.xml";
 
-    std::shared_ptr<Material> _previewMatOk;
-    std::shared_ptr<Material> _previewMatBad;
+    std::shared_ptr<Material>   _previewMatOk;
+    std::shared_ptr<Material>   _previewMatBad;
 
-    std::shared_ptr<Mesh>     _pBlockCubeMesh;    
-    std::shared_ptr<Shader>   _pBlockShader;      
-    std::shared_ptr<Material> _pBlockUberMaterial;
+    std::shared_ptr<Mesh>       _pBlockCubeMesh;
+    std::shared_ptr<Shader>     _pBlockShader;
+    std::shared_ptr<Material>   _pBlockUberMaterial;
 
-    POINT _lastPreviewMouse = { -1, -1 };
-    bool  _previewDirty     = true;
+    POINT                       _lastPreviewMouse = { -1, -1 };
+    bool                        _previewDirty = true;
 
-    InventoryData* _pInventory = nullptr;
+    InventoryData*              _pInventory = nullptr;
 
     std::unordered_map<Entity*, PlacedBlockRecord> _blockRecordMap;
     mutable std::vector<PlacedBlockRecord>         _placedCellsCache;
