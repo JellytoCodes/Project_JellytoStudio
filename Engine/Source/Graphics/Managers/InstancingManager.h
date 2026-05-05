@@ -17,11 +17,14 @@ struct RenderStats
 {
     uint32 modelDrawCalls  = 0;
     uint32 meshDrawCalls   = 0;
-    uint32 totalDrawCalls  = 0;
+	uint32 totalDrawCalls  = 0;
     uint32 totalInstances  = 0;
-    
+
     uint32 dynamicBuffers  = 0;
     uint32 staticBuffers   = 0;
+
+    uint32 meshGroupsRebuilt = 0; 
+    uint32 meshGroupsSkipped = 0; 
 };
 
 class InstancingManager
@@ -36,6 +39,8 @@ public:
 
     void SetDirty    () { _bDirty    = true; }
     void SetMeshDirty() { _meshDirty = true; }
+
+    void SetMeshGroupDirty() { _meshGroupDirty = true; }
 
     void MarkMeshDirty(InstanceID id)
     {
@@ -58,6 +63,8 @@ private:
 
     InstancingBuffer& GetOrCreateMeshBuffer(const InstanceID& id);
 
+    void SmartRebuildMeshGroups(std::vector<Entity*>& entities);
+
     using BufferMap   = std::unordered_map<InstanceID, std::unique_ptr<InstancingBuffer>, InstanceIDHash>;
     using EntityCache = std::unordered_map<InstanceID, std::vector<Entity*>,              InstanceIDHash>;
     using WorldCache  = std::unordered_map<InstanceID, std::vector<InstancingData>,       InstanceIDHash>;
@@ -72,11 +79,13 @@ private:
     WorldCache  _meshWorldCache;
     WorldCache  _modelWorldCache;
 
-    bool _bDirty    = true;
-    bool _meshDirty = true;
+    bool _bDirty       = true;
+    bool _meshDirty    = true;   
+    bool _meshGroupDirty = false;
 
     DirtySet _partialDirtyMesh;
     DirtySet _partialDirtyModel;
+
     DirtySet _dynamicMeshIds;
 
     RenderStats _stats;

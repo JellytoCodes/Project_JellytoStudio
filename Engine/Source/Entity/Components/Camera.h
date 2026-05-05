@@ -13,11 +13,14 @@ class Camera : public Component
 
 public:
     struct CullStats
-	{
-	    uint32 totalEntities   = 0;
-	    uint32 visibleEntities = 0;
-	    uint32 culledEntities  = 0;
-	};
+    {
+        uint32 totalEntities   = 0;
+        uint32 visibleEntities = 0;
+        uint32 culledEntities  = 0;
+
+        uint32 meshRebuildCount  = 0;
+        uint32 modelRebuildCount = 0;
+    };
 
     Camera();
     virtual ~Camera();
@@ -57,28 +60,29 @@ public:
     const CullStats& GetCullStats() const                       { return _cullStats; }
     const std::vector<Entity*>& GetVisibleEntities() const      { return _vecForward; }
 
-    static Matrix           S_MatView;
-    static Matrix           S_MatProjection;
+    static Matrix S_MatView;
+    static Matrix S_MatProjection;
 
 private:
-    ProjectionType          _type = ProjectionType::Perspective;
-    Matrix                  _matView = Matrix::Identity;
-    Matrix                  _matProjection = Matrix::Identity;
+    ProjectionType  _type = ProjectionType::Perspective;
+    Matrix          _matView       = Matrix::Identity;
+    Matrix          _matProjection = Matrix::Identity;
 
-    float                   _near = 1.f;
-    float                   _far = 1000.f;
-    float                   _fov = XM_PI / 4.f;
-    float                   _width = 0;
-    float                   _height = 0;
-    uint32                  _cullingMask = 0;
+    float   _near = 1.f;
+    float   _far  = 1000.f;
+    float   _fov  = XM_PI / 4.f;
+    float   _width  = 0;
+    float   _height = 0;
+    uint32  _cullingMask = 0;
 
-    std::vector<Entity*>    _vecForward;
+    std::vector<Entity*> _vecForward;
 
-    bool                    _sortDirty = true;
-    Vec3                    _prevCamPos = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-    float                   _prevCamYaw = FLT_MAX;
+    bool    _sortDirty  = true;
+    Vec3    _prevCamPos = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+    float   _prevCamYaw = FLT_MAX;
 
-    size_t                  _visibilityHash = 0;
+    size_t _meshVisibilityHash  = 0;
+    size_t _modelVisibilityHash = 0;
 
-    CullStats               _cullStats;
+    CullStats _cullStats;
 };

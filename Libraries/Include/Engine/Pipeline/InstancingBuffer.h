@@ -4,11 +4,11 @@ class VertexBuffer;
 
 struct InstancingData
 {
-    Matrix   world; 
-
-    uint32   materialIndex; 
-    uint32   _instPad[3];   
+    Matrix   world;        
+    uint32   materialIndex;
+    uint32   _instPad[3];  
 };
+
 #define MAX_MESH_INSTANCE 10000
 
 class InstancingBuffer
@@ -27,21 +27,25 @@ public:
     void   ClearData();
     void   AddData(const InstancingData& data);
 
-    void   UploadData();
-    void   BindBuffer() const;
-    void   PushData();
+    void   UploadData();       
+    void   BindBuffer() const; 
+    void   PushData();         
 
     bool   IsUploaded() const { return _uploaded; }
     void   ResetUpload()      { _uploaded = false; }
     uint32 GetCount()   const { return static_cast<uint32>(_data.size()); }
 
-private:
-    void CreateBuffers(uint32 maxCount);
+    bool   IsDynamic()  const { return _isDynamic; }
 
-    ComPtr<ID3D11Buffer>       _ringBuffers[kRingCount];
-    uint32                     _maxCount    = 0;
-    uint32                     _frameIndex  = 0;
-    uint32                     _currentSlot = 0;
+    void   PromoteToDynamic();
+
+private:
+    void   CreateBuffers(uint32 maxCount);
+
+    ComPtr<ID3D11Buffer>        _ringBuffers[kRingCount];
+    uint32                      _maxCount    = 0;
+    uint32                      _frameIndex  = 0;
+    uint32                      _currentSlot = 0;
 
     std::vector<InstancingData> _data;
 

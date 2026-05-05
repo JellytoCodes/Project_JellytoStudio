@@ -8,6 +8,93 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Pipeline/Shader.h"
 
+InstancingBuffer& InstancingManager::GetOrCreateMeshBuffer(const InstanceID& id)
+{
+    const bool shouldBeDynamic = (_dynamicMeshIds.count(id) > 0);
+    auto& bufPtr = _buffers[id];
+
+    if (!bufPtr)
+        bufPtr = std::make_unique<InstancingBuffer>(shouldBeDynamic);
+    else if (shouldBeDynamic && !bufPtr->IsDynamic())
+        bufPtr->PromoteToDynamic();
+
+    return *bufPtr;
+}
+
+void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
+{
+    EntityCache newMeshCache;
+
+    for (Entity* entity : entities)
+    {
+        auto* mr = entity->GetComponent<MeshRenderer>();
+        if (!mr) continue;
+        const InstanceID id = mr->GetInstanceID();
+        newMeshCache[id].push_back(entity);
+    }
+
+    for (auto& [id, newVec] : newMeshCache)
+    {
+        const auto   oldIt   = _meshCache.find(id);
+        const uint32 oldSize = (oldIt != _meshCache.end())
+                             ? static_cast<uint32>(oldIt->second.size()) : 0u;
+        const uint32 newSize = static_cast<uint32>(newVec.size());
+
+        const bool sizeChanged    = (oldSize != newSize);
+        const bool transformDirty = (_partialDirtyMesh.count(id) > 0);
+
+        if (!sizeChanged && !transformDirty)
+        {
+            _stats.meshGroupsSkipped++;
+            continue;
+        }
+
+        auto& worldVec = _meshWorldCache[id];
+        worldVec.clear();
+        worldVec.reserve(newSize);
+
+        for (Entity* entity : newVec)
+        {
+            RenderPacket packet;
+            auto* mr = entity->GetComponent<MeshRenderer>();
+            auto* tr = entity->GetComponent<Transform>();
+            if (mr && tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
+            {
+                InstancingData data;
+                data.world         = packet.matWorld;
+                data.materialIndex = packet.materialIndex;
+                data._instPad[0]   = 0u;
+                data._instPad[1]   = 0u;
+                data._instPad[2]   = 0u;
+                worldVec.push_back(data);
+            }
+        }
+
+        InstancingBuffer& buf = GetOrCreateMeshBuffer(id);
+        buf.ClearData();
+        for (const InstancingData& d : worldVec)
+            buf.AddData(d);
+        buf.UploadData();
+
+        _stats.meshGroupsRebuilt++;
+    }
+
+    for (auto& [id, oldVec] : _meshCache)
+    {
+        if (newMeshCache.count(id) > 0) continue;
+
+        auto bufIt = _buffers.find(id);
+        if (bufIt != _buffers.end())
+        {
+            bufIt->second->ClearData();
+            bufIt->second->ResetUpload();
+        }
+        _meshWorldCache.erase(id);
+    }
+    _meshCache = std::move(newMeshCache);
+    _partialDirtyMesh.clear();
+}
+
 void InstancingManager::Render(std::vector<Entity*>& entities)
 {
     if (entities.empty()) return;
@@ -57,7 +144,6 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 data._instPad[0]   = 0u;
                 data._instPad[1]   = 0u;
                 data._instPad[2]   = 0u;
-
                 _meshWorldCache[id].push_back(data);
             }
         }
@@ -73,7 +159,6 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 data._instPad[0]   = 0u;
                 data._instPad[1]   = 0u;
                 data._instPad[2]   = 0u;
-
                 _modelCache[id].push_back(entity);
                 _modelWorldCache[id].push_back(data);
             }
@@ -85,24 +170,26 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         }
     }
 
+    _stats = RenderStats{};
+
     if (fullMeshRebuild)
     {
         for (auto& [id, dataVec] : _meshWorldCache)
         {
-            auto& buf = _buffers[id];
-            if (!buf)
-                buf = std::make_unique<InstancingBuffer>(false);
-            else
-                buf->ClearData();
-
+            InstancingBuffer& buf = GetOrCreateMeshBuffer(id);
+            buf.ClearData();
             for (const InstancingData& d : dataVec)
-                buf->AddData(d);
-
-            buf->UploadData();
+                buf.AddData(d);
+            buf.UploadData();
         }
-
-        _meshDirty = false;
+        _meshDirty    = false;
+        _meshGroupDirty = false;
         _partialDirtyMesh.clear();
+    }
+    else if (_meshGroupDirty)
+    {
+        SmartRebuildMeshGroups(entities);
+        _meshGroupDirty = false;
     }
     else if (!_partialDirtyMesh.empty())
     {
@@ -123,7 +210,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 {
                     InstancingData data;
                     data.world         = packet.matWorld;
-                    data.materialIndex = packet.materialIndex;  // [NEW]
+                    data.materialIndex = packet.materialIndex;
                     data._instPad[0]   = 0u;
                     data._instPad[1]   = 0u;
                     data._instPad[2]   = 0u;
@@ -131,18 +218,12 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 }
             }
 
-            auto& buf = _buffers[dirtyId];
-            if (!buf)
-                buf = std::make_unique<InstancingBuffer>(false);
-            else
-                buf->ClearData();
-
+            InstancingBuffer& buf = GetOrCreateMeshBuffer(dirtyId);
+            buf.ClearData();
             for (const InstancingData& d : worldVec)
-                buf->AddData(d);
-
-            buf->UploadData();
+                buf.AddData(d);
+            buf.UploadData();
         }
-
         _partialDirtyMesh.clear();
     }
 
@@ -150,18 +231,15 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
     {
         for (auto& [id, dataVec] : _modelWorldCache)
         {
-            auto& buf = _buffers[id];
-            if (!buf)
-                buf = std::make_unique<InstancingBuffer>(false);
+            auto& bufPtr = _buffers[id];
+            if (!bufPtr)
+                bufPtr = std::make_unique<InstancingBuffer>(false);
             else
-                buf->ClearData();
-
+                bufPtr->ClearData();
             for (const InstancingData& d : dataVec)
-                buf->AddData(d);
-
-            buf->UploadData();
+                bufPtr->AddData(d);
+            bufPtr->UploadData();
         }
-
         _bDirty = false;
         _partialDirtyModel.clear();
     }
@@ -190,22 +268,17 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 }
             }
 
-            auto& buf = _buffers[dirtyId];
-            if (!buf)
-                buf = std::make_unique<InstancingBuffer>(false);
+            auto& bufPtr = _buffers[dirtyId];
+            if (!bufPtr)
+                bufPtr = std::make_unique<InstancingBuffer>(false);
             else
-                buf->ClearData();
-
+                bufPtr->ClearData();
             for (const InstancingData& d : worldVec)
-                buf->AddData(d);
-
-            buf->UploadData();
+                bufPtr->AddData(d);
+            bufPtr->UploadData();
         }
-
         _partialDirtyModel.clear();
     }
-
-    _stats = RenderStats{};
 
     RenderMeshRenderer();
     RenderModelRenderer();
@@ -257,11 +330,13 @@ void InstancingManager::RenderMeshRenderer()
         if (it == _buffers.end() || !it->second->IsUploaded()) continue;
 
         it->second->PushData();
-
         entityVec[0]->GetComponent<MeshRenderer>()->RenderInstancing(it->second.get());
 
         _stats.meshDrawCalls++;
         _stats.totalInstances += it->second->GetCount();
+
+        if (it->second->IsDynamic()) _stats.dynamicBuffers++;
+        else                         _stats.staticBuffers++;
     }
 }
 
@@ -275,7 +350,6 @@ void InstancingManager::RenderModelRenderer()
         if (it == _buffers.end() || !it->second->IsUploaded()) continue;
 
         it->second->PushData();
-
         entityVec[0]->GetComponent<ModelRenderer>()->RenderInstancing(it->second.get());
 
         _stats.modelDrawCalls++;
@@ -323,44 +397,47 @@ void InstancingManager::RenderAnimRenderer()
 
 void InstancingManager::AddData(InstanceID instanceID, const InstancingData& data, bool isDynamic)
 {
-    auto& buf = _buffers[instanceID];
-    if (!buf)
-        buf = std::make_unique<InstancingBuffer>(isDynamic);
-
-    buf->AddData(data);
+    auto& bufPtr = _buffers[instanceID];
+    if (!bufPtr)
+        bufPtr = std::make_unique<InstancingBuffer>(isDynamic);
+    bufPtr->AddData(data);
 }
 
 void InstancingManager::DumpInstancingStats() const
 {
-    ::OutputDebugStringW(L"\n========== [InstancingManager Stats] ==========\n");
+    ::OutputDebugStringW(L"\n========== [InstancingManager Stats — C-1/C-2 Fix] ==========\n");
 
-    wchar_t buf[512];
-
-    swprintf_s(buf,
-        L"Ring Buffer 슬롯: %u | "
-        L"블록 DrawCall 최적화: 7 → %zu (Texture2DArray 머지)\n",
-        InstancingBuffer::kRingCount,
-        _meshCache.size());
-    ::OutputDebugStringW(buf);
+    wchar_t buf[1024];
 
     size_t totalMesh = 0;
-    for (const auto& [id, v] : _meshCache)
-        totalMesh += v.size();
-
+    for (const auto& [id, v] : _meshCache)  totalMesh  += v.size();
     size_t totalModel = 0;
-    for (const auto& [id, v] : _modelCache)
-        totalModel += v.size();
+    for (const auto& [id, v] : _modelCache) totalModel += v.size();
+
+    uint32 dynamicCount = 0, staticCount = 0;
+    for (const auto& [id, bufPtr] : _buffers)
+        if (bufPtr) { if (bufPtr->IsDynamic()) ++dynamicCount; else ++staticCount; }
 
     swprintf_s(buf,
-        L"MeshRenderer 그룹: %zu | 블록 인스턴스: %zu\n"
-        L"ModelRenderer 그룹: %zu | 모델 인스턴스: %zu\n"
-        L"최종 DrawCall: Mesh=%zu + Model=%zu = %zu\n"
-        L"인스턴싱 절감: %.1f%% (%zu Entity → %zu DrawCall)\n"
-        L"================================================\n",
-        _meshCache.size(), totalMesh,
-        _modelCache.size(), totalModel,
+        L"[C-1 Ring Buffer]  Dynamic(MAP_WRITE_DISCARD): %u  Static(UpdateSubresource): %u\n"
+        L"[C-2 SmartRebuild] 재업로드 그룹: %u  생략 그룹: %u\n"
+        L"  → 생략률 %.1f%% (카메라 이동 시 불필요한 GPU 업로드 차단)\n"
+        L"[DrawCall]  Mesh=%zu  Model=%zu  Total=%zu\n"
+        L"[Instance]  Mesh=%zu entity → %zu DC (%.1f%% 절감)\n"
+        L"            Model=%zu entity → %zu DC\n"
+        L"=============================================================\n",
+        dynamicCount, staticCount,
+        _stats.meshGroupsRebuilt, _stats.meshGroupsSkipped,
+        (_stats.meshGroupsRebuilt + _stats.meshGroupsSkipped > 0
+            ? static_cast<double>(_stats.meshGroupsSkipped)
+              / (_stats.meshGroupsRebuilt + _stats.meshGroupsSkipped) * 100.0
+            : 0.0),
         _meshCache.size(), _modelCache.size(), _meshCache.size() + _modelCache.size(),
-        (totalMesh > 0 ? (1.0 - static_cast<double>(_meshCache.size()) / totalMesh) * 100.0 : 0.0),
-        totalMesh, _meshCache.size());
+        totalMesh, _meshCache.size(),
+        (totalMesh > 0
+            ? (1.0 - static_cast<double>(_meshCache.size()) / totalMesh) * 100.0
+            : 0.0),
+        totalModel, _modelCache.size());
+
     ::OutputDebugStringW(buf);
 }

@@ -22,6 +22,7 @@ Camera::Camera() : Super(ComponentType::Camera)
 }
 
 Camera::~Camera() {}
+
 void Camera::Awake()      {}
 void Camera::Start()      {}
 void Camera::LateUpdate() {}
@@ -29,8 +30,8 @@ void Camera::OnDestroy()  {}
 
 void Camera::Update()
 {
-    const Vec3  curPos   = GetTransform()->GetPosition();
-    const float curYaw   = GetTransform()->GetRotation().y;
+    const Vec3  curPos    = GetTransform()->GetPosition();
+    const float curYaw    = GetTransform()->GetRotation().y;
     const float moveDelta = (curPos - _prevCamPos).LengthSquared();
     const float rotDelta  = fabsf(curYaw - _prevCamYaw);
 
@@ -62,7 +63,6 @@ void Camera::UpdateMatrix()
 void Camera::SortEntities()
 {
     UpdateMatrix();
-
     if (!_sortDirty) return;
 
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
@@ -80,8 +80,7 @@ void Camera::SortEntities()
 
         XMVECTOR det;
         XMMATRIX viewInv = XMMatrixInverse(&det, _matView);
-
-        float detF;
+        float    detF;
         XMStoreFloat(&detF, det);
 
         if (fabsf(detF) > 1e-6f)
@@ -109,7 +108,6 @@ void Camera::SortEntities()
                 entity->GetComponent<MeshRenderer>()   != nullptr ||
                 entity->GetComponent<ModelRenderer>()  != nullptr ||
                 entity->GetComponent<ModelAnimator>()  != nullptr;
-
             if (!hasRenderer) continue;
 
             if (auto* aabb = entity->GetComponent<AABBCollider>())
@@ -117,7 +115,6 @@ void Camera::SortEntities()
                 if (worldFrustum.Contains(aabb->GetBoundingBox()) == DirectX::DISJOINT)
                     continue;
             }
-
             newForward.push_back(entity.get());
         }
     }
@@ -131,32 +128,55 @@ void Camera::SortEntities()
                 entity->GetComponent<MeshRenderer>()   != nullptr ||
                 entity->GetComponent<ModelRenderer>()  != nullptr ||
                 entity->GetComponent<ModelAnimator>()  != nullptr;
-
             if (!hasRenderer) continue;
 
             newForward.push_back(entity.get());
         }
     }
 
-    size_t newHash = newForward.size();
+    size_t newMeshHash  = 0;
+    size_t newModelHash = 0;
+
     for (Entity* e : newForward)
     {
-        newHash ^= std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(e))
-            + 0x9e3779b97f4a7c15ULL
-            + (newHash << 6) + (newHash >> 2);
+        const size_t h = std::hash<uintptr_t>{}(reinterpret_cast<uintptr_t>(e));
+
+        if (e->GetComponent<MeshRenderer>())
+        {
+            newMeshHash  ^= h + 0x9e3779b97f4a7c15ULL + (newMeshHash  << 6) + (newMeshHash  >> 2);
+        }
+        else
+        {
+            newModelHash ^= h + 0x9e3779b97f4a7c15ULL + (newModelHash << 6) + (newModelHash >> 2);
+        }
     }
 
-    if (newHash != _visibilityHash)
+    const bool meshChanged  = (newMeshHash  != _meshVisibilityHash);
+    const bool modelChanged = (newModelHash != _modelVisibilityHash);
+
+    if (meshChanged || modelChanged)
     {
-        _visibilityHash = newHash;
-        _vecForward     = std::move(newForward);
-        GET_SINGLE(InstancingManager)->SetDirty();
-        GET_SINGLE(InstancingManager)->SetMeshDirty();
+        _vecForward = std::move(newForward);
+
+        if (meshChanged)
+        {
+            _meshVisibilityHash = newMeshHash;
+            GET_SINGLE(InstancingManager)->SetMeshGroupDirty();
+            _cullStats.meshRebuildCount++;
+        }
+
+        if (modelChanged)
+        {
+            _modelVisibilityHash = newModelHash;
+            GET_SINGLE(InstancingManager)->SetDirty();
+            _cullStats.modelRebuildCount++;
+        }
     }
 
     _cullStats.totalEntities   = static_cast<uint32>(entities.size());
     _cullStats.visibleEntities = static_cast<uint32>(_vecForward.size());
     _cullStats.culledEntities  = _cullStats.totalEntities - _cullStats.visibleEntities;
+
     _sortDirty = false;
 }
 
