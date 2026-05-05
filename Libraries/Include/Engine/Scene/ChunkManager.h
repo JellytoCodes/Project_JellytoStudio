@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Entity/Entity.h"
+#include "Entity/Components/Collider/CollisionChannel.h"
 
 class ChunkManager
 {
@@ -12,9 +13,9 @@ public:
     void Unregister(Entity* entity);
     void Clear();
 
-    void CollectVisible(
-        const DirectX::BoundingFrustum& frustum,
-        std::vector<Entity*>&           outEntities);
+    void CollectVisible(const DirectX::BoundingFrustum& frustum, std::vector<Entity*>& outEntities);
+
+    bool PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist);
 
     bool IsManaged(Entity* entity) const;
 

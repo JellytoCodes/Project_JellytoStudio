@@ -1,5 +1,6 @@
 ﻿#include "Framework.h"
 #include "ChunkManager.h"
+
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Transform.h"
 
@@ -117,4 +118,47 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
 bool ChunkManager::IsManaged(Entity* entity) const
 {
     return _entityToKey.count(entity) > 0;
+}
+bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist)
+{
+    outEntity    = nullptr;
+    outDist      = FLT_MAX;
+    outHitNormal = Vec3(0, 1, 0);
+
+    const XMVECTOR vOrigin = XMLoadFloat3(&rayOrigin);
+    const XMVECTOR vDir    = XMLoadFloat3(&rayDir);
+
+    for (auto& [key, chunk] : _chunks)
+    {
+        if (chunk.entities.empty()) continue;
+
+        if (chunk.aabbDirty)
+            chunk.RebuildAABB();
+
+        float chunkDist = 0.f;
+        if (!chunk.aabb.Intersects(vOrigin, vDir, chunkDist)) continue;
+        if (chunkDist >= outDist) continue;
+
+        for (Entity* entity : chunk.entities)
+        {
+            auto* aabb = entity->GetComponent<AABBCollider>();
+            if (!aabb) continue;
+            if (!aabb->CanBePickedBy(queryChan)) continue;
+
+            float dist = 0.f;
+            Vec3  normal;
+            Vec3  origin = rayOrigin;
+            Vec3  dir    = rayDir;
+            Ray   r(origin, dir);
+
+            if (aabb->IntersectsWithNormal(r, dist, normal) && dist < outDist)
+            {
+                outDist      = dist;
+                outEntity    = entity;
+                outHitNormal = normal;
+            }
+        }
+    }
+
+    return outEntity != nullptr;
 }
