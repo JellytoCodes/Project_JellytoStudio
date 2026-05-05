@@ -24,8 +24,6 @@ void PointClickController::Update()
         MoveToDestination(GET_SINGLE(TimeManager)->GetDeltaTime());
 }
 
-// ── 입력: 블록 상면 피킹 → 이동 목표 설정 ───────────────────────────────
-
 void PointClickController::HandleInput()
 {
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::RBUTTON)) return;
@@ -35,8 +33,6 @@ void PointClickController::HandleInput()
 
     const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
 
-    // Scene::PickBlock 출력 파라미터는 Entity*& (raw pointer)
-    // 이전 코드의 shared_ptr<Entity> hitEntity는 컴파일 오류
     Entity* hitEntity = nullptr;
     Vec3    hitNormal;
     float   hitDist;
@@ -45,7 +41,6 @@ void PointClickController::HandleInput()
         _walkChannel, hitEntity, hitNormal, hitDist))
         return;
 
-    // 상면만 허용 (hitNormal.y > 0.7) — 측면/하면 클릭은 이동 무시
     if (hitNormal.y < 0.7f) return;
 
     AABBCollider* aabb = hitEntity->GetComponent<AABBCollider>();
@@ -57,8 +52,6 @@ void PointClickController::HandleInput()
     Vec3 dest(box.Center.x, blockTopY, box.Center.z);
     MoveTo(dest);
 }
-
-// ── 이동 ──────────────────────────────────────────────────────────────────
 
 void PointClickController::MoveTo(const Vec3& worldPos)
 {

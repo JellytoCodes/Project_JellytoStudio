@@ -80,16 +80,16 @@ ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
 	for (D3D11_SIGNATURE_PARAMETER_DESC& paramDesc : params)
 	{
 		D3D11_INPUT_ELEMENT_DESC elementDesc;
-		elementDesc.SemanticName         = paramDesc.SemanticName;
-		elementDesc.SemanticIndex        = paramDesc.SemanticIndex;
-		elementDesc.InputSlot            = 0;
-		elementDesc.AlignedByteOffset    = D3D11_APPEND_ALIGNED_ELEMENT;
-		elementDesc.InputSlotClass       = D3D11_INPUT_PER_VERTEX_DATA;
+		elementDesc.SemanticName = paramDesc.SemanticName;
+		elementDesc.SemanticIndex = paramDesc.SemanticIndex;
+		elementDesc.InputSlot = 0;
+		elementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+		elementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 		elementDesc.InstanceDataStepRate = 0;
 
-		if      (paramDesc.Mask == 1)  { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32_UINT;           else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32_SINT;           else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32_FLOAT; }
-		else if (paramDesc.Mask <= 3)  { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32_UINT;        else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32_SINT;        else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32_FLOAT; }
-		else if (paramDesc.Mask <= 7)  { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_UINT;     else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_SINT;     else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT; }
+		if (paramDesc.Mask == 1) { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32_UINT;           else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32_SINT;           else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32_FLOAT; }
+		else if (paramDesc.Mask <= 3) { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32_UINT;        else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32_SINT;        else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32_FLOAT; }
+		else if (paramDesc.Mask <= 7) { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_UINT;     else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_SINT;     else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT; }
 		else if (paramDesc.Mask <= 15) { if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_UINT;  else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_SINT;  else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; }
 
 		std::string name = paramDesc.SemanticName;
@@ -100,9 +100,9 @@ ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
 
 		if (Utils::StartsWith(name, "INST"))
 		{
-			elementDesc.InputSlot            = 1;
-			elementDesc.AlignedByteOffset    = D3D11_APPEND_ALIGNED_ELEMENT;
-			elementDesc.InputSlotClass       = D3D11_INPUT_PER_INSTANCE_DATA;
+			elementDesc.InputSlot = 1;
+			elementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+			elementDesc.InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
 			elementDesc.InstanceDataStepRate = 1;
 		}
 
@@ -110,7 +110,7 @@ ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
 			inputLayoutDesc.push_back(elementDesc);
 	}
 
-	const void* code     = effectVsDesc->pBytecode;
+	const void* code = effectVsDesc->pBytecode;
 	UINT        codeSize = effectVsDesc->BytecodeLength;
 
 	if (!inputLayoutDesc.empty())
@@ -129,52 +129,55 @@ ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
 // ── Draw 위임 ─────────────────────────────────────────────────────────────
 
 void Shader::Draw(UINT technique, UINT pass, UINT vertexCount, UINT startVertexLocation)
-{ _techniques[technique].passes[pass].Draw(vertexCount, startVertexLocation); }
+{
+	_techniques[technique].passes[pass].Draw(vertexCount, startVertexLocation);
+}
 
 void Shader::DrawIndexed(UINT technique, UINT pass, UINT indexCount, UINT startIndexLocation, INT baseVertexLocation)
-{ _techniques[technique].passes[pass].DrawIndexed(indexCount, startIndexLocation, baseVertexLocation); }
+{
+	_techniques[technique].passes[pass].DrawIndexed(indexCount, startIndexLocation, baseVertexLocation);
+}
 
 void Shader::DrawInstanced(UINT technique, UINT pass, UINT vertexCountPerInstance, UINT instanceCount, UINT startVertexLocation, UINT startInstanceLocation)
-{ _techniques[technique].passes[pass].DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation); }
+{
+	_techniques[technique].passes[pass].DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
+}
 
 void Shader::DrawIndexedInstanced(UINT technique, UINT pass, UINT indexCountPerInstance, UINT instanceCount, UINT startIndexLocation, INT baseVertexLocation, UINT startInstanceLocation)
-{ _techniques[technique].passes[pass].DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation); }
+{
+	_techniques[technique].passes[pass].DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+}
 
 void Shader::Dispatch(UINT technique, UINT pass, UINT x, UINT y, UINT z)
-{ _techniques[technique].passes[pass].Dispatch(x, y, z); }
+{
+	_techniques[technique].passes[pass].Dispatch(x, y, z);
+}
 
 // ── GetVariable 계열 (변경 없음) ──────────────────────────────────────────
-ComPtr<ID3DX11EffectVariable>                    Shader::GetVariable(const std::string& n)    { return _shaderDesc.effect->GetVariableByName(n.c_str()); }
-ComPtr<ID3DX11EffectScalarVariable>              Shader::GetScalar(const std::string& n)       { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsScalar(); }
-ComPtr<ID3DX11EffectVectorVariable>              Shader::GetVector(const std::string& n)       { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsVector(); }
-ComPtr<ID3DX11EffectMatrixVariable>              Shader::GetMatrix(const std::string& n)       { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsMatrix(); }
-ComPtr<ID3DX11EffectStringVariable>              Shader::GetString(const std::string& n)       { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsString(); }
-ComPtr<ID3DX11EffectShaderResourceVariable>      Shader::GetSRV(const std::string& n)         { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsShaderResource(); }
-ComPtr<ID3DX11EffectRenderTargetViewVariable>    Shader::GetRTV(const std::string& n)         { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsRenderTargetView(); }
-ComPtr<ID3DX11EffectDepthStencilViewVariable>    Shader::GetDSV(const std::string& n)         { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsDepthStencilView(); }
+ComPtr<ID3DX11EffectVariable>                    Shader::GetVariable(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str()); }
+ComPtr<ID3DX11EffectScalarVariable>              Shader::GetScalar(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsScalar(); }
+ComPtr<ID3DX11EffectVectorVariable>              Shader::GetVector(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsVector(); }
+ComPtr<ID3DX11EffectMatrixVariable>              Shader::GetMatrix(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsMatrix(); }
+ComPtr<ID3DX11EffectStringVariable>              Shader::GetString(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsString(); }
+ComPtr<ID3DX11EffectShaderResourceVariable>      Shader::GetSRV(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsShaderResource(); }
+ComPtr<ID3DX11EffectRenderTargetViewVariable>    Shader::GetRTV(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsRenderTargetView(); }
+ComPtr<ID3DX11EffectDepthStencilViewVariable>    Shader::GetDSV(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsDepthStencilView(); }
 ComPtr<ID3DX11EffectConstantBuffer>              Shader::GetConstantBuffer(const std::string& n) { return _shaderDesc.effect->GetConstantBufferByName(n.c_str()); }
-ComPtr<ID3DX11EffectShaderVariable>              Shader::GetShader(const std::string& n)      { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsShader(); }
-ComPtr<ID3DX11EffectBlendVariable>               Shader::GetBlend(const std::string& n)       { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsBlend(); }
-ComPtr<ID3DX11EffectDepthStencilVariable>        Shader::GetDepthStencil(const std::string& n){ return _shaderDesc.effect->GetVariableByName(n.c_str())->AsDepthStencil(); }
-ComPtr<ID3DX11EffectRasterizerVariable>          Shader::GetRasterizer(const std::string& n)  { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsRasterizer(); }
-ComPtr<ID3DX11EffectSamplerVariable>             Shader::GetSampler(const std::string& n)     { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsSampler(); }
-ComPtr<ID3DX11EffectUnorderedAccessViewVariable> Shader::GetUAV(const std::string& n)         { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsUnorderedAccessView(); }
+ComPtr<ID3DX11EffectShaderVariable>              Shader::GetShader(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsShader(); }
+ComPtr<ID3DX11EffectBlendVariable>               Shader::GetBlend(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsBlend(); }
+ComPtr<ID3DX11EffectDepthStencilVariable>        Shader::GetDepthStencil(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsDepthStencil(); }
+ComPtr<ID3DX11EffectRasterizerVariable>          Shader::GetRasterizer(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsRasterizer(); }
+ComPtr<ID3DX11EffectSamplerVariable>             Shader::GetSampler(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsSampler(); }
+ComPtr<ID3DX11EffectUnorderedAccessViewVariable> Shader::GetUAV(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsUnorderedAccessView(); }
 
 // ── Push 상수버퍼 계열 (shared_ptr → unique_ptr) ──────────────────────────
 void Shader::PushGlobalData(const Matrix& view, const Matrix& projection)
 {
 	if (_globalEffectBuffer == nullptr)
-	{
-		_globalBuffer = std::make_unique<ConstantBuffer<GlobalDesc>>();
-		_globalBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_globalEffectBuffer = GetConstantBuffer("GlobalBuffer");
-	}
-	_globalDesc.P   = projection;
-	_globalDesc.V   = view;
-	_globalDesc.VP  = view * projection;
-	_globalDesc.VInv = view.Invert();
-	_globalBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _globalDesc);
-	_globalEffectBuffer->SetConstantBuffer(_globalBuffer->GetComPtr().Get());
+
+	GET_SINGLE(SharedCBufferManager)->SetGlobal(view, projection);
+	_globalEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetGlobalBuffer());
 }
 
 void Shader::PushTransformData(const TransformDesc& desc)
@@ -193,17 +196,10 @@ void Shader::PushTransformData(const TransformDesc& desc)
 void Shader::PushLightData(const LightDesc& desc)
 {
 	if (_lightEffectBuffer == nullptr)
-	{
-		_lightBuffer = std::make_unique<ConstantBuffer<LightDesc>>();
-		_lightBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
 		_lightEffectBuffer = GetConstantBuffer("LightBuffer");
-	}
 
-	if (::memcmp(&_lightDesc, &desc, sizeof(LightDesc)) == 0) return;
-
-	_lightDesc = desc;
-	_lightBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _lightDesc);
-	_lightEffectBuffer->SetConstantBuffer(_lightBuffer->GetComPtr().Get());
+	GET_SINGLE(SharedCBufferManager)->SetLight(desc);
+	_lightEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetLightBuffer());
 }
 
 void Shader::PushMaterialData(const MaterialDesc& desc)
@@ -296,21 +292,21 @@ ShaderDesc ShaderManager::GetEffect(const std::wstring& fileName)
 
 void Shader::PushShadowData(const ShadowDesc& desc, ID3D11ShaderResourceView* shadowSrv)
 {
-    if (_shadowEffectBuffer == nullptr)
-    {
-        _shadowBuffer = std::make_unique<ConstantBuffer<ShadowDesc>>();
-        _shadowBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
-        _shadowEffectBuffer = GetConstantBuffer("ShadowBuffer");
-        if (_shadowEffectBuffer == nullptr) return;
-    }
+	if (_shadowEffectBuffer == nullptr)
+	{
+		_shadowBuffer = std::make_unique<ConstantBuffer<ShadowDesc>>();
+		_shadowBuffer->Create(GET_SINGLE(Graphics)->GetDevice());
+		_shadowEffectBuffer = GetConstantBuffer("ShadowBuffer");
+		if (_shadowEffectBuffer == nullptr) return;
+	}
 
-    if (::memcmp(&_shadowDesc, &desc, sizeof(ShadowDesc)) != 0)
-    {
-        _shadowDesc = desc;
-        _shadowBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _shadowDesc);
-        _shadowEffectBuffer->SetConstantBuffer(_shadowBuffer->GetComPtr().Get());
-    }
+	if (::memcmp(&_shadowDesc, &desc, sizeof(ShadowDesc)) != 0)
+	{
+		_shadowDesc = desc;
+		_shadowBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _shadowDesc);
+		_shadowEffectBuffer->SetConstantBuffer(_shadowBuffer->GetComPtr().Get());
+	}
 
-    auto shadowMapVar = GetSRV("ShadowMap");
-    if (shadowMapVar) shadowMapVar->SetResource(shadowSrv);
+	auto shadowMapVar = GetSRV("ShadowMap");
+	if (shadowMapVar) shadowMapVar->SetResource(shadowSrv);
 }

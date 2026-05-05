@@ -4,6 +4,7 @@
 #include "ShaderTechnique.h"
 
 #include "Pipeline/ConstantBuffer.h"
+#include "Pipeline/Managers/SharedCBufferManager.h"
 
 struct ShaderDesc
 {
@@ -19,8 +20,8 @@ public:
 	Shader(const std::wstring& file);
 	~Shader();
 
-	std::wstring          GetFile()   { return _file; }
-	ComPtr<ID3DX11Effect> Effect()    { return _shaderDesc.effect; }
+	std::wstring          GetFile() { return _file; }
+	ComPtr<ID3DX11Effect> Effect() { return _shaderDesc.effect; }
 
 	void Draw(UINT technique, UINT pass, UINT vertexCount, UINT startVertexLocation = 0);
 	void DrawIndexed(UINT technique, UINT pass, UINT indexCount, UINT startIndexLocation = 0, INT baseVertexLocation = 0);
@@ -66,16 +67,12 @@ private:
 	std::vector<Technique>									_techniques;
 
 
-	GlobalDesc												_globalDesc;
-	std::unique_ptr<ConstantBuffer<GlobalDesc>>				_globalBuffer;
 	ComPtr<ID3DX11EffectConstantBuffer>						_globalEffectBuffer;
 
 	TransformDesc											_transformDesc;
 	std::unique_ptr<ConstantBuffer<TransformDesc>>			_transformBuffer;
 	ComPtr<ID3DX11EffectConstantBuffer>						_transformEffectBuffer;
 
-	LightDesc												_lightDesc;
-	std::unique_ptr<ConstantBuffer<LightDesc>>				_lightBuffer;
 	ComPtr<ID3DX11EffectConstantBuffer>						_lightEffectBuffer;
 
 	MaterialDesc											_materialDesc;
