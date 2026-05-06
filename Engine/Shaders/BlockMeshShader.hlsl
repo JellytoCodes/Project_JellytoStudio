@@ -1,7 +1,9 @@
 #include "Global.hlsli"
 #include "Light.hlsli"
 
-Texture2DArray g_BlockTextures : register(t0);
+Texture2D g_BlockAtlas : register(t0);
+
+float4 g_AtlasRects[8];
 
 struct VertexBlockMesh
 {
@@ -11,11 +13,9 @@ struct VertexBlockMesh
     float3 tangent  : TANGENT;
     
     uint   instanceID    : SV_INSTANCEID;
-    matrix world         : INST;         
+    matrix world         : INST;
     uint   materialIndex : INST_MATERIAL;
-    // _pad[3] (12B at offset 68) → Input Layout 에 선언 없음, 자동 스킵
 };
-
 
 struct BlockMeshOutput
 {
@@ -48,8 +48,11 @@ BlockMeshOutput VS(VertexBlockMesh input)
 float4 PS(BlockMeshOutput input) : SV_TARGET
 {
     float3 N = normalize(input.normal);
-    
-    float4 texColor = g_BlockTextures.Sample(LinearSampler, float3(input.uv, (float)input.materialIndex));
+
+    float4 rect     = g_AtlasRects[input.materialIndex];
+    float2 atlasUV  = input.uv * rect.zw + rect.xy;
+
+    float4 texColor = g_BlockAtlas.Sample(LinearSampler, atlasUV);
         
     bool   hasTex    = (texColor.a > 0.001f) || any(texColor.rgb > 0.001f);
     float4 baseColor = hasTex ? texColor : Material.diffuse;
@@ -77,12 +80,6 @@ float4 PS(BlockMeshOutput input) : SV_TARGET
 
 technique11 T0
 {
-    // Pass 0: 불투명 블록 (기본)
     PASS_VP(P0, VS, PS)
-
-    // Pass 1: 와이어프레임 디버그
     PASS_RS_VP(P1, FillModeWireFrame, VS, PS)
-
-    // Pass 2: 반투명 블록 (향후 유리 블록 등 확장용)
-    // PASS_BS_VP(P2, AlphaBlend, VS, PS)
 }

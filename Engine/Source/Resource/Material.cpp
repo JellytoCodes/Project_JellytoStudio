@@ -20,7 +20,7 @@ void Material::SetShader(std::shared_ptr<Shader> shader)
         _normalEffectBuffer   = shader->GetSRV("NormalMap");
         _specularEffectBuffer = shader->GetSRV("SpecularMap");
 
-        _textureArrayEffectBuffer = shader->GetSRV("g_BlockTextures");
+        _textureArrayEffectBuffer = shader->GetSRV("g_BlockAtlas");
     }
 }
 
@@ -38,8 +38,13 @@ void Material::Update()
     if (_specularEffectBuffer)
         _specularEffectBuffer->SetResource(_specularMap ? _specularMap->GetComPtr().Get() : nullptr);
 
-    if (_textureArrayEffectBuffer && _textureArray)
-        _textureArrayEffectBuffer->SetResource(_textureArray->GetSRV().Get());
+    if (_textureArrayEffectBuffer)
+    {
+        if (_textureArray)
+            _textureArrayEffectBuffer->SetResource(_textureArray->GetSRV().Get());
+        else if (_diffuseMap)
+            _textureArrayEffectBuffer->SetResource(_diffuseMap->GetComPtr().Get());
+    }
 }
 
 std::unique_ptr<Material> Material::Clone() const
