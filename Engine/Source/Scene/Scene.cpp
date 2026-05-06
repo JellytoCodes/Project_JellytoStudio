@@ -1,7 +1,6 @@
 ﻿#include "Framework.h"
-#include "Scene.h"
-
 #include "Graphics/Graphics.h"
+#include "Scene.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Collider/BaseCollider.h"
@@ -185,6 +184,34 @@ bool Scene::PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan, 
     Vec3 rayOrigin, rayDir;
     if (!BuildPickRay(screenX, screenY, rayOrigin, rayDir)) return false;
 
-    return GET_SINGLE(ChunkManager)->PickBlock(
-        rayOrigin, rayDir, queryChan, outEntity, outHitNormal, outDist);
+    outEntity    = nullptr;
+    outDist      = FLT_MAX;
+    outHitNormal = Vec3(0, 1, 0);
+
+    auto* chunkMgr = GET_SINGLE(ChunkManager);
+
+    chunkMgr->PickBlock(rayOrigin, rayDir, queryChan, outEntity, outHitNormal, outDist);
+
+    Ray ray(rayOrigin, rayDir);
+    for (Entity* entity : _collidableObjects)
+    {
+        if (chunkMgr->IsManaged(entity)) continue;
+        if (_mainCamera && _mainCamera->IsCulled(entity->GetLayerIndex())) continue;
+
+        auto* aabb = entity->GetComponent<AABBCollider>();
+        if (!aabb) continue;
+        if (!aabb->CanBePickedBy(queryChan)) continue;
+
+        float dist = 0.f;
+        Vec3  normal;
+        Ray   r = ray;
+        if (aabb->IntersectsWithNormal(r, dist, normal) && dist < outDist)
+        {
+            outDist      = dist;
+            outEntity    = entity;
+            outHitNormal = normal;
+        }
+    }
+
+    return outEntity != nullptr;
 }
