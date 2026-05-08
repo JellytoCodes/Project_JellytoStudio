@@ -15,7 +15,7 @@ class BlockPlacer : public MonoBehaviour, public IBlockPlacer
 {
 public:
     static Vec3  GetHalfExtents(ColliderSize s);
-    static float GetFullHeight (ColliderSize s) { return GetHalfExtents(s).y * 2.f; }
+    static float GetFullHeight(ColliderSize s) { return GetHalfExtents(s).y * 2.f; }
 
     BlockPlacer();
     virtual ~BlockPlacer() = default;
@@ -26,11 +26,11 @@ public:
     virtual void LateUpdate() override {}
     virtual void OnDestroy()  override;
 
-    void SetPalette         (PaletteWidget* p)          { _palette    = p; }
-    void SetSavePath        (const std::wstring& path)  { _savePath   = path; }
-    void SetCharacterEntity (Entity* e)                 { _character  = e; }
-    void SetInventoryData   (InventoryData* inv)        { _pInventory = inv; }
-    void SetDefsPath        (const std::wstring& path)  { _defsPath   = path; }
+    void SetPalette(PaletteWidget* p) { _palette = p; }
+    void SetSavePath(const std::wstring& path) { _savePath = path; }
+    void SetCharacterEntity(Entity* e) { _character = e; }
+    void SetInventoryData(InventoryData* inv) { _pInventory = inv; }
+    void SetDefsPath(const std::wstring& path) { _defsPath = path; }
 
     bool IsPlacingMode() const { return _placingMode; }
     void SetPlacingMode(bool on);
@@ -46,10 +46,10 @@ private:
     {
         struct Hit
         {
-            bool    valid  = false;
+            bool    valid = false;
             Entity* entity = nullptr;
             Vec3    normal = Vec3(0, 1, 0);
-            float   dist   = FLT_MAX;
+            float   dist = FLT_MAX;
         };
         Hit   priming;
         Hit   floor;
@@ -57,24 +57,24 @@ private:
         POINT mousePos = { -1, -1 };
     };
 
-    void HandleInput  (const FramePickResult& pick);
+    void HandleInput(const FramePickResult& pick);
     void UpdatePreview(const FramePickResult& pick);
-    void HidePreview  ();
+    void HidePreview();
 
-    bool   TryPlaceOnHit  (Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
+    bool   TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
     bool   TryRemoveEntity(Entity* entity);
 
-    bool   CalcPlacePos (PaletteWidget::SlotType type, Entity* hitEntity,
-                         const Vec3& hitNormal, Vec3& outCenterPos) const;
+    bool   CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity,
+        const Vec3& hitNormal, Vec3& outCenterPos) const;
     bool   IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
 
     Entity* SpawnBlockEntity(const Vec3& centerPos, PaletteWidget::SlotType type,
-                             const Vec3& initialScale, const Vec3& finalScale);
+        const Vec3& initialScale, const Vec3& finalScale);
 
-    Entity* SpawnMeshBlock (const BlockDef& def, const Vec3& centerPos,
-                            const Vec3& initialScale, const Vec3& finalScale);
+    Entity* SpawnMeshBlock(const BlockDef& def, const Vec3& centerPos,
+        const Vec3& initialScale, const Vec3& finalScale);
     Entity* SpawnModelBlock(const BlockDef& def, const Vec3& centerPos,
-                            const Vec3& initialScale, const Vec3& finalScale);
+        const Vec3& initialScale, const Vec3& finalScale);
 
     void    AttachCollider(Entity* entity, const BlockDef& def);
     void    PushPaletteRects();
@@ -83,23 +83,23 @@ private:
 
     struct PlaceTween
     {
-        Entity* entity     = nullptr;
-        float   elapsed    = 0.f;
+        Entity* entity = nullptr;
+        float   elapsed = 0.f;
         Vec3    finalScale = Vec3(1.f);
         static constexpr float kDuration = 0.18f;
     };
     void TickPlaceTweens(float dt);
 
-    PaletteWidget* _palette       = nullptr;
-    Entity*        _character     = nullptr;
-    Entity*        _previewEntity = nullptr;
-    InventoryData* _pInventory    = nullptr;
+    PaletteWidget* _palette = nullptr;
+    Entity* _character = nullptr;
+    Entity* _previewEntity = nullptr;
+    InventoryData* _pInventory = nullptr;
 
-    bool         _placingMode   = false;
-    bool         _previewValid  = false;
-    bool         _previewDirty  = true;
-    std::wstring _savePath      = L"../Saved/scene.xml";
-    std::wstring _defsPath      = L"../Resources/Data/BlockDefs.xml";
+    bool         _placingMode = false;
+    bool         _previewValid = false;
+    bool         _previewDirty = true;
+    std::wstring _savePath = L"../Saved/scene.xml";
+    std::wstring _defsPath = L"../Resources/Data/BlockDefs.xml";
 
     std::shared_ptr<Texture>  _paletteTex;
     std::shared_ptr<Mesh>     _cubeMesh;
@@ -110,6 +110,8 @@ private:
 
     std::shared_ptr<Material> _previewMatOk;
     std::shared_ptr<Material> _previewMatBad;
+
+    std::unordered_map<std::wstring, std::shared_ptr<Model>> _modelCache;
 
     POINT _lastPreviewMouse = { -1, -1 };
 

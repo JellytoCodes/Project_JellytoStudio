@@ -58,16 +58,16 @@ bool BlockDefRegistry::Load(const std::wstring& xmlPath)
         }
         else
         {
-            if (const char* mp = elem->Attribute("model"))
-                def.modelPath = StrToWStr(mp);
+            if (const char* mn = elem->Attribute("modelName"))
+                def.modelName = StrToWStr(mn);
             elem->QueryFloatAttribute("modelScale", &def.modelScale);
             def.paletteRect = { 0.f, 0.f, 1.f, 1.f };
         }
 
-        if (const char* c = elem->Attribute("collider"))   def.collider     = ParseCollider(c);
-        if (const char* c = elem->Attribute("ownChannel")) def.ownChannel   = ParseChannel(c);
+        if (const char* c = elem->Attribute("collider"))   def.collider = ParseCollider(c);
+        if (const char* c = elem->Attribute("ownChannel")) def.ownChannel = ParseChannel(c);
         if (const char* p = elem->Attribute("pickable"))   def.pickableMask = ParsePickable(p);
-        if (const char* f = elem->Attribute("faces"))      def.faceMask     = ParseFaces(f);
+        if (const char* f = elem->Attribute("faces"))      def.faceMask = ParseFaces(f);
 
         const int32 slot = def.typeId;
         if (slot >= static_cast<int32>(_defs.size()))
@@ -75,7 +75,7 @@ bool BlockDefRegistry::Load(const std::wstring& xmlPath)
             _defs.resize(slot + 1);
             _uvRects.resize(slot + 1, BlockUVRect{});
         }
-        _defs[slot]    = def;
+        _defs[slot] = def;
         _uvRects[slot] = def.paletteRect;
     }
 
@@ -114,11 +114,11 @@ uint8 BlockDefRegistry::ParsePickable(const char* s)
     if (!s) return 0xFF;
     uint8 mask = 0;
     std::string str(s);
-    if (str.find("Priming")   != std::string::npos) mask |= static_cast<uint8>(CH::Priming);
-    if (str.find("Floor")     != std::string::npos) mask |= static_cast<uint8>(CH::Floor);
-    if (str.find("Mushroom")  != std::string::npos) mask |= static_cast<uint8>(CH::Mushroom);
+    if (str.find("Priming") != std::string::npos) mask |= static_cast<uint8>(CH::Priming);
+    if (str.find("Floor") != std::string::npos) mask |= static_cast<uint8>(CH::Floor);
+    if (str.find("Mushroom") != std::string::npos) mask |= static_cast<uint8>(CH::Mushroom);
     if (str.find("Character") != std::string::npos) mask |= static_cast<uint8>(CH::Character);
-    if (str == "All")                               mask  = 0xFF;
+    if (str == "All")                               mask = 0xFF;
     return mask;
 }
 
@@ -127,9 +127,9 @@ uint8 BlockDefRegistry::ParseFaces(const char* s)
     if (!s) return 0xFF;
     uint8 mask = 0;
     std::string str(s);
-    if (str.find("Top")  != std::string::npos) mask |= 0x01;
+    if (str.find("Top") != std::string::npos) mask |= 0x01;
     if (str.find("Side") != std::string::npos) mask |= 0x02;
-    if (str.find("Bot")  != std::string::npos) mask |= 0x04;
-    if (str == "All")                          mask  = 0xFF;
+    if (str.find("Bot") != std::string::npos) mask |= 0x04;
+    if (str == "All")                          mask = 0xFF;
     return mask;
 }

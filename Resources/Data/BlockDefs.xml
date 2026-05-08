@@ -11,10 +11,9 @@
 -->
 <BlockDefs paletteTex="../Resources/Textures/MapModel/Main_texture.png">
 
-    <!-- ── Case B: FBX 모델 (팔레트 UV 베이크) ─────────────────────────── -->
     <Block id="0" name="Mushroom1"
            renderType="Model"
-           model="../Resources/Models/MapModel/Mushroom1.fbx"
+           model="../Resources/Models/MapModel/Mushroom1.mesh"
            modelScale="1.0"
            collider="Small"
            ownChannel="Mushroom"
@@ -23,7 +22,7 @@
 
     <Block id="1" name="Mushroom2"
            renderType="Model"
-           model="../Resources/Models/MapModel/Mushroom2.fbx"
+           model="../Resources/Models/MapModel/Mushroom2.mesh"
            modelScale="1.0"
            collider="Small"
            ownChannel="Mushroom"
@@ -32,43 +31,44 @@
 
     <Block id="2" name="Mushroom3"
            renderType="Model"
-           model="../Resources/Models/MapModel/Mushroom3.fbx"
+           model="../Resources/Models/MapModel/Mushroom3.mesh"
            modelScale="1.0"
            collider="Small"
            ownChannel="Mushroom"
            pickable="Priming"
            faces="Top"/>
 
-    <!-- ── Case A: Cube Mesh (팔레트 단색 픽셀 샘플) ───────────────────── -->
-    <!--   paletteU/V: 텍스처 픽셀 좌표 = (픽셀X + 0.5) / 텍스처폭         -->
-    <!--   실제 팔레트 좌표로 교체 필요                                     -->
     <Block id="3" name="Priming1"
-           renderType="Mesh"
-           paletteU="0.1406" paletteV="0.1406"
+           renderType="Model"
+           model="../Resources/Models/MapModel/Priming_01.mesh"
+		   modelScale="1.0"
            collider="Unit"
            ownChannel="Priming"
            pickable="Priming|Floor|Character"
            faces="Top|Side"/>
 
     <Block id="4" name="Priming2"
-           renderType="Mesh"
-           paletteU="0.2656" paletteV="0.1406"
+           renderType="Model"
+           model="../Resources/Models/MapModel/Priming_02.mesh"
+		   modelScale="1.0"
            collider="Unit"
            ownChannel="Priming"
            pickable="Priming|Floor|Character"
            faces="Top|Side"/>
 
     <Block id="5" name="Priming3"
-           renderType="Mesh"
-           paletteU="0.3906" paletteV="0.1406"
+           renderType="Model"
+           model="../Resources/Models/MapModel/Priming_03.mesh"
+		   modelScale="1.0"
            collider="Unit"
            ownChannel="Priming"
            pickable="Priming|Floor|Character"
            faces="Top|Side"/>
 
     <Block id="6" name="Bridge"
-           renderType="Mesh"
-           paletteU="0.5156" paletteV="0.1406"
+           renderType="Model"
+           model="../Resources/Models/MapModel/Bridge.mesh"
+		   modelScale="1.0"
            collider="Wide"
            ownChannel="Priming"
            pickable="Priming|Floor|Character"
