@@ -1,5 +1,4 @@
-﻿
-#include "pch.h"
+﻿#include "pch.h"
 #include "MainApp.h"
 
 #include "Actors.h"

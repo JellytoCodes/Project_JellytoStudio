@@ -1,33 +1,21 @@
 #pragma once
 #include "Entity/Components/MonoBehaviour.h"
-#include "Entity/Components/Collider/CollisionChannel.h"
 #include "Scene/BlockPlacerInterface.h"
 #include "UI/PaletteWidget.h"
+#include "Data/BlockDef.h"
 
 class Material;
 class Mesh;
 class Shader;
-class InventoryData;
 class Texture;
-
-struct AtlasRect
-{
-    float uvOffsetX = 0.f;
-    float uvOffsetY = 0.f;
-    float uvScaleX  = 1.f;
-    float uvScaleY  = 1.f;
-};
+class Model;
+class InventoryData;
 
 class BlockPlacer : public MonoBehaviour, public IBlockPlacer
 {
 public:
-    enum class ColliderSize : uint8
-    {
-        Small, Unit, Tall, Wide,
-    };
-
     static Vec3  GetHalfExtents(ColliderSize s);
-    static float GetFullHeight(ColliderSize s) { return GetHalfExtents(s).y * 2.f; }
+    static float GetFullHeight (ColliderSize s) { return GetHalfExtents(s).y * 2.f; }
 
     BlockPlacer();
     virtual ~BlockPlacer() = default;
@@ -38,10 +26,11 @@ public:
     virtual void LateUpdate() override {}
     virtual void OnDestroy()  override;
 
-    void SetPalette(PaletteWidget* palette)         { _palette    = palette;    }
-    void SetSavePath(const std::wstring& path)      { _savePath   = path;       }
-    void SetCharacterEntity(Entity* character)      { _character  = character;  }
-    void SetInventoryData(InventoryData* inventory) { _pInventory = inventory;  }
+    void SetPalette         (PaletteWidget* p)          { _palette    = p; }
+    void SetSavePath        (const std::wstring& path)  { _savePath   = path; }
+    void SetCharacterEntity (Entity* e)                 { _character  = e; }
+    void SetInventoryData   (InventoryData* inv)        { _pInventory = inv; }
+    void SetDefsPath        (const std::wstring& path)  { _defsPath   = path; }
 
     bool IsPlacingMode() const { return _placingMode; }
     void SetPlacingMode(bool on);
@@ -50,25 +39,9 @@ public:
     virtual bool PlaceBlock(float x, float y, float z, int32 type)        override;
     virtual void ClearAllBlocks()                                          override;
 
-    bool PlaceBlockAt(const Vec3& entityPos, PaletteWidget::SlotType type);
+    bool PlaceBlockAt(const Vec3& centerPos, PaletteWidget::SlotType type);
 
 private:
-    struct MapModelParams
-    {
-        ColliderSize     collider;
-        CollisionChannel ownChannel;
-        uint8            pickableMask;
-        uint8            faceMask;
-    };
-
-    MapModelParams GetModelParams(PaletteWidget::SlotType type) const;
-
-    std::shared_ptr<Material> GetPreviewMat(bool ok);
-
-    bool CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity,
-                      const Vec3& hitNormal, Vec3& outEntityPos) const;
-    bool IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
-
     struct FramePickResult
     {
         struct Hit
@@ -86,12 +59,27 @@ private:
 
     void HandleInput  (const FramePickResult& pick);
     void UpdatePreview(const FramePickResult& pick);
-    void HidePreview();
+    void HidePreview  ();
 
-    bool   TryPlaceOnHit(Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
+    bool   TryPlaceOnHit  (Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
     bool   TryRemoveEntity(Entity* entity);
 
-    Entity* SpawnBlockEntity(const Vec3& pos, PaletteWidget::SlotType type, const Vec3& initialScale, const Vec3& finalScale);
+    bool   CalcPlacePos (PaletteWidget::SlotType type, Entity* hitEntity,
+                         const Vec3& hitNormal, Vec3& outCenterPos) const;
+    bool   IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
+
+    Entity* SpawnBlockEntity(const Vec3& centerPos, PaletteWidget::SlotType type,
+                             const Vec3& initialScale, const Vec3& finalScale);
+
+    Entity* SpawnMeshBlock (const BlockDef& def, const Vec3& centerPos,
+                            const Vec3& initialScale, const Vec3& finalScale);
+    Entity* SpawnModelBlock(const BlockDef& def, const Vec3& centerPos,
+                            const Vec3& initialScale, const Vec3& finalScale);
+
+    void    AttachCollider(Entity* entity, const BlockDef& def);
+    void    PushPaletteRects();
+
+    std::shared_ptr<Material> GetPreviewMat(bool ok);
 
     struct PlaceTween
     {
@@ -105,25 +93,25 @@ private:
     PaletteWidget* _palette       = nullptr;
     Entity*        _character     = nullptr;
     Entity*        _previewEntity = nullptr;
-    bool           _placingMode   = false;
-    bool           _previewValid  = false;
-    std::wstring   _savePath      = L"../Saved/scene.xml";
+    InventoryData* _pInventory    = nullptr;
+
+    bool         _placingMode   = false;
+    bool         _previewValid  = false;
+    bool         _previewDirty  = true;
+    std::wstring _savePath      = L"../Saved/scene.xml";
+    std::wstring _defsPath      = L"../Resources/Data/BlockDefs.xml";
+
+    std::shared_ptr<Texture>  _paletteTex;
+    std::shared_ptr<Mesh>     _cubeMesh;
+    std::shared_ptr<Shader>   _meshShader;
+    std::shared_ptr<Material> _meshUberMaterial;
+
+    std::shared_ptr<Shader>   _modelShader;
 
     std::shared_ptr<Material> _previewMatOk;
     std::shared_ptr<Material> _previewMatBad;
 
-    std::shared_ptr<Mesh>     _pBlockCubeMesh;
-    std::shared_ptr<Shader>   _pBlockShader;
-    std::shared_ptr<Material> _pBlockUberMaterial;
-    std::shared_ptr<Texture>  _pBlockAtlasTexture;
-
-    static const AtlasRect kAtlasRects[];
-    void PushAtlasRects();
-
     POINT _lastPreviewMouse = { -1, -1 };
-    bool  _previewDirty     = true;
-
-    InventoryData* _pInventory = nullptr;
 
     std::unordered_map<Entity*, PlacedBlockRecord> _blockRecordMap;
     mutable std::vector<PlacedBlockRecord>         _placedCellsCache;
