@@ -61,7 +61,7 @@ void BlockPlacer::Awake()
     desc.specular = Vec4(0.1f, 0.1f, 0.1f, 1.f);
     desc.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
 
-    _modelShader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
+    _modelShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 
     PushPaletteRects();
 }
@@ -333,7 +333,7 @@ void BlockPlacer::AttachCollider(Entity* entity, const BlockDef& def)
 {
     const Vec3 half = GetHalfExtents(def.collider);
     auto col = std::make_unique<AABBCollider>();
-    col->SetShowDebug(false);
+    col->SetShowDebug(true);
     col->SetBoxExtents(half);
     col->SetOffsetPosition(Vec3(0.f, 0.f, 0.f));
     col->SetOwnChannel(def.ownChannel);
@@ -382,8 +382,10 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockDef& def, const Vec3& centerPos,
     else
     {
         model = std::make_shared<Model>();
+        model->SetModelPath  (L"../Resources/Models/MapModel/");
+        model->SetTexturePath(L"../Resources/Textures/MapModel/");
+        model->ReadModel   (def.modelName);
         model->ReadMaterial(def.modelName);
-        model->ReadModel(def.modelName);
         _modelCache[def.modelName] = model;
     }
 
@@ -402,7 +404,6 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockDef& def, const Vec3& centerPos,
     auto modelR = std::make_unique<ModelRenderer>(_modelShader, false);
     modelR->SetModel(model);
     modelR->SetModelScale(Vec3(def.modelScale));
-    modelR->SetPass(0);
     entity->AddComponent(std::move(modelR));
 
     AttachCollider(entity.get(), def);

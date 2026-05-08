@@ -12,45 +12,47 @@
 <BlockDefs paletteTex="../Resources/Textures/MapModel/Main_texture.png">
 
     <Block id="0" name="Mushroom1"
-           renderType="Model"
-           model="../Resources/Models/MapModel/Mushroom1.mesh"
-           modelScale="1.0"
-           collider="Small"
-           ownChannel="Mushroom"
-           pickable="Priming"
-           faces="Top"/>
+        renderType="Model"
+        modelName="Mushroom1"
+        modelScale="1.0"
+        collider="Small"
+        ownChannel="Mushroom"
+        pickable="Priming"
+        faces="Top"
+	/>
 
     <Block id="1" name="Mushroom2"
-           renderType="Model"
-           model="../Resources/Models/MapModel/Mushroom2.mesh"
-           modelScale="1.0"
-           collider="Small"
-           ownChannel="Mushroom"
-           pickable="Priming"
-           faces="Top"/>
+        renderType="Model"
+        modelName="Mushroom2"
+        modelScale= "0.01"
+        collider="Small"
+        ownChannel="Mushroom"
+        pickable="Priming"
+        faces="Top"
+    />   
 
     <Block id="2" name="Mushroom3"
            renderType="Model"
-           model="../Resources/Models/MapModel/Mushroom3.mesh"
-           modelScale="1.0"
+           modelName="Mushroom3"
+           modelScale= "0.01"
            collider="Small"
            ownChannel="Mushroom"
            pickable="Priming"
            faces="Top"/>
 
     <Block id="3" name="Priming1"
-           renderType="Model"
-           model="../Resources/Models/MapModel/Priming_01.mesh"
-		   modelScale="1.0"
-           collider="Unit"
-           ownChannel="Priming"
-           pickable="Priming|Floor|Character"
-           faces="Top|Side"/>
+        renderType="Model"
+        modelName="Priming_01"
+	modelScale= "0.01"
+        collider="Unit"
+        ownChannel="Priming"
+        pickable="Priming|Floor|Character"
+        faces="Top|Side"/>
 
     <Block id="4" name="Priming2"
            renderType="Model"
-           model="../Resources/Models/MapModel/Priming_02.mesh"
-		   modelScale="1.0"
+           modelName="Priming_02"
+		   modelScale= "0.01"
            collider="Unit"
            ownChannel="Priming"
            pickable="Priming|Floor|Character"
@@ -58,8 +60,8 @@
 
     <Block id="5" name="Priming3"
            renderType="Model"
-           model="../Resources/Models/MapModel/Priming_03.mesh"
-		   modelScale="1.0"
+           modelName="Priming_03"
+           modelScale="0.01"
            collider="Unit"
            ownChannel="Priming"
            pickable="Priming|Floor|Character"

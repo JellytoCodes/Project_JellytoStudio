@@ -54,6 +54,8 @@ public:
     const std::vector<BlockUVRect>& GetUVRects()           const { return _uvRects; }
 
 private:
+    void PopulateFromDataTable();
+
     static ColliderSize      ParseCollider(const char* s);
     static CollisionChannel  ParseChannel(const char* s);
     static uint8             ParsePickable(const char* s);
