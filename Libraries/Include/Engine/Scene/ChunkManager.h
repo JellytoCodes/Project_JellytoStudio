@@ -18,6 +18,7 @@ public:
     bool PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist);
 
     bool IsManaged(Entity* entity) const;
+    bool TryGetChunkKey(Entity* entity, uint64& outKey) const;
 
 private:
     struct Chunk

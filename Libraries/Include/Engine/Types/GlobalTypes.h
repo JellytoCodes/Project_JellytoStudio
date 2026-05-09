@@ -18,7 +18,21 @@ using Matrix		= SimpleMath::Matrix;
 using Quaternion	= SimpleMath::Quaternion;
 using Ray			= SimpleMath::Ray;
 
-using InstanceID = std::pair<uint64, uint64>;
+struct InstanceID
+{
+    uint64 resource0 = 0;
+    uint64 resource1 = 0;
+    uint64 bucket    = 0;
+
+    bool IsValid() const { return resource0 != 0 || resource1 != 0; }
+
+    bool operator==(const InstanceID& other) const
+    {
+        return resource0 == other.resource0
+            && resource1 == other.resource1
+            && bucket    == other.bucket;
+    }
+};
 
 struct TransformData
 {

@@ -72,5 +72,5 @@ void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
 
 InstanceID MeshRenderer::GetInstanceID() const
 {
-    return std::make_pair(reinterpret_cast<uint64>(_mesh.get()), reinterpret_cast<uint64>(_material.get()));
+    return { reinterpret_cast<uint64>(_mesh.get()), reinterpret_cast<uint64>(_material.get()) };
 }

@@ -7,8 +7,9 @@ struct InstanceIDHash
 {
     std::size_t operator()(const InstanceID& id) const noexcept
     {
-        std::size_t h = std::hash<uint64>{}(id.first);
-        h ^= std::hash<uint64>{}(id.second) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        std::size_t h = std::hash<uint64>{}(id.resource0);
+        h ^= std::hash<uint64>{}(id.resource1) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+        h ^= std::hash<uint64>{}(id.bucket)    + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
         return h;
     }
 };
@@ -42,13 +43,20 @@ public:
 
     void SetMeshGroupDirty() { _meshGroupDirty = true; }
 
+    InstanceID GetMeshInstanceID(Entity* entity) const;
+
     void MarkMeshDirty(InstanceID id)
     {
+        if (!id.IsValid()) return;
         _partialDirtyMesh.insert(id);
         _dynamicMeshIds.insert(id);
     }
 
-    void MarkModelDirty(InstanceID id) { _partialDirtyModel.insert(id); }
+    void MarkModelDirty(InstanceID id)
+    {
+        if (!id.IsValid()) return;
+        _partialDirtyModel.insert(id);
+    }
 
     void DumpInstancingStats() const;
 

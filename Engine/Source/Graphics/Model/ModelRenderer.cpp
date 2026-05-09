@@ -103,5 +103,5 @@ void ModelRenderer::RenderRawInstanced(const ComPtr<ID3D11DeviceContext>& dc,
 
 InstanceID ModelRenderer::GetInstanceID()
 {
-	return std::make_pair(reinterpret_cast<uint64>(_model.get()), reinterpret_cast<uint64>(_shader.get()));
+	return { reinterpret_cast<uint64>(_model.get()), reinterpret_cast<uint64>(_shader.get()) };
 }

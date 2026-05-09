@@ -3,8 +3,6 @@
 class Mesh;
 class Material;
 
-using InstanceID = std::pair<uint64, uint64>;
-
 struct RenderPacket
 {
     InstanceID  instanceID    = { 0, 0 };

@@ -148,9 +148,10 @@ void ModelAnimator::RenderRawSkinnedInstanced(const ComPtr<ID3D11DeviceContext>&
 
 InstanceID ModelAnimator::GetInstanceID()
 {
-    return std::make_pair(
+    return {
         reinterpret_cast<uint64>(_model.get()),
-        reinterpret_cast<uint64>(_shader.get()));
+        reinterpret_cast<uint64>(_shader.get())
+    };
 }
 
 void ModelAnimator::PressedKeyForCheckFrame()

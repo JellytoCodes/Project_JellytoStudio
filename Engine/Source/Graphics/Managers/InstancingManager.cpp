@@ -7,6 +7,23 @@
 #include "Graphics/Model/ModelRenderer.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Pipeline/Shader.h"
+#include "Scene/ChunkManager.h"
+
+InstanceID InstancingManager::GetMeshInstanceID(Entity* entity) const
+{
+    if (!entity) return {};
+
+    auto* mr = entity->GetComponent<MeshRenderer>();
+    if (!mr) return {};
+
+    InstanceID id = mr->GetInstanceID();
+
+    uint64 chunkKey = 0;
+    if (GET_SINGLE(ChunkManager)->TryGetChunkKey(entity, chunkKey))
+        id.bucket = chunkKey;
+
+    return id;
+}
 
 InstancingBuffer& InstancingManager::GetOrCreateMeshBuffer(const InstanceID& id)
 {
@@ -29,7 +46,7 @@ void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
     {
         auto* mr = entity->GetComponent<MeshRenderer>();
         if (!mr) continue;
-        const InstanceID id = mr->GetInstanceID();
+        const InstanceID id = GetMeshInstanceID(entity);
         newMeshCache[id].push_back(entity);
     }
 
@@ -131,7 +148,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         {
             if (!fullMeshRebuild) continue;
 
-            const InstanceID id = mr->GetInstanceID();
+            const InstanceID id = GetMeshInstanceID(entity);
             _meshCache[id].push_back(entity);
 
             RenderPacket packet;

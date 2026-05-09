@@ -120,6 +120,15 @@ bool ChunkManager::IsManaged(Entity* entity) const
     return _entityToKey.count(entity) > 0;
 }
 
+bool ChunkManager::TryGetChunkKey(Entity* entity, uint64& outKey) const
+{
+    auto it = _entityToKey.find(entity);
+    if (it == _entityToKey.end()) return false;
+
+    outKey = it->second;
+    return true;
+}
+
 bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist)
 {
     outEntity    = nullptr;

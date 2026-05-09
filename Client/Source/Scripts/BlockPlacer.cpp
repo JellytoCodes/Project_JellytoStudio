@@ -297,7 +297,7 @@ void BlockPlacer::UpdatePreview(const FramePickResult& pick)
     {
         mr->SetMesh(_cubeMesh);
         mr->SetMaterial(GetPreviewMat(canAct));
-        instMgr->MarkMeshDirty(mr->GetInstanceID());
+        instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(_previewEntity));
     }
 }
 
@@ -308,7 +308,7 @@ void BlockPlacer::HidePreview()
     auto* instMgr = GET_SINGLE(InstancingManager);
 
     if (auto* mr = _previewEntity->GetComponent<MeshRenderer>())
-        instMgr->MarkMeshDirty(mr->GetInstanceID());
+        instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(_previewEntity));
 
     if (scene) scene->Remove(_previewEntity);
     _previewEntity = nullptr;
@@ -455,18 +455,14 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& centerPos, SlotType type)
     Entity* rawBlock = SpawnBlockEntity(centerPos, type, Vec3(0.001f), finalScale);
     if (!rawBlock) return false;
 
-    InstanceID instID = { 0, 0 };
-    if (auto* mr = rawBlock->GetComponent<MeshRenderer>())
-        instID = mr->GetInstanceID();
-
     GET_SINGLE(ChunkManager)->Register(rawBlock);
     _blockRecordMap[rawBlock] = { centerPos.x, centerPos.y, centerPos.z,
                                    static_cast<int32>(type) };
     _placedCacheDirty = true;
     _placeTweens.push_back({ rawBlock, 0.f, finalScale });
 
-    if (instID.first != 0)
-        GET_SINGLE(InstancingManager)->MarkMeshDirty(instID);
+    auto* instMgr = GET_SINGLE(InstancingManager);
+    instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(rawBlock));
 
     return true;
 }
@@ -480,9 +476,8 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (_pInventory)
         _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
 
-    InstanceID instID = { 0, 0 };
-    if (auto* mr = entity->GetComponent<MeshRenderer>())
-        instID = mr->GetInstanceID();
+    auto* instMgr = GET_SINGLE(InstancingManager);
+    const InstanceID instID = instMgr->GetMeshInstanceID(entity);
 
     GET_SINGLE(ChunkManager)->Unregister(entity);
     _blockRecordMap.erase(it);
@@ -497,8 +492,7 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (!scene) return false;
     scene->Remove(entity);
 
-    if (instID.first != 0)
-        GET_SINGLE(InstancingManager)->MarkMeshDirty(instID);
+    instMgr->MarkMeshDirty(instID);
 
     return true;
 }
@@ -515,16 +509,12 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
         finalScale, finalScale);
     if (!rawBlock) return false;
 
-    InstanceID instID = { 0, 0 };
-    if (auto* mr = rawBlock->GetComponent<MeshRenderer>())
-        instID = mr->GetInstanceID();
-
     GET_SINGLE(ChunkManager)->Register(rawBlock);
     _blockRecordMap[rawBlock] = { x, y, z, typeInt };
     _placedCacheDirty = true;
 
-    if (instID.first != 0)
-        GET_SINGLE(InstancingManager)->MarkMeshDirty(instID);
+    auto* instMgr = GET_SINGLE(InstancingManager);
+    instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(rawBlock));
 
     return true;
 }
@@ -551,8 +541,8 @@ void BlockPlacer::TickPlaceTweens(float dt)
                 if (auto* col = tw.entity->GetComponent<AABBCollider>())
                     col->InvalidateBounds();
 
-                if (auto* mr = tw.entity->GetComponent<MeshRenderer>())
-                    instMgr->MarkMeshDirty(mr->GetInstanceID());
+                if (tw.entity->GetComponent<MeshRenderer>())
+                    instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(tw.entity));
 
                 return t >= 1.f;
             }),
