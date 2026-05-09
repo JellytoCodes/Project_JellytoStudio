@@ -47,6 +47,10 @@ public:
 
 private:
     bool BuildPickRay(int32 screenX, int32 screenY, Vec3& outOrigin, Vec3& outDir) const;
+    void FlushPendingMutations();
+    void AddImmediate(std::unique_ptr<Entity> object);
+    void RemoveImmediate(Entity* object);
+    bool IsIterating() const { return _iterationDepth > 0; }
 
     std::wstring _name = L"Unnamed Scene";
 
@@ -58,4 +62,8 @@ private:
     std::unordered_set<Entity*> _collidableObjects;
     std::vector<Widget*> _widgetObjects;
     std::unique_ptr<ShadowPass> _shadowPass;
+
+    std::vector<std::unique_ptr<Entity>> _pendingAdds;
+    std::vector<Entity*> _pendingRemoves;
+    uint32 _iterationDepth = 0;
 };

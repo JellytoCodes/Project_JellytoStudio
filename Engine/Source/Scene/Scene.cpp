@@ -22,18 +22,25 @@ Scene::~Scene() {}
 
 void Scene::Awake()
 {
+    ++_iterationDepth;
     for (auto& object : _objects)
         object->Awake();
+    --_iterationDepth;
+    FlushPendingMutations();
 }
 
 void Scene::Start()
 {
+    ++_iterationDepth;
     for (auto& object : _objects)
         object->Start();
+    --_iterationDepth;
+    FlushPendingMutations();
 }
 
 void Scene::Update()
 {
+    ++_iterationDepth;
     if (_mainCamera)
     {
         if (Entity* camEntity = _mainCamera->GetEntity())
@@ -45,24 +52,33 @@ void Scene::Update()
         if (_mainCamera && object->GetComponent<Camera>() == _mainCamera) continue;
         object->Update();
     }
+    --_iterationDepth;
+    FlushPendingMutations();
 }
 
 void Scene::LateUpdate()
 {
+    ++_iterationDepth;
     for (auto& object : _objects)
         object->LateUpdate();
+    --_iterationDepth;
+    FlushPendingMutations();
 }
 
 void Scene::OnDestroy()
 {
+    ++_iterationDepth;
     for (auto& object : _objects)
         object->OnDestroy();
+    --_iterationDepth;
+    FlushPendingMutations();
 }
 
 void Scene::Render()
 {
     if (_mainCamera == nullptr) return;
 
+    ++_iterationDepth;
     _mainCamera->SortEntities();
 
     if (_mainLight)
@@ -85,9 +101,68 @@ void Scene::Render()
         widget->DrawUI();
 
     GET_SINGLE(UIManager)->Render();
+    --_iterationDepth;
+    FlushPendingMutations();
 }
 
 void Scene::Add(std::unique_ptr<Entity> object)
+{
+    if (!object) return;
+
+    if (IsIterating())
+    {
+        _pendingAdds.push_back(std::move(object));
+        return;
+    }
+
+    AddImmediate(std::move(object));
+}
+
+void Scene::Remove(Entity* object)
+{
+    if (!object) return;
+
+    auto pendingAddIt = std::find_if(_pendingAdds.begin(), _pendingAdds.end(),
+        [object](const std::unique_ptr<Entity>& p) { return p.get() == object; });
+
+    if (pendingAddIt != _pendingAdds.end())
+    {
+        _pendingAdds.erase(pendingAddIt);
+        return;
+    }
+
+    if (IsIterating())
+    {
+        if (std::find(_pendingRemoves.begin(), _pendingRemoves.end(), object) == _pendingRemoves.end())
+            _pendingRemoves.push_back(object);
+        return;
+    }
+
+    RemoveImmediate(object);
+}
+
+void Scene::FlushPendingMutations()
+{
+    if (IsIterating()) return;
+
+    if (!_pendingRemoves.empty())
+    {
+        for (Entity* object : _pendingRemoves)
+            RemoveImmediate(object);
+        _pendingRemoves.clear();
+    }
+
+    if (!_pendingAdds.empty())
+    {
+        std::vector<std::unique_ptr<Entity>> pendingAdds = std::move(_pendingAdds);
+        _pendingAdds.clear();
+
+        for (auto& object : pendingAdds)
+            AddImmediate(std::move(object));
+    }
+}
+
+void Scene::AddImmediate(std::unique_ptr<Entity> object)
 {
     if (BaseCollider* collider = object->GetComponent<BaseCollider>())
     {
@@ -103,7 +178,7 @@ void Scene::Add(std::unique_ptr<Entity> object)
     if (_mainCamera) _mainCamera->SetSortDirty();
 }
 
-void Scene::Remove(Entity* object)
+void Scene::RemoveImmediate(Entity* object)
 {
     auto it = std::find_if(_objects.begin(), _objects.end(),
         [object](const std::unique_ptr<Entity>& p) { return p.get() == object; });
