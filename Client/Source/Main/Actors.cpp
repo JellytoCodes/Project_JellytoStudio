@@ -21,7 +21,7 @@
 
 void SkySphereActor::BuildEntity()
 {
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/SkySphere.hlsl");
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/SkySphereShader.hlsl");
 	std::shared_ptr<Material> material = std::make_shared<Material>();
 	material->SetShader(shader);
 	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"Sky", L"../Resources/Textures/clear_sky.png");
@@ -40,7 +40,7 @@ void SkySphereActor::BuildEntity()
 
 void FloorActor::BuildEntity()
 {
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 	std::shared_ptr<Material> material = std::make_shared<Material>();
 	material->SetShader(shader);
 	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"FloorMat", L"../Resources/Textures/GridTile.jpg");
@@ -60,7 +60,7 @@ void FloorActor::BuildEntity()
 
 void CubeActor::BuildEntity()
 {
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 	std::shared_ptr<Material> material = std::make_shared<Material>();
 	material->SetShader(shader);
 	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
@@ -85,7 +85,7 @@ void CubeActor::BuildEntity()
 
 void SphereActor::BuildEntity()
 {
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 	std::shared_ptr<Material> material = std::make_shared<Material>();
 	material->SetShader(shader);
 	std::shared_ptr<Texture> texture = GET_SINGLE(ResourceManager)->Load<Texture>(L"CubeTex", L"../Resources/Textures/GridTile.jpg");
@@ -110,7 +110,7 @@ void SphereActor::BuildEntity()
 
 void CharacterActor::BuildEntity()
 {
-	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/ModelShader.hlsl");
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/SkinnedMeshShader.hlsl");
 	std::shared_ptr<Model> model = std::make_shared<Model>();
 	model->ReadModel(L"Kaya/Kaya");
 	model->ReadMaterial(L"Kaya/Kaya");

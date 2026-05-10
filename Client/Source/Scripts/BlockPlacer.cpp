@@ -50,7 +50,7 @@ void BlockPlacer::Awake()
     _cubeMesh = GET_SINGLE(ResourceManager)->Get<Mesh>(L"Cube");
     assert(_cubeMesh && "Cube 메시를 찾을 수 없습니다.");
 
-    _meshShader = std::make_shared<Shader>(L"../Engine/Shaders/BlockMeshShader.hlsl");
+    _meshShader = std::make_shared<Shader>(L"../Engine/Shaders/BlockShader.hlsl");
 
     _meshUberMaterial = std::make_shared<Material>();
     _meshUberMaterial->SetShader(_meshShader);
@@ -62,7 +62,7 @@ void BlockPlacer::Awake()
     desc.specular = Vec4(0.1f, 0.1f, 0.1f, 1.f);
     desc.emissive = Vec4(0.f,  0.f,  0.f,  0.f);
 
-    _modelShader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+    _modelShader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 
     PushPaletteRects();
 }
@@ -317,7 +317,7 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
     if (mat) return mat;
 
     mat = std::make_shared<Material>();
-    mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl"));
+    mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl"));
     auto& d    = mat->GetMaterialDesc();
     d.ambient  = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
                                  : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
@@ -338,8 +338,7 @@ void BlockPlacer::AttachCollider(Entity* entity, const BlockRecord& rec)
     entity->AddComponent(std::move(col));
 }
 
-Entity* BlockPlacer::SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPos,
-                                     const Vec3& initialScale, const Vec3& finalScale)
+Entity* BlockPlacer::SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale)
 {
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene || !_cubeMesh || !_meshUberMaterial) return nullptr;
@@ -364,8 +363,7 @@ Entity* BlockPlacer::SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPo
     return raw;
 }
 
-Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerPos,
-                                      const Vec3& initialScale, const Vec3& finalScale)
+Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale)
 {
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene || rec.modelName.empty()) return nullptr;

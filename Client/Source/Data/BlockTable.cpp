@@ -6,9 +6,6 @@ using SlotType = PaletteWidget::SlotType;
 using CH       = CollisionChannel;
 using PF       = PlaceFace;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 인코딩 헬퍼
-// ─────────────────────────────────────────────────────────────────────────────
 std::wstring BlockTable::Utf8ToWide(const char* utf8)
 {
     if (!utf8 || utf8[0] == '\0') return {};
@@ -35,9 +32,6 @@ float BlockTable::AttrFloat(const tinyxml2::XMLElement* e, const char* name, flo
     return v;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 파싱 헬퍼
-// ─────────────────────────────────────────────────────────────────────────────
 ColliderSize BlockTable::ParseCollider(const char* s)
 {
     if (!s) return ColliderSize::Unit;
@@ -90,9 +84,6 @@ BlockRenderType BlockTable::ParseRenderType(const char* s)
     return BlockRenderType::Mesh;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Load  —  BlockMaster.xml 로드
-// ─────────────────────────────────────────────────────────────────────────────
 void BlockTable::Load(const std::wstring& xmlPath)
 {
     assert(!_loaded && "BlockTable::Load() 는 앱 시작 시 1회만 호출해야 합니다.");
@@ -105,13 +96,11 @@ void BlockTable::Load(const std::wstring& xmlPath)
     const auto* root = doc.RootElement();
     assert(root);
 
-    // ── 팔레트 텍스처 경로 ─────────────────────────────────────────────────
     if (const char* pal = root->Attribute("paletteTex"))
         _palettePath = Utf8ToWide(pal);
     if (_palettePath.empty())
         _palettePath = L"../Resources/Textures/MapModel/Main_texture.png";
 
-    // ── <Blocks> 섹션 ──────────────────────────────────────────────────────
     const auto* blocksElem = root->FirstChildElement("Blocks");
     assert(blocksElem && "<Blocks> 요소 없음");
 
@@ -161,12 +150,10 @@ void BlockTable::Load(const std::wstring& xmlPath)
         _uvRects[slot]  = rec.paletteRect;
     }
 
-    // 키맵 구성
     _keyMap.reserve(_records.size());
     for (const auto& rec : _records)
         if (!rec.key.empty()) _keyMap.emplace(rec.key, &rec);
 
-    // ── <PhaseSequence> 섹션 ───────────────────────────────────────────────
     const auto* phaseElem = root->FirstChildElement("PhaseSequence");
     assert(phaseElem && "<PhaseSequence> 요소 없음");
 
@@ -190,9 +177,6 @@ void BlockTable::Load(const std::wstring& xmlPath)
     _loaded = true;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 조회
-// ─────────────────────────────────────────────────────────────────────────────
 const BlockRecord* BlockTable::GetRecord(int32 typeId) const
 {
     if (typeId < 0 || typeId >= static_cast<int32>(_records.size())) return nullptr;

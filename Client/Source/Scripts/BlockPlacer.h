@@ -36,7 +36,7 @@ public:
 
     virtual const std::vector<PlacedBlockRecord>& GetPlacedBlocks() const override;
     virtual bool PlaceBlock(float x, float y, float z, int32 type)        override;
-    virtual void ClearAllBlocks()                                          override;
+    virtual void ClearAllBlocks()                                         override;
 
     bool PlaceBlockAt(const Vec3& centerPos, PaletteWidget::SlotType type);
 
@@ -63,17 +63,12 @@ private:
     bool   TryPlaceOnHit  (Entity* hitEntity, const Vec3& hitNormal, PaletteWidget::SlotType type);
     bool   TryRemoveEntity(Entity* entity);
 
-    bool   CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity,
-                        const Vec3& hitNormal, Vec3& outCenterPos) const;
+    bool   CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity, const Vec3& hitNormal, Vec3& outCenterPos) const;
     bool   IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
 
-    Entity* SpawnBlockEntity(const Vec3& centerPos, PaletteWidget::SlotType type,
-                             const Vec3& initialScale, const Vec3& finalScale);
-
-    Entity* SpawnMeshBlock (const BlockRecord& rec, const Vec3& centerPos,
-                            const Vec3& initialScale, const Vec3& finalScale);
-    Entity* SpawnModelBlock(const BlockRecord& rec, const Vec3& centerPos,
-                            const Vec3& initialScale, const Vec3& finalScale);
+    Entity* SpawnBlockEntity(const Vec3& centerPos, PaletteWidget::SlotType type, const Vec3& initialScale, const Vec3& finalScale);
+    Entity* SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale);
+    Entity* SpawnModelBlock(const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale);
 
     void AttachCollider(Entity* entity, const BlockRecord& rec);
     void PushPaletteRects();

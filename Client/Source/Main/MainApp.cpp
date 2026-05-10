@@ -75,8 +75,7 @@ void MainApp::InitScene()
     const BlockRecord* startRec = GET_SINGLE(BlockTable)->GetRecordByKey(L"Priming1");
     assert(startRec && "BlockMaster.xml 에 key='Priming1' 항목이 없습니다.");
 
-    std::shared_ptr<Shader> meshShader =
-        std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+    std::shared_ptr<Shader> meshShader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 
     std::shared_ptr<Model> startModel = std::make_shared<Model>();
     startModel->SetModelPath  (L"../Resources/Models/MapModel/");

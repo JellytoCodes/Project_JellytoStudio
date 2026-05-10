@@ -39,7 +39,7 @@ void BaseCollider::Update()
 void BaseCollider::InitDebugShader()
 {
 	if (s_debugShader != nullptr) return;
-	s_debugShader = std::make_shared<Shader>(L"../Engine/Shaders/ColliderDebug.hlsl");
+	s_debugShader = std::make_shared<Shader>(L"../Engine/Shaders/ColliderDebugShader.hlsl");
 }
 
 void BaseCollider::RenderDebug()
