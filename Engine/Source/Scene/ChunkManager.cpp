@@ -115,6 +115,44 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
     }
 }
 
+void ChunkManager::CollectStaticColliders(const DirectX::BoundingBox& bounds, std::vector<BaseCollider*>& outColliders)
+{
+    const Vec3 center  = { bounds.Center.x,  bounds.Center.y,  bounds.Center.z  };
+    const Vec3 extents = { bounds.Extents.x, bounds.Extents.y, bounds.Extents.z };
+    const Vec3 minP = center - extents;
+    const Vec3 maxP = center + extents;
+
+    int32 minCX, minCZ, maxCX, maxCZ;
+    WorldToChunkCoord(minP, minCX, minCZ);
+    WorldToChunkCoord(maxP, maxCX, maxCZ);
+
+    for (int32 cz = minCZ; cz <= maxCZ; ++cz)
+    {
+        for (int32 cx = minCX; cx <= maxCX; ++cx)
+        {
+            auto it = _chunks.find(CoordKey(cx, cz));
+            if (it == _chunks.end()) continue;
+
+            Chunk& chunk = it->second;
+            if (chunk.entities.empty()) continue;
+
+            if (chunk.aabbDirty)
+                chunk.RebuildAABB();
+
+            if (!chunk.aabb.Intersects(bounds))
+                continue;
+
+            for (Entity* e : chunk.entities)
+            {
+                auto* col = e->GetComponent<AABBCollider>();
+                if (!col || !col->IsStatic()) continue;
+
+                outColliders.push_back(col);
+            }
+        }
+    }
+}
+
 bool ChunkManager::IsManaged(Entity* entity) const
 {
     return _entityToKey.count(entity) > 0;

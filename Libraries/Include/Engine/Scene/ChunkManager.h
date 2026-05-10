@@ -2,6 +2,8 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Collider/CollisionChannel.h"
 
+class BaseCollider;
+
 class ChunkManager
 {
     DECLARE_SINGLE(ChunkManager);
@@ -14,6 +16,7 @@ public:
     void Clear();
 
     void CollectVisible(const DirectX::BoundingFrustum& frustum, std::vector<Entity*>& outEntities);
+    void CollectStaticColliders(const DirectX::BoundingBox& bounds, std::vector<BaseCollider*>& outColliders);
 
     bool PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist);
 

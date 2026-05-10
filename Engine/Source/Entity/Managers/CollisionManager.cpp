@@ -1,7 +1,9 @@
 ﻿#include "Framework.h"
 #include "CollisionManager.h"
 #include "Entity/Entity.h"
+#include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Collider/BaseCollider.h"
+#include "Scene/ChunkManager.h"
 
 std::vector<BaseCollider*> CollisionManager::s_DynamicColliders;
 std::vector<BaseCollider*> CollisionManager::s_StaticColliders;
@@ -50,13 +52,39 @@ void CollisionManager::CheckCollision()
         }
     }
 
-    const int32 statCount = static_cast<int32>(s_StaticColliders.size());
+    auto* chunkMgr = GET_SINGLE(ChunkManager);
+    std::vector<BaseCollider*> chunkCandidates;
+
     for (int32 i = 0; i < dynCount; ++i)
     {
         BaseCollider* a = s_DynamicColliders[i];
+
+        chunkCandidates.clear();
+        bool usedChunkBroadphase = false;
+        if (auto* aabb = dynamic_cast<AABBCollider*>(a))
+        {
+            chunkCandidates.reserve(32);
+            chunkMgr->CollectStaticColliders(aabb->GetBoundingBox(), chunkCandidates);
+            usedChunkBroadphase = true;
+        }
+
+        for (BaseCollider* b : chunkCandidates)
+        {
+            if (Intersects(a, b))
+            {
+                Entity* entityA = a->GetEntity();
+                Entity* entityB = b->GetEntity();
+                entityA->OnCollision(entityB);
+                entityB->OnCollision(entityA);
+            }
+        }
+
+        const int32 statCount = static_cast<int32>(s_StaticColliders.size());
         for (int32 j = 0; j < statCount; ++j)
         {
             BaseCollider* b = s_StaticColliders[j];
+            if (usedChunkBroadphase && chunkMgr->IsManaged(b->GetEntity())) continue;
+
             if (Intersects(a, b))
             {
                 Entity* entityA = a->GetEntity();

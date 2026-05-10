@@ -4,20 +4,20 @@
 #include "UI/UIManager.h"
 #include "Core/DisplayContext.h"
 #include "Core/Managers/InputManager.h"
-#include "Data/BlockDataTable.h"
+#include "Data/BlockTable.h"
 
 using SlotType = PaletteWidget::SlotType;
 
 const wchar_t* InventoryWidget::GetSlotLabel(SlotType type)
 {
-    const BlockSlotRecord* rec = GET_SINGLE(BlockDataTable)->GetSlotRecord(type);
+    const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(type);
     if (!rec) return L"";
     return rec->label.c_str();
 }
 
 Color InventoryWidget::GetSlotColor(SlotType type)
 {
-    const BlockSlotRecord* rec = GET_SINGLE(BlockDataTable)->GetSlotRecord(type);
+    const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(type);
     if (!rec) return Color(0.12f, 0.12f, 0.14f, 0.85f);
     return rec->color;
 }
@@ -133,9 +133,7 @@ void InventoryWidget::DrawHotbarMirror()
     }
 }
 
-void InventoryWidget::DrawSingleSlot(float x, float y, float w, float h,
-                                      const InventorySlotData& slot,
-                                      bool selected, bool isHotbar)
+void InventoryWidget::DrawSingleSlot(float x, float y, float w, float h, const InventorySlotData& slot, bool selected, bool isHotbar)
 {
     auto* ui = GET_SINGLE(UIManager);
 
@@ -161,8 +159,7 @@ void InventoryWidget::DrawSingleSlot(float x, float y, float w, float h,
     DrawSlotLabel(x, y, w, h, slot, isHotbar);
 }
 
-void InventoryWidget::DrawSlotLabel(float x, float y, float w, float h,
-                                     const InventorySlotData& slot, bool isHotbar)
+void InventoryWidget::DrawSlotLabel(float x, float y, float w, float h, const InventorySlotData& slot, bool isHotbar)
 {
     auto* ui = GET_SINGLE(UIManager);
 
