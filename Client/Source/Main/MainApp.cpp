@@ -2,11 +2,8 @@
 #include "MainApp.h"
 
 #include "Actors.h"
-
 #include "Core/Managers/InputManager.h"
-
-#include "Data/BlockDataTable.h"
-
+#include "Data/BlockTable.h"
 #include "Entity/Actor.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Camera.h"
@@ -14,41 +11,27 @@
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Managers/CollisionManager.h"
-
 #include "Graphics/Managers/InstancingManager.h"
-
 #include "Resource/Managers/ResourceManager.h"
-
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 #include "Scene/SceneSerializer.h"
-
 #include "Scripts/IsometricCameraController.h"
 #include "Scripts/BlockPlacer.h"
 #include "Scripts/OneBlockScript.h"
-
 #include "UI/PaletteWidget.h"
 #include "UI/InventoryWidget.h"
-
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
-
 #include "Pipeline/Shader.h"
 
-MainApp::MainApp()
-{
-	
-}
-
-MainApp::~MainApp()
-{
-	
-}
+MainApp::MainApp()  {}
+MainApp::~MainApp() {}
 
 void MainApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
-    GET_SINGLE(BlockDataTable)->Load(L"../Resources/Data/BlockData.xml");
+    GET_SINGLE(BlockTable)->Load(L"../Resources/Data/BlockMaster.xml");
 
     SceneSerializer::RegisterActor(L"SkySphereActor",  [] { return std::make_unique<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"CubeActor",       [] { return std::make_unique<CubeActor>(); });
@@ -65,13 +48,10 @@ void MainApp::Init()
     CreateInventorySystem();
 
     Camera* mainCam = _scene->GetMainCamera();
-
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 
     _debugHUD.Init(mainCam);
 }
-
-// ── 씬 초기화 ─────────────────────────────────────────────────────────────────
 
 void MainApp::InitScene()
 {
@@ -91,38 +71,46 @@ void MainApp::InitScene()
     if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
         scene->SetMainLight(lightComp);
 
-    std::shared_ptr<Shader> shader = std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
+    // ── StartBlock (원블록) ─────────────────────────────────────────────────
+    const BlockRecord* startRec = GET_SINGLE(BlockTable)->GetRecordByKey(L"Priming1");
+    assert(startRec && "BlockMaster.xml 에 key='Priming1' 항목이 없습니다.");
 
-    std::shared_ptr<Model> model = std::make_shared<Model>();
-    model->SetModelPath(L"../Resources/Models/MapModel/");
-    model->SetTexturePath(L"../Resources/Textures/MapModel/");
-    model->ReadModel(L"Priming_01");
-    model->ReadMaterial(L"Priming_01");
+    std::shared_ptr<Shader> meshShader =
+        std::make_shared<Shader>(L"../Engine/Shaders/MeshShader.hlsl");
 
-    auto mr = std::make_unique<ModelRenderer>(shader, false);
-    mr->SetModel(model);
-    mr->SetModelScale(Vec3(0.01f));
-    
+    std::shared_ptr<Model> startModel = std::make_shared<Model>();
+    startModel->SetModelPath  (L"../Resources/Models/MapModel/");
+    startModel->SetTexturePath(L"../Resources/Textures/MapModel/");
+    startModel->ReadModel   (startRec->modelName);
+    startModel->ReadMaterial(startRec->modelName);
+
+    auto mr = std::make_unique<ModelRenderer>(meshShader, false);
+    mr->SetModel(startModel);
+    mr->SetModelScale(Vec3(startRec->modelScale));
+
+    const Vec3 startHalf = BlockPlacer::GetHalfExtents(startRec->collider);
     auto col = std::make_unique<AABBCollider>();
-    col->SetBoxExtents(Vec3(0.5f, 0.5f, 0.5f));
-    col->SetOffsetPosition(Vec3(0.f, 0.5f, 0.f));
-    col->SetOwnChannel(CollisionChannel::Priming);
-    col->SetPickableMask(static_cast<uint8>(CollisionChannel::Priming) | static_cast<uint8>(CollisionChannel::Character));
+    col->SetBoxExtents(startHalf);
+    col->SetOffsetPosition(Vec3(0.f, startHalf.y, 0.f));
+    col->SetOwnChannel(startRec->ownChannel);
+    col->SetPickableMask(startRec->pickableMask);
     col->SetStatic(true);
-    
+
     auto startBlock = std::make_unique<Entity>(L"StartBlock");
     startBlock->AddComponent(std::make_unique<Transform>());
     startBlock->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
     startBlock->AddComponent(std::move(mr));
     startBlock->AddComponent(std::move(col));
-    
+
     _startBlock = startBlock.get();
     scene->Add(std::move(startBlock));
 
+    // ── 캐릭터 ─────────────────────────────────────────────────────────────
     Actor* charActor = spawn(std::make_unique<CharacterActor>());
     _characterEntity = charActor->GetEntity();
     _characterEntity->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 1.0f, 0.f));
 
+    // ── OneBlockScript ──────────────────────────────────────────────────────
     if (_startBlock)
     {
         auto oneBlock = std::make_unique<OneBlockScript>();
@@ -136,11 +124,11 @@ void MainApp::CreateCamera()
 {
     Scene* scene = _scene.get();
 
-    std::unique_ptr<Entity> camera = std::make_unique<Entity>(L"Camera");
+    auto camera = std::make_unique<Entity>(L"Camera");
     camera->AddComponent(std::make_unique<Transform>());
     camera->AddComponent(std::make_unique<Camera>());
 
-    std::unique_ptr<IsometricCameraController> isoCtrl = std::make_unique<IsometricCameraController>();
+    auto isoCtrl = std::make_unique<IsometricCameraController>();
     isoCtrl->SetDistance(10.f);
     isoCtrl->SetPanSpeed(10.f);
     isoCtrl->SetZoomSpeed(10.f);
@@ -162,14 +150,14 @@ void MainApp::CreatePlacementSystem()
 {
     Scene* scene = _scene.get();
 
-    std::unique_ptr<PaletteWidget> palette = std::make_unique<PaletteWidget>(L"Palette");
+    auto palette = std::make_unique<PaletteWidget>(L"Palette");
     _palette = palette.get();
     scene->Add(std::move(palette));
 
-    std::unique_ptr<Entity> placerEntity = std::make_unique<Entity>(L"BlockPlacer");
+    auto placerEntity = std::make_unique<Entity>(L"BlockPlacer");
     placerEntity->AddComponent(std::make_unique<Transform>());
 
-    std::unique_ptr<BlockPlacer> placer = std::make_unique<BlockPlacer>();
+    auto placer = std::make_unique<BlockPlacer>();
     placer->SetPalette(_palette);
     placer->SetSavePath(L"../Saved/scene.xml");
 
@@ -185,11 +173,8 @@ void MainApp::CreateInventorySystem()
 {
     _inventoryData.GiveAll(10);
 
-    if (_blockPlacer)
-        _blockPlacer->SetInventoryData(&_inventoryData);
-
-    if (_oneBlockScript)
-        _oneBlockScript->SetInventoryData(&_inventoryData);
+    if (_blockPlacer)    _blockPlacer->SetInventoryData(&_inventoryData);
+    if (_oneBlockScript) _oneBlockScript->SetInventoryData(&_inventoryData);
 
     auto invWidget = std::make_unique<InventoryWidget>(L"Inventory");
     invWidget->SetInventoryData(&_inventoryData);
@@ -202,7 +187,6 @@ void MainApp::CreateInventorySystem()
 void MainApp::Update()
 {
     CollisionManager::CheckCollision();
-
     _debugHUD.Update();
 
     if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F1))
@@ -211,5 +195,5 @@ void MainApp::Update()
 
 void MainApp::Render()
 {
-	_debugHUD.Render(); 
+    _debugHUD.Render();
 }

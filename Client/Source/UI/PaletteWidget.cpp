@@ -4,23 +4,25 @@
 #include "Core/Managers/InputManager.h"
 #include "Core/DisplayContext.h"
 #include "Types/GlobalTypes.h"
-#include "Data/BlockDataTable.h"
+#include "Data/BlockTable.h"
 
 PaletteWidget::PaletteWidget(const std::wstring& name)
     : Super(name)
 {
-    assert(GET_SINGLE(BlockDataTable)->IsLoaded() && "PaletteWidget 생성 전 BlockDataTable::Load() 필요.");
+    assert(GET_SINGLE(BlockTable)->IsLoaded() &&
+           "PaletteWidget 생성 전 BlockTable::Load() 가 선행되어야 합니다.");
 
-    const auto& allRecords = GET_SINGLE(BlockDataTable)->GetAllSlotRecords();
-    assert(static_cast<int32>(allRecords.size()) == SLOT_COUNT && "BlockData.xml의 Slot 수와 SlotType::Count가 다름.");
+    const auto& allRecords = GET_SINGLE(BlockTable)->GetAllRecords();
+    assert(static_cast<int32>(allRecords.size()) == SLOT_COUNT &&
+           "BlockMaster.xml 의 Block 수와 SlotType::Count 가 다름.");
 
     for (int32 i = 0; i < SLOT_COUNT; ++i)
     {
-        const BlockSlotRecord& rec = allRecords[static_cast<size_t>(i)];
-        _slots[i].label     = rec.paletteLabel;
-        _slots[i].modelName = rec.modelName;
-        _slots[i].color     = rec.color;
-        _slots[i].type      = rec.slotType;
+        const BlockRecord& rec  = allRecords[static_cast<size_t>(i)];
+        _slots[i].label         = rec.paletteLabel;
+        _slots[i].modelName     = rec.modelName;
+        _slots[i].color         = rec.color;
+        _slots[i].type          = static_cast<SlotType>(rec.typeId);
     }
 }
 
@@ -53,12 +55,11 @@ void PaletteWidget::DrawUI()
 {
     if (!_placingMode) return;
 
-    const float scrW  = GET_SINGLE(DisplayContext)->GetWidthF();
-    const float scrH  = GET_SINGLE(DisplayContext)->GetHeightF();
+    const float scrW   = GET_SINGLE(DisplayContext)->GetWidthF();
+    const float scrH   = GET_SINGLE(DisplayContext)->GetHeightF();
     const float totalW = SLOT_COUNT * SLOT_W + (SLOT_COUNT - 1) * SLOT_GAP + BAR_PADDING * 2;
 
     SetScreenPos((scrW - totalW) * 0.5f, scrH - BAR_H - 8.f);
-
     DrawBar();
 }
 
@@ -73,10 +74,9 @@ void PaletteWidget::DrawBar()
 
     for (int32 i = 0; i < SLOT_COUNT; ++i)
     {
-        const float sx = bx + BAR_PADDING + i * (SLOT_W + SLOT_GAP);
-        const float sy = by + (BAR_H - SLOT_H) * 0.5f;
-
-        const bool selected = (i == _selectedSlot);
+        const float sx       = bx + BAR_PADDING + i * (SLOT_W + SLOT_GAP);
+        const float sy       = by + (BAR_H - SLOT_H) * 0.5f;
+        const bool  selected = (i == _selectedSlot);
 
         Color bg = _slots[i].color;
         if (selected)
