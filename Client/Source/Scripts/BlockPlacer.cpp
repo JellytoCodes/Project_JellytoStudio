@@ -15,6 +15,7 @@
 #include "Scene/SceneSerializer.h"
 #include "Scene/ChunkManager.h"
 #include "Resource/Managers/ResourceManager.h"
+#include "Entity/Components/Camera.h"
 #include "Resource/Mesh.h"
 #include "Resource/Material.h"
 #include "Pipeline/Shader.h"
@@ -22,18 +23,18 @@
 #include "Graphics/Managers/InstancingManager.h"
 
 using SlotType = PaletteWidget::SlotType;
-using CH       = CollisionChannel;
-using PF       = PlaceFace;
+using CH = CollisionChannel;
+using PF = PlaceFace;
 
 Vec3 BlockPlacer::GetHalfExtents(ColliderSize s)
 {
     switch (s)
     {
     case ColliderSize::Small: return Vec3(0.25f, 0.25f, 0.25f);
-    case ColliderSize::Unit:  return Vec3(0.5f,  0.5f,  0.5f);
-    case ColliderSize::Tall:  return Vec3(0.5f,  0.75f, 0.5f);
-    case ColliderSize::Wide:  return Vec3(1.0f,  0.25f, 0.5f);
-    default:                  return Vec3(0.5f,  0.5f,  0.5f);
+    case ColliderSize::Unit:  return Vec3(0.5f, 0.5f, 0.5f);
+    case ColliderSize::Tall:  return Vec3(0.5f, 0.75f, 0.5f);
+    case ColliderSize::Wide:  return Vec3(1.0f, 0.25f, 0.5f);
+    default:                  return Vec3(0.5f, 0.5f, 0.5f);
     }
 }
 
@@ -56,11 +57,11 @@ void BlockPlacer::Awake()
     _meshUberMaterial->SetShader(_meshShader);
     _meshUberMaterial->SetDiffuseMap(_paletteTex);
 
-    auto& desc    = _meshUberMaterial->GetMaterialDesc();
-    desc.ambient  = Vec4(0.3f, 0.3f, 0.3f, 1.f);
-    desc.diffuse  = Vec4(1.f,  1.f,  1.f,  1.f);
+    auto& desc = _meshUberMaterial->GetMaterialDesc();
+    desc.ambient = Vec4(0.3f, 0.3f, 0.3f, 1.f);
+    desc.diffuse = Vec4(1.f, 1.f, 1.f, 1.f);
     desc.specular = Vec4(0.1f, 0.1f, 0.1f, 1.f);
-    desc.emissive = Vec4(0.f,  0.f,  0.f,  0.f);
+    desc.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
 
     _modelShader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 
@@ -83,12 +84,12 @@ void BlockPlacer::PushPaletteRects()
     }
 }
 
-void BlockPlacer::Start()  {}
+void BlockPlacer::Start() {}
 void BlockPlacer::OnDestroy() { HidePreview(); }
 
 void BlockPlacer::SetPlacingMode(bool on)
 {
-    _placingMode  = on;
+    _placingMode = on;
     if (!on) HidePreview();
     if (_palette) _palette->SetPlacingMode(on);
     _previewDirty = true;
@@ -96,8 +97,8 @@ void BlockPlacer::SetPlacingMode(bool on)
 
 void BlockPlacer::Update()
 {
-    const float dt    = GET_SINGLE(TimeManager)->GetDeltaTime();
-    auto*       input = GET_SINGLE(InputManager);
+    const float dt = GET_SINGLE(TimeManager)->GetDeltaTime();
+    auto* input = GET_SINGLE(InputManager);
 
     TickPlaceTweens(dt);
 
@@ -146,7 +147,7 @@ void BlockPlacer::HandleInput(const FramePickResult& pick)
 
     if (st == SlotType::Eraser)
     {
-        if      (pick.priming.valid)  TryRemoveEntity(pick.priming.entity);
+        if (pick.priming.valid)  TryRemoveEntity(pick.priming.entity);
         else if (pick.mushroom.valid) TryRemoveEntity(pick.mushroom.entity);
         return;
     }
@@ -156,25 +157,25 @@ void BlockPlacer::HandleInput(const FramePickResult& pick)
 
     Entity* hitEntity = nullptr;
     Vec3    hitNormal;
-    float   hitDist   = FLT_MAX;
-    bool    hit       = false;
+    float   hitDist = FLT_MAX;
+    bool    hit = false;
 
     if ((rec->pickableMask & static_cast<uint8>(CH::Priming)) && pick.priming.valid)
     {
-        hit       = true;
+        hit = true;
         hitEntity = pick.priming.entity;
         hitNormal = pick.priming.normal;
-        hitDist   = pick.priming.dist;
+        hitDist = pick.priming.dist;
     }
 
     if ((rec->pickableMask & static_cast<uint8>(CH::Floor)) && pick.floor.valid)
     {
         if (!hit || pick.floor.dist < hitDist)
         {
-            hit       = true;
+            hit = true;
             hitEntity = pick.floor.entity;
             hitNormal = pick.floor.normal;
-            hitDist   = pick.floor.dist;
+            hitDist = pick.floor.dist;
         }
     }
 
@@ -182,7 +183,7 @@ void BlockPlacer::HandleInput(const FramePickResult& pick)
 }
 
 bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
-                                const Vec3& hitNormal, Vec3& outCenterPos) const
+    const Vec3& hitNormal, Vec3& outCenterPos) const
 {
     const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
     if (!rec) return false;
@@ -193,10 +194,10 @@ bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
     const auto* hitAabb = hitEntity->GetComponent<AABBCollider>();
     if (!hitAabb) return false;
 
-    const BoundingBox& hitBox  = const_cast<AABBCollider*>(hitAabb)->GetBoundingBox();
-    const Vec3 hitCenter = { hitBox.Center.x,  hitBox.Center.y,  hitBox.Center.z  };
-    const Vec3 hitExt    = { hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z };
-    const Vec3 newHalf   = GetHalfExtents(rec->collider);
+    const BoundingBox& hitBox = const_cast<AABBCollider*>(hitAabb)->GetBoundingBox();
+    const Vec3 hitCenter = { hitBox.Center.x,  hitBox.Center.y,  hitBox.Center.z };
+    const Vec3 hitExt = { hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z };
+    const Vec3 newHalf = GetHalfExtents(rec->collider);
 
     Vec3 newCenter;
     newCenter.x = hitCenter.x + hitNormal.x * (hitExt.x + newHalf.x);
@@ -216,7 +217,7 @@ bool BlockPlacer::IsOverlappingCharacter(const Vec3& colCenter, const Vec3& half
     if (!charCol) return false;
 
     BoundingBox box;
-    box.Center  = colCenter;
+    box.Center = colCenter;
     box.Extents = halfExt;
     return box.Intersects(charCol->GetBoundingBox());
 }
@@ -226,30 +227,30 @@ void BlockPlacer::UpdatePreview(const FramePickResult& pick)
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) { HidePreview(); return; }
 
-    const SlotType st      = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
+    const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
     const bool     isErase = (st == SlotType::Eraser);
-    const bool     moved   = (pick.mousePos.x != _lastPreviewMouse.x ||
-                              pick.mousePos.y != _lastPreviewMouse.y);
+    const bool     moved = (pick.mousePos.x != _lastPreviewMouse.x ||
+        pick.mousePos.y != _lastPreviewMouse.y);
 
     if (!moved && !_previewDirty) return;
     _lastPreviewMouse = pick.mousePos;
-    _previewDirty     = false;
+    _previewDirty = false;
 
-    bool canAct     = false;
+    bool canAct = false;
     Vec3 previewPos;
     Vec3 previewScale;
 
     if (isErase)
     {
         previewScale = Vec3(1.f, 0.06f, 1.f);
-        canAct       = pick.priming.valid || pick.mushroom.valid;
+        canAct = pick.priming.valid || pick.mushroom.valid;
     }
     else
     {
         const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(st));
         if (!rec) { HidePreview(); return; }
 
-        const Vec3 half     = GetHalfExtents(rec->collider);
+        const Vec3 half = GetHalfExtents(rec->collider);
         const bool hasStock = (_pInventory == nullptr || _pInventory->GetCount(st) > 0);
 
         previewScale = Vec3(half.x * 2.f * 0.95f, 0.06f, half.z * 2.f * 0.95f);
@@ -258,13 +259,17 @@ void BlockPlacer::UpdatePreview(const FramePickResult& pick)
         {
             Vec3 cp;
             if (CalcPlacePos(st, pick.priming.entity, pick.priming.normal, cp))
-            { canAct = hasStock; previewPos = cp; }
+            {
+                canAct = hasStock; previewPos = cp;
+            }
         }
         else if ((rec->pickableMask & static_cast<uint8>(CH::Floor)) && pick.floor.valid)
         {
             Vec3 cp;
             if (CalcPlacePos(st, pick.floor.entity, pick.floor.normal, cp))
-            { canAct = hasStock; previewPos = cp; }
+            {
+                canAct = hasStock; previewPos = cp;
+            }
         }
     }
 
@@ -300,15 +305,15 @@ void BlockPlacer::UpdatePreview(const FramePickResult& pick)
 void BlockPlacer::HidePreview()
 {
     if (!_previewEntity) return;
-    Scene* scene   = GET_SINGLE(SceneManager)->GetCurrentScene();
-    auto*  instMgr = GET_SINGLE(InstancingManager);
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    auto* instMgr = GET_SINGLE(InstancingManager);
 
     if (auto* mr = _previewEntity->GetComponent<MeshRenderer>())
         instMgr->MarkMeshDirty(mr->GetInstanceID());
 
     if (scene) scene->Remove(_previewEntity);
     _previewEntity = nullptr;
-    _previewValid  = false;
+    _previewValid = false;
 }
 
 std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
@@ -318,9 +323,9 @@ std::shared_ptr<Material> BlockPlacer::GetPreviewMat(bool ok)
 
     mat = std::make_shared<Material>();
     mat->SetShader(std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl"));
-    auto& d    = mat->GetMaterialDesc();
-    d.ambient  = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
-                                 : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
+    auto& d = mat->GetMaterialDesc();
+    d.ambient = d.diffuse = ok ? Vec4(0.2f, 0.9f, 0.2f, 0.5f)
+        : Vec4(0.9f, 0.2f, 0.2f, 0.5f);
     d.specular = d.emissive = Vec4(0.f, 0.f, 0.f, 0.f);
     return mat;
 }
@@ -331,7 +336,8 @@ void BlockPlacer::AttachCollider(Entity* entity, const BlockRecord& rec)
     auto col = std::make_unique<AABBCollider>();
     col->SetShowDebug(true);
     col->SetBoxExtents(half);
-    col->SetOffsetPosition(Vec3(0.f, 0.f, 0.f));
+    const float yOffset = (rec.renderType == BlockRenderType::Model) ? half.y : 0.f;
+    col->SetOffsetPosition(Vec3(0.f, yOffset, 0.f));
     col->SetOwnChannel(rec.ownChannel);
     col->SetPickableMask(rec.pickableMask);
     col->SetStatic(true);
@@ -360,6 +366,10 @@ Entity* BlockPlacer::SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPo
 
     Entity* raw = entity.get();
     scene->Add(std::move(entity));
+
+    if (auto* col = raw->GetComponent<AABBCollider>())
+        col->Update();
+
     return raw;
 }
 
@@ -377,9 +387,9 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerP
     else
     {
         model = std::make_shared<Model>();
-        model->SetModelPath  (L"../Resources/Models/MapModel/");
+        model->SetModelPath(L"../Resources/Models/MapModel/");
         model->SetTexturePath(L"../Resources/Textures/MapModel/");
-        model->ReadModel   (rec.modelName);
+        model->ReadModel(rec.modelName);
         model->ReadMaterial(rec.modelName);
         _modelCache[rec.modelName] = model;
     }
@@ -390,10 +400,13 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerP
         return nullptr;
     }
 
+    const Vec3 half = GetHalfExtents(rec.collider);
+    const Vec3 bottomPos = Vec3(centerPos.x, centerPos.y - half.y, centerPos.z);
+
     auto entity = std::make_unique<Entity>(L"MapBlock");
     entity->AddComponent(std::make_unique<Transform>());
     auto* tf = entity->GetComponent<Transform>();
-    tf->SetLocalPosition(centerPos);
+    tf->SetLocalPosition(bottomPos);
     tf->SetLocalScale(initialScale);
 
     auto modelR = std::make_unique<ModelRenderer>(_modelShader, false);
@@ -405,11 +418,15 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerP
 
     Entity* raw = entity.get();
     scene->Add(std::move(entity));
+
+    if (auto* col = raw->GetComponent<AABBCollider>())
+        col->Update();
+
     return raw;
 }
 
 Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type,
-                                       const Vec3& initialScale, const Vec3& finalScale)
+    const Vec3& initialScale, const Vec3& finalScale)
 {
     const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
     if (!rec)
@@ -420,7 +437,7 @@ Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type,
 
     switch (rec->renderType)
     {
-    case BlockRenderType::Mesh:  return SpawnMeshBlock (*rec, centerPos, initialScale, finalScale);
+    case BlockRenderType::Mesh:  return SpawnMeshBlock(*rec, centerPos, initialScale, finalScale);
     case BlockRenderType::Model: return SpawnModelBlock(*rec, centerPos, initialScale, finalScale);
     default:                     return nullptr;
     }
@@ -441,15 +458,12 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& centerPos, SlotType type)
     const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
     if (!rec) return false;
 
-    const Vec3 half       = GetHalfExtents(rec->collider);
+    const Vec3 half = GetHalfExtents(rec->collider);
     const Vec3 finalScale = half * 2.f;
 
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     Entity* rawBlock = SpawnBlockEntity(centerPos, type, Vec3(0.001f), finalScale);
     if (!rawBlock) return false;
-
-    InstanceID instID = { 0, 0 };
-    if (auto* mr = rawBlock->GetComponent<MeshRenderer>())
-        instID = mr->GetInstanceID();
 
     GET_SINGLE(ChunkManager)->Register(rawBlock);
     _blockRecordMap[rawBlock] = { centerPos.x, centerPos.y, centerPos.z,
@@ -457,8 +471,12 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& centerPos, SlotType type)
     _placedCacheDirty = true;
     _placeTweens.push_back({ rawBlock, 0.f, finalScale });
 
-    auto* instMgr = GET_SINGLE(InstancingManager);
-    instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(_previewEntity));
+    if (Camera* cam = scene->GetMainCamera())
+    {
+        cam->SetSortDirty();
+        cam->SortEntities();
+    }
+    GET_SINGLE(InstancingManager)->SetMeshGroupDirty();
 
     return true;
 }
@@ -471,10 +489,6 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 
     if (_pInventory)
         _pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
-
-    InstanceID instID = { 0, 0 };
-    if (auto* mr = entity->GetComponent<MeshRenderer>())
-        instID = mr->GetInstanceID();
 
     GET_SINGLE(ChunkManager)->Unregister(entity);
     _blockRecordMap.erase(it);
@@ -489,8 +503,12 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
     if (!scene) return false;
     scene->Remove(entity);
 
-    auto* instMgr = GET_SINGLE(InstancingManager);
-    instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(_previewEntity));
+    if (Camera* cam = scene->GetMainCamera())
+    {
+        cam->SetSortDirty();
+        cam->SortEntities();
+    }
+    GET_SINGLE(InstancingManager)->SetMeshGroupDirty();
 
     return true;
 }
@@ -500,23 +518,18 @@ bool BlockPlacer::PlaceBlock(float x, float y, float z, int32 typeInt)
     const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(typeInt);
     if (!rec || static_cast<SlotType>(typeInt) == SlotType::Eraser) return false;
 
-    const Vec3 half       = GetHalfExtents(rec->collider);
+    const Vec3 half = GetHalfExtents(rec->collider);
     const Vec3 finalScale = half * 2.f;
 
     Entity* rawBlock = SpawnBlockEntity(Vec3(x, y, z), static_cast<SlotType>(typeInt),
-                                        finalScale, finalScale);
+        finalScale, finalScale);
     if (!rawBlock) return false;
-
-    InstanceID instID = { 0, 0 };
-    if (auto* mr = rawBlock->GetComponent<MeshRenderer>())
-        instID = mr->GetInstanceID();
 
     GET_SINGLE(ChunkManager)->Register(rawBlock);
     _blockRecordMap[rawBlock] = { x, y, z, typeInt };
     _placedCacheDirty = true;
 
-    auto* instMgr = GET_SINGLE(InstancingManager);
-    instMgr->MarkMeshDirty(instMgr->GetMeshInstanceID(rawBlock));
+    GET_SINGLE(InstancingManager)->SetMeshGroupDirty();
 
     return true;
 }
