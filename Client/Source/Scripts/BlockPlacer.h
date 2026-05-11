@@ -80,6 +80,7 @@ private:
         Entity* entity     = nullptr;
         float   elapsed    = 0.f;
         Vec3    finalScale = Vec3(1.f);
+        float   startFrac  = 0.15f;
         static constexpr float kDuration = 0.18f;
     };
     void TickPlaceTweens(float dt);

@@ -420,8 +420,7 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerP
     return raw;
 }
 
-Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type,
-                                       const Vec3& initialScale, const Vec3& finalScale)
+Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type, const Vec3& initialScale, const Vec3& finalScale)
 {
     const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
     if (!rec)
@@ -457,13 +456,15 @@ bool BlockPlacer::PlaceBlockAt(const Vec3& centerPos, SlotType type)
     const Vec3 finalScale = half * 2.f;
 
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-    Entity* rawBlock = SpawnBlockEntity(centerPos, type, finalScale, finalScale);
+    const Vec3 initScale  = finalScale * 0.15f;
+    Entity* rawBlock = SpawnBlockEntity(centerPos, type, initScale, finalScale);
     if (!rawBlock) return false;
 
     GET_SINGLE(ChunkManager)->Register(rawBlock);
     _blockRecordMap[rawBlock] = { centerPos.x, centerPos.y, centerPos.z,
                                    static_cast<int32>(type) };
     _placedCacheDirty = true;
+    _placeTweens.push_back({ rawBlock, 0.f, finalScale, 0.15f });
     GET_SINGLE(InstancingManager)->SetMeshDirty();
 
     return true;
@@ -530,8 +531,9 @@ void BlockPlacer::TickPlaceTweens(float dt)
                 if (_blockRecordMap.find(tw.entity) == _blockRecordMap.end()) return true;
 
                 tw.elapsed += dt;
-                const float t = std::min(tw.elapsed / PlaceTween::kDuration, 1.f);
-                const float s = t * t * (3.f - 2.f * t);
+                const float t    = std::min(tw.elapsed / PlaceTween::kDuration, 1.f);
+                const float ease = t * t * (3.f - 2.f * t);
+                const float s    = tw.startFrac + (1.f - tw.startFrac) * ease;
 
                 if (auto* tf = tw.entity->GetComponent<Transform>())
                     tf->SetLocalScale(tw.finalScale * s);
