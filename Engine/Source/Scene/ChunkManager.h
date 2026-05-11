@@ -19,6 +19,7 @@ public:
     void CollectStaticColliders(const DirectX::BoundingBox& bounds, std::vector<BaseCollider*>& outColliders);
 
     bool PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist);
+    bool PickBlocks(const Vec3& rayOrigin, const Vec3& rayDir, uint8 queryMask, BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom);
 
     bool IsManaged(Entity* entity) const;
     bool TryGetChunkKey(Entity* entity, uint64& outKey) const;

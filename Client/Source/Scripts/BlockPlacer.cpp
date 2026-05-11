@@ -121,17 +121,23 @@ void BlockPlacer::Update()
         const int32 mx = static_cast<int32>(pick.mousePos.x);
         const int32 my = static_cast<int32>(pick.mousePos.y);
 
-        scene->PickBlock(mx, my, CH::Priming,
-            pick.priming.entity, pick.priming.normal, pick.priming.dist);
-        pick.priming.valid = (pick.priming.entity != nullptr);
+        BlockPickHit priming;
+        BlockPickHit floor;
+        BlockPickHit mushroom;
+        scene->PickBlocks(mx, my, CH::Priming | CH::Floor | CH::Mushroom,
+            priming, floor, mushroom);
 
-        scene->PickBlock(mx, my, CH::Floor,
-            pick.floor.entity, pick.floor.normal, pick.floor.dist);
-        pick.floor.valid = (pick.floor.entity != nullptr);
+        auto assignHit = [](FramePickResult::Hit& dst, const BlockPickHit& src)
+        {
+            dst.valid  = src.valid;
+            dst.entity = src.entity;
+            dst.normal = src.normal;
+            dst.dist   = src.dist;
+        };
 
-        scene->PickBlock(mx, my, CH::Mushroom,
-            pick.mushroom.entity, pick.mushroom.normal, pick.mushroom.dist);
-        pick.mushroom.valid = (pick.mushroom.entity != nullptr);
+        assignHit(pick.priming,  priming);
+        assignHit(pick.floor,    floor);
+        assignHit(pick.mushroom, mushroom);
     }
 
     HandleInput(pick);

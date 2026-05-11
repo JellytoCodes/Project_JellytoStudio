@@ -43,6 +43,7 @@ public:
     Entity* Pick(int32 screenX, int32 screenY);
 
     bool PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist);
+    bool PickBlocks(int32 screenX, int32 screenY, uint8 queryMask, BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom);
     bool PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, float groundY = 0.f);
 
 private:

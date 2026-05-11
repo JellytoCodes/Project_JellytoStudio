@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+class Entity;
+
 enum class CollisionChannel : uint8
 {
     None      = 0,
@@ -27,6 +29,22 @@ inline bool ChannelInMask(CollisionChannel ch, uint8 mask)
 {
     return (static_cast<uint8>(ch) & mask) != 0;
 }
+
+struct BlockPickHit
+{
+    bool    valid  = false;
+    Entity* entity = nullptr;
+    DirectX::SimpleMath::Vector3 normal = DirectX::SimpleMath::Vector3(0.f, 1.f, 0.f);
+    float   dist   = FLT_MAX;
+
+    void Reset()
+    {
+        valid  = false;
+        entity = nullptr;
+        normal = DirectX::SimpleMath::Vector3(0.f, 1.f, 0.f);
+        dist   = FLT_MAX;
+    }
+};
 
 // 배치 가능 면 플래그
 enum class PlaceFace : uint8

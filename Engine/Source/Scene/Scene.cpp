@@ -12,6 +12,32 @@
 #include "Graphics/Managers/InstancingManager.h"
 #include "Scene/ChunkManager.h"
 
+namespace
+{
+    void UpdatePickHit(BlockPickHit& hit, Entity* entity, const Vec3& normal, float dist)
+    {
+        if (dist >= hit.dist) return;
+
+        hit.valid  = true;
+        hit.entity = entity;
+        hit.normal = normal;
+        hit.dist   = dist;
+    }
+
+    void UpdateMatchingPickHits(uint8 queryMask, AABBCollider* aabb, Entity* entity, const Vec3& normal, float dist,
+                                BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
+    {
+        if ((queryMask & static_cast<uint8>(CollisionChannel::Priming)) && aabb->CanBePickedBy(CollisionChannel::Priming))
+            UpdatePickHit(priming, entity, normal, dist);
+
+        if ((queryMask & static_cast<uint8>(CollisionChannel::Floor)) && aabb->CanBePickedBy(CollisionChannel::Floor))
+            UpdatePickHit(floor, entity, normal, dist);
+
+        if ((queryMask & static_cast<uint8>(CollisionChannel::Mushroom)) && aabb->CanBePickedBy(CollisionChannel::Mushroom))
+            UpdatePickHit(mushroom, entity, normal, dist);
+    }
+}
+
 Scene::Scene()
 {
     _shadowPass = std::make_unique<ShadowPass>();
@@ -289,4 +315,37 @@ bool Scene::PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan, 
     }
 
     return outEntity != nullptr;
+}
+
+bool Scene::PickBlocks(int32 screenX, int32 screenY, uint8 queryMask,
+                       BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
+{
+    priming.Reset();
+    floor.Reset();
+    mushroom.Reset();
+
+    Vec3 rayOrigin, rayDir;
+    if (!BuildPickRay(screenX, screenY, rayOrigin, rayDir)) return false;
+
+    auto* chunkMgr = GET_SINGLE(ChunkManager);
+    chunkMgr->PickBlocks(rayOrigin, rayDir, queryMask, priming, floor, mushroom);
+
+    Ray ray(rayOrigin, rayDir);
+    for (Entity* entity : _collidableObjects)
+    {
+        if (chunkMgr->IsManaged(entity)) continue;
+        if (_mainCamera && _mainCamera->IsCulled(entity->GetLayerIndex())) continue;
+
+        auto* aabb = entity->GetComponent<AABBCollider>();
+        if (!aabb) continue;
+        if ((aabb->GetPickableMask() & queryMask) == 0) continue;
+
+        float dist = 0.f;
+        Vec3  normal;
+        Ray   r = ray;
+        if (aabb->IntersectsWithNormal(r, dist, normal))
+            UpdateMatchingPickHits(queryMask, aabb, entity, normal, dist, priming, floor, mushroom);
+    }
+
+    return priming.valid || floor.valid || mushroom.valid;
 }

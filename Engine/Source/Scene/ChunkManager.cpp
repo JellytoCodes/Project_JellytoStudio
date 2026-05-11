@@ -4,6 +4,32 @@
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Transform.h"
 
+namespace
+{
+    void UpdatePickHit(BlockPickHit& hit, Entity* entity, const Vec3& normal, float dist)
+    {
+        if (dist >= hit.dist) return;
+
+        hit.valid  = true;
+        hit.entity = entity;
+        hit.normal = normal;
+        hit.dist   = dist;
+    }
+
+    void UpdateMatchingPickHits(uint8 queryMask, AABBCollider* aabb, Entity* entity, const Vec3& normal, float dist,
+                                BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
+    {
+        if ((queryMask & static_cast<uint8>(CollisionChannel::Priming)) && aabb->CanBePickedBy(CollisionChannel::Priming))
+            UpdatePickHit(priming, entity, normal, dist);
+
+        if ((queryMask & static_cast<uint8>(CollisionChannel::Floor)) && aabb->CanBePickedBy(CollisionChannel::Floor))
+            UpdatePickHit(floor, entity, normal, dist);
+
+        if ((queryMask & static_cast<uint8>(CollisionChannel::Mushroom)) && aabb->CanBePickedBy(CollisionChannel::Mushroom))
+            UpdatePickHit(mushroom, entity, normal, dist);
+    }
+}
+
 uint64 ChunkManager::CoordKey(int32 cx, int32 cz)
 {
     return (static_cast<uint64>(static_cast<uint32>(cx)) << 32)
@@ -209,4 +235,45 @@ bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, Collisio
     }
 
     return outEntity != nullptr;
+}
+
+bool ChunkManager::PickBlocks(const Vec3& rayOrigin, const Vec3& rayDir, uint8 queryMask,
+                              BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
+{
+    const XMVECTOR vOrigin = XMLoadFloat3(&rayOrigin);
+    const XMVECTOR vDir    = XMLoadFloat3(&rayDir);
+
+    float bestKnownDist = FLT_MAX;
+
+    for (auto& [key, chunk] : _chunks)
+    {
+        if (chunk.entities.empty()) continue;
+
+        if (chunk.aabbDirty)
+            chunk.RebuildAABB();
+
+        bestKnownDist = std::min({ priming.dist, floor.dist, mushroom.dist });
+
+        float chunkDist = 0.f;
+        if (!chunk.aabb.Intersects(vOrigin, vDir, chunkDist)) continue;
+        if (chunkDist >= bestKnownDist) continue;
+
+        for (Entity* entity : chunk.entities)
+        {
+            auto* aabb = entity->GetComponent<AABBCollider>();
+            if (!aabb) continue;
+            if ((aabb->GetPickableMask() & queryMask) == 0) continue;
+
+            float dist = 0.f;
+            Vec3  normal;
+            Vec3  origin = rayOrigin;
+            Vec3  dir    = rayDir;
+            Ray   r(origin, dir);
+
+            if (aabb->IntersectsWithNormal(r, dist, normal))
+                UpdateMatchingPickHits(queryMask, aabb, entity, normal, dist, priming, floor, mushroom);
+        }
+    }
+
+    return priming.valid || floor.valid || mushroom.valid;
 }
