@@ -1,4 +1,6 @@
-#pragma once
+﻿#pragma once
+
+#include "UI/UITypes.h"
 
 class UIManager
 {
@@ -11,25 +13,30 @@ public:
 
     void AddRect(float x, float y, float w, float h, Color color);
     void AddRectBorder(float x, float y, float w, float h, Color color, float thickness = 1.f);
-    void AddTexturedRect(float x, float y, float w, float h, Color tint, ComPtr<ID3D11ShaderResourceView> srv);
     void AddText(const std::wstring& text, float x, float y, float w, float h, Color color, int fontSize = 18, const std::wstring& fontName = L"Arial");
+
+    void AddTexturedRect(float x, float y, float w, float h, Color tint, TextureHandle texHandle);
+
+    TextureHandle RegisterTexture  (ComPtr<ID3D11ShaderResourceView> srv);
+    void          UnregisterTexture(TextureHandle handle);
 
 private:
     struct DrawCmd
     {
         uint32 indexOffset = 0;
         uint32 indexCount  = 0;
-        uint32 pass        = 0;   // 0=color, 1=texture
+        uint32 pass        = 0;
         ComPtr<ID3D11ShaderResourceView> srv = nullptr;
     };
 
-    void PushQuad(float x, float y, float w, float h, Color color,
-                  Vec2 uvMin, Vec2 uvMax, uint32 pass,
-                  ComPtr<ID3D11ShaderResourceView> srv);
+    using TextureRegistry = std::unordered_map<TextureHandle, ComPtr<ID3D11ShaderResourceView>>;
 
-    ComPtr<ID3D11ShaderResourceView> BuildTextSRV(
-        const std::wstring& text, uint32 tw, uint32 th,
-        Color color, int fontSize, const std::wstring& fontName);
+    TextureRegistry _textureRegistry;
+    TextureHandle   _nextHandle = 1u;
+
+    void PushQuad(float x, float y, float w, float h, Color color, Vec2 uvMin, Vec2 uvMax, uint32 pass, ComPtr<ID3D11ShaderResourceView> srv);
+
+    ComPtr<ID3D11ShaderResourceView> BuildTextSRV(const std::wstring& text, uint32 tw, uint32 th, Color color, int fontSize, const std::wstring& fontName);
 
     void CreateDeviceObjects();
     void CreateBuffers();
@@ -39,15 +46,15 @@ private:
     std::vector<uint32>    _indices;
     std::vector<DrawCmd>   _cmds;
 
-    ComPtr<ID3D11Buffer>      _vb;
-    ComPtr<ID3D11Buffer>      _ib;
+    ComPtr<ID3D11Buffer>   _vb;
+    ComPtr<ID3D11Buffer>   _ib;
     uint32 _vbCap = 0, _ibCap = 0;
 
     ComPtr<ID3D11InputLayout>       _inputLayout;
     ComPtr<ID3D11VertexShader>      _vs;
-    ComPtr<ID3D11PixelShader>       _psColor;   // pass=0
-    ComPtr<ID3D11PixelShader>       _psTex;     // pass=1
-    ComPtr<ID3D11Buffer>            _cbuffer;   // ScreenSize
+    ComPtr<ID3D11PixelShader>       _psColor;   
+    ComPtr<ID3D11PixelShader>       _psTex;     
+    ComPtr<ID3D11Buffer>            _cbuffer;   
     ComPtr<ID3D11SamplerState>      _sampler;
     ComPtr<ID3D11BlendState>        _blendState;
     ComPtr<ID3D11DepthStencilState> _depthState;

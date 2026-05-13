@@ -1,28 +1,33 @@
 #pragma once
+
 #include "Resource.h"
+#include "UI/UITypes.h"
 
 class Texture : public Resource
 {
-	using Super = Resource;
+    using Super = Resource;
 
-public :
-	Texture();
-	virtual ~Texture();
+public:
+    Texture();
+    virtual ~Texture();
 
-	ComPtr<ID3D11ShaderResourceView>	GetComPtr() { return _shaderResourceView; }
+    ComPtr<ID3D11ShaderResourceView> GetComPtr() { return _shaderResourceView; }
+    void SetSRV(ComPtr<ID3D11ShaderResourceView> srv);
 
-	virtual void						Load(const std::wstring& path) override;
-	
-	ComPtr<ID3D11Texture2D>				GetTexture2D();
-	void								SetSRV(ComPtr<ID3D11ShaderResourceView> srv) { _shaderResourceView = srv; }
+    ComPtr<ID3D11Texture2D> GetTexture2D();
+    const DirectX::ScratchImage& GetInfo() { return _img; }
 
-	Vec2								GetSize() const { return _size; }
+    virtual void Load(const std::wstring& path) override;
+    Vec2         GetSize() const { return _size; }
 
-	const DirectX::ScratchImage& GetInfo() { return _img; }
+    TextureHandle GetUIHandle();
+
+    void          InvalidateUIHandle();
 
 private:
-	ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
-	Vec2 _size = { 0.f, 0.f };
-	DirectX::ScratchImage _img = {};
-};
+    ComPtr<ID3D11ShaderResourceView> _shaderResourceView;
+    Vec2                             _size     = { 0.f, 0.f };
+    DirectX::ScratchImage            _img      = {};
 
+    TextureHandle                    _uiHandle = kInvalidTextureHandle;
+};

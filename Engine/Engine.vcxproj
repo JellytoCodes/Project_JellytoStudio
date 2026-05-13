@@ -196,6 +196,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\UI\Components\UIButton.cpp" />
     <ClCompile Include="Source\UI\Components\UIComponent.cpp" />
     <ClCompile Include="Source\UI\Components\UIText.cpp" />
+    <ClCompile Include="Source\UI\UITypes.cpp" />
     <ClCompile Include="Source\UI\Widget.cpp" />
     <ClCompile Include="Source\Utils\Converter.cpp" />
     <ClCompile Include="Source\Types\AsTypes.cpp" />
@@ -278,6 +279,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\UI\Components\UIButton.h" />
     <ClInclude Include="Source\UI\Components\UIComponent.h" />
     <ClInclude Include="Source\UI\Components\UIText.h" />
+    <ClInclude Include="Source\UI\UITypes.h" />
     <ClInclude Include="Source\UI\Widget.h" />
     <ClInclude Include="Source\Utils\Converter.h" />
     <ClInclude Include="Source\Types\AsTypes.h" />
