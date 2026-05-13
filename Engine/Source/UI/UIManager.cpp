@@ -47,9 +47,8 @@ void UIManager::SetScreenSize(float w, float h) { _screenW = w; _screenH = h; }
 TextureHandle UIManager::RegisterTexture(ComPtr<ID3D11ShaderResourceView> srv)
 {
     if (!srv) return kInvalidTextureHandle;
-
     const TextureHandle handle = _nextHandle++;
-    _textureRegistry[handle]  = std::move(srv);
+    _textureRegistry[handle] = std::move(srv);
     return handle;
 }
 
@@ -59,147 +58,12 @@ void UIManager::UnregisterTexture(TextureHandle handle)
     _textureRegistry.erase(handle);
 }
 
-void UIManager::AddRect(float x, float y, float w, float h, Color color)
-{
-    PushQuad(x, y, w, h, color, Vec2(0,0), Vec2(1,1), 0, nullptr);
-}
-
-void UIManager::AddRectBorder(float x, float y, float w, float h,
-                               Color color, float t)
-{
-    AddRect(x,         y,         w, t, color);
-    AddRect(x,         y + h - t, w, t, color);
-    AddRect(x,         y,         t, h, color);
-    AddRect(x + w - t, y,         t, h, color);
-}
-
-void UIManager::AddTexturedRect(float x, float y, float w, float h,
-                                 Color tint, TextureHandle texHandle)
-{
-    if (texHandle == kInvalidTextureHandle) return;
-
-    const auto it = _textureRegistry.find(texHandle);
-    if (it == _textureRegistry.end()) return;   // 미등록 핸들 → 무시
-
-    PushQuad(x, y, w, h, tint, Vec2(0,0), Vec2(1,1), 1, it->second);
-}
-
-void UIManager::AddText(const std::wstring& text,
-                         float x, float y, float w, float h,
-                         Color color, int fontSize, const std::wstring& fontName)
-{
-    if (text.empty()) return;
-    const uint32 tw = static_cast<uint32>(w);
-    const uint32 th = static_cast<uint32>(h > 0 ? h : static_cast<float>(fontSize + 4));
-
-    ComPtr<ID3D11ShaderResourceView> srv =
-        BuildTextSRV(text, tw, th, color, fontSize, fontName);
-    if (srv)
-        PushQuad(x, y, w, h, Color(1,1,1,1), Vec2(0,0), Vec2(1,1), 1, srv);
-}
-
-void UIManager::PushQuad(float x, float y, float w, float h,
-                          Color color, Vec2 uvMin, Vec2 uvMax,
-                          uint32 pass,
-                          ComPtr<ID3D11ShaderResourceView> srv)
-{
-    const uint32 base    = static_cast<uint32>(_vertices.size());
-    const uint32 idxBase = static_cast<uint32>(_indices.size());
-
-    _vertices.push_back({ Vec2(x,     y    ), Vec2(uvMin.x, uvMin.y), color });
-    _vertices.push_back({ Vec2(x + w, y    ), Vec2(uvMax.x, uvMin.y), color });
-    _vertices.push_back({ Vec2(x + w, y + h), Vec2(uvMax.x, uvMax.y), color });
-    _vertices.push_back({ Vec2(x,     y + h), Vec2(uvMin.x, uvMax.y), color });
-
-    _indices.push_back(base + 0); _indices.push_back(base + 1);
-    _indices.push_back(base + 2); _indices.push_back(base + 0);
-    _indices.push_back(base + 2); _indices.push_back(base + 3);
-
-    if (!_cmds.empty() &&
-        _cmds.back().pass == pass &&
-        _cmds.back().srv  == srv)
-    {
-        _cmds.back().indexCount += 6;
-    }
-    else
-    {
-        DrawCmd cmd;
-        cmd.indexOffset = idxBase;
-        cmd.indexCount  = 6;
-        cmd.pass        = pass;
-        cmd.srv         = std::move(srv);
-        _cmds.push_back(std::move(cmd));
-    }
-}
-
-void UIManager::Render()
-{
-    if (!_vs || _cmds.empty())
-    {
-        _vertices.clear(); _indices.clear(); _cmds.clear();
-        return;
-    }
-
-    UpdateBuffers();
-
-    auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
-
-    {
-        D3D11_MAPPED_SUBRESOURCE ms = {};
-        dc->Map(_cbuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
-        float data[4] = { _screenW, _screenH, 0.f, 0.f };
-        memcpy(ms.pData, data, sizeof(data));
-        dc->Unmap(_cbuffer.Get(), 0);
-    }
-
-    // IA
-    dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    dc->IASetInputLayout(_inputLayout.Get());
-    uint32 stride = sizeof(VertexUI), offset = 0;
-    dc->IASetVertexBuffers(0, 1, _vb.GetAddressOf(), &stride, &offset);
-    dc->IASetIndexBuffer(_ib.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-    // VS
-    dc->VSSetShader(_vs.Get(), nullptr, 0);
-    dc->VSSetConstantBuffers(0, 1, _cbuffer.GetAddressOf());
-
-    // OM
-    float blendFactor[4] = { 0, 0, 0, 0 };
-    dc->OMSetBlendState(_blendState.Get(), blendFactor, 0xFFFFFFFF);
-    dc->OMSetDepthStencilState(_depthState.Get(), 0);
-    dc->RSSetState(_rasterState.Get());
-
-    // 샘플러
-    dc->PSSetSamplers(0, 1, _sampler.GetAddressOf());
-
-    // 커맨드별 드로우
-    for (const auto& cmd : _cmds)
-    {
-        if (cmd.pass == 1)
-        {
-            if (!cmd.srv) continue;
-            dc->PSSetShader(_psTex.Get(), nullptr, 0);
-            dc->PSSetShaderResources(0, 1, cmd.srv.GetAddressOf());
-        }
-        else
-        {
-            dc->PSSetShader(_psColor.Get(), nullptr, 0);
-            ID3D11ShaderResourceView* nullSRV = nullptr;
-            dc->PSSetShaderResources(0, 1, &nullSRV);
-        }
-        dc->DrawIndexed(cmd.indexCount, cmd.indexOffset, 0);
-    }
-
-    _vertices.clear();
-    _indices.clear();
-    _cmds.clear();
-}
-
 void UIManager::CreateDeviceObjects()
 {
     auto device = GET_SINGLE(Graphics)->GetDevice();
 
     ComPtr<ID3DBlob> vsBlob, psColorBlob, psTexBlob, errBlob;
+
     auto compile = [&](const char* src, const char* target, ComPtr<ID3DBlob>& out)
     {
         HRESULT hr = D3DCompile(src, strlen(src), nullptr, nullptr, nullptr,
@@ -228,12 +92,9 @@ void UIManager::CreateDeviceObjects()
 
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,       0,  0,
-          D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0,
-          D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,
-          D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,       0,  0,                           D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     CHECK(device->CreateInputLayout(
         layout, ARRAYSIZE(layout),
@@ -241,7 +102,7 @@ void UIManager::CreateDeviceObjects()
         _inputLayout.GetAddressOf()));
 
     D3D11_BUFFER_DESC cbd = {};
-    cbd.ByteWidth      = sizeof(float) * 4;   // float2 + float2 pad (16-byte align)
+    cbd.ByteWidth      = sizeof(float) * 4;
     cbd.Usage          = D3D11_USAGE_DYNAMIC;
     cbd.BindFlags      = D3D11_BIND_CONSTANT_BUFFER;
     cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -325,56 +186,177 @@ void UIManager::UpdateBuffers()
     }
 }
 
+void UIManager::Render()
+{
+    if (!_vs || _cmds.empty())
+    {
+        _vertices.clear(); _indices.clear(); _cmds.clear();
+        return;
+    }
+
+    UpdateBuffers();
+
+    auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
+
+    {
+        D3D11_MAPPED_SUBRESOURCE ms = {};
+        dc->Map(_cbuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+        float data[4] = { _screenW, _screenH, 0.f, 0.f };
+        memcpy(ms.pData, data, sizeof(data));
+        dc->Unmap(_cbuffer.Get(), 0);
+    }
+
+    dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    dc->IASetInputLayout(_inputLayout.Get());
+    uint32 stride = sizeof(VertexUI), offset = 0;
+    dc->IASetVertexBuffers(0, 1, _vb.GetAddressOf(), &stride, &offset);
+    dc->IASetIndexBuffer(_ib.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+    dc->VSSetShader(_vs.Get(), nullptr, 0);
+    dc->VSSetConstantBuffers(0, 1, _cbuffer.GetAddressOf());
+
+    float blendFactor[4] = { 0, 0, 0, 0 };
+    dc->OMSetBlendState(_blendState.Get(), blendFactor, 0xFFFFFFFF);
+    dc->OMSetDepthStencilState(_depthState.Get(), 0);
+    dc->RSSetState(_rasterState.Get());
+
+    dc->PSSetSamplers(0, 1, _sampler.GetAddressOf());
+
+    for (const auto& cmd : _cmds)
+    {
+        if (cmd.pass == 1)
+        {
+            if (!cmd.srv) continue;
+            dc->PSSetShader(_psTex.Get(), nullptr, 0);
+            dc->PSSetShaderResources(0, 1, cmd.srv.GetAddressOf());
+        }
+        else
+        {
+            dc->PSSetShader(_psColor.Get(), nullptr, 0);
+            ID3D11ShaderResourceView* nullSRV = nullptr;
+            dc->PSSetShaderResources(0, 1, &nullSRV);
+        }
+
+        dc->DrawIndexed(cmd.indexCount, cmd.indexOffset, 0);
+    }
+
+    ID3D11ShaderResourceView* nullSRV = nullptr;
+    dc->PSSetShaderResources(0, 1, &nullSRV);
+
+    _vertices.clear();
+    _indices.clear();
+    _cmds.clear();
+}
+
+void UIManager::PushQuad(float x, float y, float w, float h,
+                          Color color, Vec2 uvMin, Vec2 uvMax,
+                          uint32 pass, ComPtr<ID3D11ShaderResourceView> srv)
+{
+    uint32 base    = static_cast<uint32>(_vertices.size());
+    uint32 idxBase = static_cast<uint32>(_indices.size());
+
+    _vertices.push_back({ Vec2(x,     y    ), Vec2(uvMin.x, uvMin.y), color });
+    _vertices.push_back({ Vec2(x + w, y    ), Vec2(uvMax.x, uvMin.y), color });
+    _vertices.push_back({ Vec2(x + w, y + h), Vec2(uvMax.x, uvMax.y), color });
+    _vertices.push_back({ Vec2(x,     y + h), Vec2(uvMin.x, uvMax.y), color });
+
+    _indices.push_back(base+0); _indices.push_back(base+1); _indices.push_back(base+2);
+    _indices.push_back(base+0); _indices.push_back(base+2); _indices.push_back(base+3);
+
+    if (!_cmds.empty() && _cmds.back().pass == pass && _cmds.back().srv == srv)
+        _cmds.back().indexCount += 6;
+    else
+        _cmds.push_back({ idxBase, 6, pass, srv });
+}
+
+void UIManager::AddRect(float x, float y, float w, float h, Color color)
+{
+    PushQuad(x, y, w, h, color, Vec2(0,0), Vec2(1,1), 0, nullptr);
+}
+
+void UIManager::AddRectBorder(float x, float y, float w, float h, Color color, float t)
+{
+    AddRect(x,         y,         w, t, color);
+    AddRect(x,         y + h - t, w, t, color);
+    AddRect(x,         y,         t, h, color);
+    AddRect(x + w - t, y,         t, h, color);
+}
+
+void UIManager::AddTexturedRect(float x, float y, float w, float h,
+                                 Color tint, TextureHandle texHandle)
+{
+    if (texHandle == kInvalidTextureHandle) return;
+    const auto it = _textureRegistry.find(texHandle);
+    if (it == _textureRegistry.end()) return;
+    PushQuad(x, y, w, h, tint, Vec2(0,0), Vec2(1,1), 1, it->second);
+}
+
+void UIManager::AddText(const std::wstring& text,
+                         float x, float y, float w, float h,
+                         Color color, int fontSize, const std::wstring& fontName)
+{
+    if (text.empty()) return;
+    uint32 tw = static_cast<uint32>(w);
+    uint32 th = static_cast<uint32>(h);
+    if (!tw || !th) return;
+
+    auto srv = BuildTextSRV(text, tw, th, color, fontSize, fontName);
+    if (srv)
+        PushQuad(x, y, w, h, Color(1,1,1,1), Vec2(0,0), Vec2(1,1), 1, srv);
+}
+
 ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     const std::wstring& text, uint32 tw, uint32 th,
     Color color, int fontSize, const std::wstring& fontName)
 {
-    BITMAPINFO bmi    = {};
+    BITMAPINFO bmi = {};
     bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth       =  static_cast<LONG>(tw);
-    bmi.bmiHeader.biHeight      = -static_cast<LONG>(th);   // top-down
+    bmi.bmiHeader.biWidth       = static_cast<LONG>(tw);
+    bmi.bmiHeader.biHeight      = -static_cast<LONG>(th);
     bmi.bmiHeader.biPlanes      = 1;
     bmi.bmiHeader.biBitCount    = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    void* pBits = nullptr;
-    HBITMAP hBmp = CreateDIBSection(nullptr, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
-    if (!hBmp) return nullptr;
+    void*   pBits = nullptr;
+    HDC     hdc   = ::CreateCompatibleDC(nullptr);
+    HBITMAP hBmp  = ::CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
+    if (!hBmp) { ::DeleteDC(hdc); return nullptr; }
+    ::SelectObject(hdc, hBmp);
 
-    HDC hdc = CreateCompatibleDC(nullptr);
-    HBITMAP hOld = (HBITMAP)SelectObject(hdc, hBmp);
+    RECT rc = { 0, 0, (LONG)tw, (LONG)th };
+    HBRUSH hBr = ::CreateSolidBrush(RGB(0, 0, 0));
+    ::FillRect(hdc, &rc, hBr);
+    ::DeleteObject(hBr);
 
-    LOGFONTW lf      = {};
-    lf.lfHeight      = -fontSize;
-    lf.lfWeight      = FW_NORMAL;
-    lf.lfCharSet     = DEFAULT_CHARSET;
-    lf.lfQuality     = CLEARTYPE_QUALITY;
-    wcscpy_s(lf.lfFaceName, fontName.c_str());
-    HFONT hFont = CreateFontIndirectW(&lf);
-    HFONT hOldF = (HFONT)SelectObject(hdc, hFont);
+    COLORREF cr = RGB(
+        static_cast<BYTE>(color.R() * 255.f),
+        static_cast<BYTE>(color.G() * 255.f),
+        static_cast<BYTE>(color.B() * 255.f));
+    HFONT hFont = ::CreateFontW(fontSize, 0, 0, 0, FW_BOLD,
+        FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+        DEFAULT_PITCH | FF_SWISS, fontName.c_str());
+    HFONT hOld = (HFONT)::SelectObject(hdc, hFont);
+    ::SetBkMode(hdc, TRANSPARENT);
+    ::SetTextColor(hdc, cr);
+    ::DrawTextW(hdc, text.c_str(), -1, &rc,
+        DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOCLIP);
+    ::SelectObject(hdc, hOld);
+    ::DeleteObject(hFont);
 
-    SetBkMode(hdc, TRANSPARENT);
-    SetTextColor(hdc, RGB(255, 255, 255));
-    RECT rc = { 0, 0, static_cast<LONG>(tw), static_cast<LONG>(th) };
-    DrawTextW(hdc, text.c_str(), -1, &rc, DT_LEFT | DT_TOP | DT_SINGLELINE);
-
-    uint8_t* src = reinterpret_cast<uint8_t*>(pBits);
-    for (uint32 i = 0; i < tw * th; ++i)
+    std::vector<uint8_t> rgba(tw * th * 4);
+    uint8_t* src = static_cast<uint8_t*>(pBits);
+    for (uint32 i = 0; i < tw * th; i++)
     {
-        const uint8_t b = src[i * 4 + 0];
-        const uint8_t g = src[i * 4 + 1];
-        const uint8_t r = src[i * 4 + 2];
-        const uint8_t a = static_cast<uint8_t>((r + g + b) / 3);
-        src[i * 4 + 0] = static_cast<uint8_t>(r * color.x);
-        src[i * 4 + 1] = static_cast<uint8_t>(g * color.y);
-        src[i * 4 + 2] = static_cast<uint8_t>(b * color.z);
-        src[i * 4 + 3] = a;
+        uint8_t b = src[i*4+0], g = src[i*4+1], r = src[i*4+2];
+        uint8_t a = static_cast<uint8_t>((static_cast<uint32>(r) + g + b) / 3);
+        rgba[i*4+0] = r;
+        rgba[i*4+1] = g;
+        rgba[i*4+2] = b;
+        rgba[i*4+3] = a;
     }
-
-    SelectObject(hdc, hOldF);
-    DeleteObject(hFont);
-    SelectObject(hdc, hOld);
-    DeleteDC(hdc);
+    ::DeleteObject(hBmp);
+    ::DeleteDC(hdc);
 
     D3D11_TEXTURE2D_DESC td = {};
     td.Width            = tw;
@@ -387,25 +369,21 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     td.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
 
     D3D11_SUBRESOURCE_DATA sd = {};
-    sd.pSysMem     = pBits;
+    sd.pSysMem     = rgba.data();
     sd.SysMemPitch = tw * 4;
 
     ComPtr<ID3D11Texture2D> tex;
     if (FAILED(GET_SINGLE(Graphics)->GetDevice()->CreateTexture2D(&td, &sd, tex.GetAddressOf())))
-    {
-        ::DeleteObject(hBmp);
         return nullptr;
-    }
-    ::DeleteObject(hBmp);
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
-    srvd.Format                    = DXGI_FORMAT_R8G8B8A8_UNORM;
-    srvd.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvd.Texture2D.MipLevels       = 1;
+    srvd.Format              = DXGI_FORMAT_R8G8B8A8_UNORM;
+    srvd.ViewDimension       = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvd.Texture2D.MipLevels = 1;
 
     ComPtr<ID3D11ShaderResourceView> srv;
     if (FAILED(GET_SINGLE(Graphics)->GetDevice()->CreateShaderResourceView(
-            tex.Get(), &srvd, srv.GetAddressOf())))
+        tex.Get(), &srvd, srv.GetAddressOf())))
         return nullptr;
 
     return srv;

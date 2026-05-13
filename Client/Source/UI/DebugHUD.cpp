@@ -21,35 +21,28 @@ void DebugHUD::Update()
 
 void DebugHUD::RebuildLines()
 {
-    const auto&  rs  = GET_SINGLE(InstancingManager)->GetStats();
-    const auto&  cs  = _pCamera ? _pCamera->GetCullStats() : Camera::CullStats{};
+    const auto& rs = GET_SINGLE(InstancingManager)->GetStats();
+    const auto& cs = _pCamera ? _pCamera->GetCullStats() : Camera::CullStats{};
     const uint32 fps = GET_SINGLE(TimeManager)->GetFps();
 
-    const float cullPct =
-        cs.totalEntities > 0
-        ? cs.culledEntities * 100.f / cs.totalEntities
-        : 0.f;
+    const float cullPct = cs.totalEntities > 0 ? cs.culledEntities * 100.f / cs.totalEntities : 0.f;
+    const float instEff = (rs.totalInstances > 0 && rs.modelDrawCalls > 0) ? (1.f - static_cast<float>(rs.modelDrawCalls) / rs.totalInstances) * 100.f : 0.f;
 
-    const float instEff =
-        (rs.totalInstances > 0 && rs.modelDrawCalls > 0)
-        ? (1.f - static_cast<float>(rs.modelDrawCalls) / rs.totalInstances) * 100.f
-        : 0.f;
-
-    const std::wstring newTexts[kLineCount] =
-    {
+    const std::wstring newTexts[kLineCount] = {
         L"[ RENDER STATS ]",
-        L"FPS: "       + std::to_wstring(fps)
-            + L"   DrawCall: "  + std::to_wstring(rs.totalDrawCalls),
-        L"Visible: "   + std::to_wstring(cs.visibleEntities)
-            + L"  / Total: "    + std::to_wstring(cs.totalEntities),
-        L"Culled: "    + std::to_wstring(cs.culledEntities)
-            + L"  ("   + std::to_wstring(static_cast<int>(cullPct)) + L"%)",
-        L"Instances: " + std::to_wstring(rs.totalInstances)
+        std::wstring(L"FPS: ") + std::to_wstring(fps)
+            + L"   DrawCall: " + std::to_wstring(rs.totalDrawCalls),
+        std::wstring(L"Visible: ") + std::to_wstring(cs.visibleEntities)
+            + L"  / Total: " + std::to_wstring(cs.totalEntities),
+        std::wstring(L"Culled: ") + std::to_wstring(cs.culledEntities)
+            + L"  (" + std::to_wstring(static_cast<int>(cullPct)) + L"%)",
+        std::wstring(L"Instances: ") + std::to_wstring(rs.totalInstances)
             + L"  Eff: " + std::to_wstring(static_cast<int>(instEff)) + L"%",
     };
 
-    for (int i = 0; i < kLineCount; ++i)
+    for (int i = 0; i < kLineCount; i++)
     {
+        if (_lines[i].text == newTexts[i]) continue;
         _lines[i].text = newTexts[i];
     }
 }
@@ -62,12 +55,11 @@ void DebugHUD::Render()
 
     const float panelH = kPadY * 2 + kLineCount * kLineH;
 
-    auto* ui = GET_SINGLE(UIManager);
+    GET_SINGLE(UIManager)->AddRect(
+        kPanelX, kPanelY, kPanelW, panelH,
+        Color(0.f, 0.f, 0.f, 0.65f));
 
-    ui->AddRect(kPanelX, kPanelY, kPanelW, panelH,
-                Color(0.f, 0.f, 0.f, 0.65f));
-
-    for (int i = 0; i < kLineCount; ++i)
+    for (int i = 0; i < kLineCount; i++)
     {
         const float tx = kPanelX + kPadX;
         const float ty = kPanelY + kPadY + i * kLineH;
@@ -76,8 +68,8 @@ void DebugHUD::Render()
             ? Color(1.f, 0.95f, 0.3f, 1.f)
             : Color(1.f, 1.f,   1.f, 1.f);
 
-        ui->AddText(_lines[i].text, tx, ty,
-                    kPanelW - kPadX * 2, kLineH,
-                    col, kFontSize);
+        GET_SINGLE(UIManager)->AddText(
+            _lines[i].text, tx, ty, kPanelW - kPadX * 2, kLineH,
+            col, kFontSize);
     }
 }

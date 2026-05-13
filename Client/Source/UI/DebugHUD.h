@@ -1,9 +1,4 @@
-﻿// ============================================================================
-//  DebugHUD.h
-//
-//  [C-1 개선] CachedLine 구조체에서 ComPtr<ID3D11ShaderResourceView> 제거.
-//
-#pragma once
+﻿#pragma once
 
 class Camera;
 
@@ -24,17 +19,16 @@ private:
     {
         std::wstring text;
     };
-
     std::vector<CachedLine> _lines;
 
     void RebuildLines();
 
-    static constexpr float kPanelX   = 10.f;
-    static constexpr float kPanelY   = 10.f;
-    static constexpr float kPanelW   = 310.f;
-    static constexpr float kLineH    = 22.f;
-    static constexpr float kPadX     = 10.f;
-    static constexpr float kPadY     = 8.f;
-    static constexpr int   kFontSize = 15;
-    static constexpr int   kLineCount = 5;
+    static constexpr float kPanelX      = 10.f;
+    static constexpr float kPanelY      = 10.f;
+    static constexpr float kPanelW      = 310.f;
+    static constexpr float kLineH       = 22.f;
+    static constexpr float kPadX        = 10.f;
+    static constexpr float kPadY        = 8.f;
+    static constexpr int   kFontSize    = 15;
+    static constexpr int   kLineCount   = 5;
 };
