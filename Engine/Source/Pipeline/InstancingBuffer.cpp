@@ -1,5 +1,6 @@
 ﻿#include "Framework.h"
 #include "InstancingBuffer.h"
+#include "DynamicInstancePool.h"
 #include "Graphics/Graphics.h"
 
 InstancingBuffer::InstancingBuffer(bool isDynamic)
@@ -11,40 +12,37 @@ InstancingBuffer::InstancingBuffer(bool isDynamic)
 void InstancingBuffer::CreateBuffers(uint32 maxCount)
 {
     _maxCount = maxCount;
-
     _data.clear();
     _data.reserve(maxCount);
+
+    // 동적 버퍼는 DynamicInstancePool 의 공유 버퍼를 사용하므로
+    // 자체 D3D11 버퍼를 할당하지 않는다.
+    if (_isDynamic)
+    {
+        _frameIndex = 0;
+        _currentSlot = 0;
+        _poolElementOffset = 0;
+        _dirty = true;
+        _uploaded = false;
+        return;
+    }
 
     auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
 
     D3D11_BUFFER_DESC desc = {};
     desc.ByteWidth = sizeof(InstancingData) * maxCount;
     desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.CPUAccessFlags = 0;
 
-    if (_isDynamic)
-    {
-        desc.Usage          = D3D11_USAGE_DYNAMIC;
-        desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    _ringBuffers[0].Reset();
+    CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
 
-        for (uint32 i = 0; i < kRingCount; ++i)
-        {
-            _ringBuffers[i].Reset();
-            CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf()));
-        }
-    }
-    else
-    {
-        desc.Usage          = D3D11_USAGE_DEFAULT;
-        desc.CPUAccessFlags = 0;
-
-        _ringBuffers[0].Reset();
-        CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
-    }
-
-    _frameIndex  = 0;
+    _frameIndex = 0;
     _currentSlot = 0;
-    _dirty       = true;
-    _uploaded    = false;
+    _poolElementOffset = 0;
+    _dirty = true;
+    _uploaded = false;
 }
 
 void InstancingBuffer::PromoteToDynamic()
@@ -52,25 +50,14 @@ void InstancingBuffer::PromoteToDynamic()
     if (_isDynamic) return;
 
     _isDynamic = true;
-
-    auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
-
-    D3D11_BUFFER_DESC desc = {};
-    desc.ByteWidth      = sizeof(InstancingData) * _maxCount;
-    desc.BindFlags      = D3D11_BIND_VERTEX_BUFFER;
-    desc.Usage          = D3D11_USAGE_DYNAMIC;
-    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
     for (uint32 i = 0; i < kRingCount; ++i)
-    {
         _ringBuffers[i].Reset();
-        CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf()));
-    }
 
-    _frameIndex  = 0;
+    _frameIndex = 0;
     _currentSlot = 0;
-    _dirty       = true;
-    _uploaded    = false;
+    _poolElementOffset = 0;
+    _dirty = true;
+    _uploaded = false;
 
     if (!_data.empty())
         UploadData();
@@ -79,7 +66,7 @@ void InstancingBuffer::PromoteToDynamic()
 void InstancingBuffer::ClearData()
 {
     _data.clear();
-    _dirty    = true;
+    _dirty = true;
     _uploaded = false;
 }
 
@@ -92,9 +79,24 @@ void InstancingBuffer::AddData(const InstancingData& data)
 void InstancingBuffer::UploadData()
 {
     const uint32 count = GetCount();
-    if (count == 0) return;
-    if (!_dirty)   return;
+    if (count == 0 || !_dirty) return;
 
+    if (_isDynamic)
+    {
+        // [H-1 핵심]
+        // 동적 그룹은 DynamicInstancePool 에 위임한다.
+        //   첫 번째 그룹 → Pool 내부에서 MAP_WRITE_DISCARD  (1회)
+        //   이후 그룹들  → Pool 내부에서 MAP_WRITE_NO_OVERWRITE (N-1회)
+        // Map 비용이 그룹 수에 비례하지 않고 상수(1)에 수렴한다.
+        _poolElementOffset =
+            GET_SINGLE(DynamicInstancePool)->Append(_data.data(), count);
+
+        _dirty = false;
+        _uploaded = true;
+        return;
+    }
+
+    // 정적 버퍼 — 원본 로직 유지 (UpdateSubresource)
     if (count > _maxCount)
     {
         std::vector<InstancingData> saved = std::move(_data);
@@ -107,69 +109,40 @@ void InstancingBuffer::UploadData()
         D3D11_BUFFER_DESC desc = {};
         desc.ByteWidth = sizeof(InstancingData) * newCount;
         desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.CPUAccessFlags = 0;
 
-        if (_isDynamic)
-        {
-            desc.Usage          = D3D11_USAGE_DYNAMIC;
-            desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-            for (uint32 i = 0; i < kRingCount; ++i)
-            {
-                _ringBuffers[i].Reset();
-                CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[i].GetAddressOf()));
-            }
-        }
-        else
-        {
-            desc.Usage          = D3D11_USAGE_DEFAULT;
-            desc.CPUAccessFlags = 0;
-            _ringBuffers[0].Reset();
-            CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
-        }
+        _ringBuffers[0].Reset();
+        CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
 
         _data = std::move(saved);
         _data.reserve(newCount);
-        _frameIndex  = 0;
         _currentSlot = 0;
     }
 
     auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
+    ctx->UpdateSubresource(
+        _ringBuffers[0].Get(),
+        0, nullptr,
+        _data.data(),
+        sizeof(InstancingData) * count,
+        0);
 
-    if (_isDynamic)
-    {
-        _currentSlot = _frameIndex % kRingCount;
-        ++_frameIndex;
-
-        D3D11_MAPPED_SUBRESOURCE mapped = {};
-        CHECK(ctx->Map(
-            _ringBuffers[_currentSlot].Get(),
-            0,
-            D3D11_MAP_WRITE_DISCARD,
-            0,
-            &mapped));
-
-        ::memcpy(mapped.pData, _data.data(), sizeof(InstancingData) * count);
-
-        ctx->Unmap(_ringBuffers[_currentSlot].Get(), 0);
-    }
-    else
-    {
-        _currentSlot = 0;
-        ctx->UpdateSubresource(
-            _ringBuffers[0].Get(),
-            0,
-            nullptr,
-            _data.data(),
-            sizeof(InstancingData) * count,
-            0);
-    }
-
-    _dirty    = false;
+    _currentSlot = 0;
+    _dirty = false;
     _uploaded = true;
 }
 
 void InstancingBuffer::BindBuffer() const
 {
     if (!_uploaded || GetCount() == 0) return;
+
+    if (_isDynamic)
+    {
+        // DynamicInstancePool 이 현재 슬롯의 공유 버퍼를 element offset 기준으로 바인딩.
+        GET_SINGLE(DynamicInstancePool)->BindSlice(_poolElementOffset);
+        return;
+    }
 
     auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
 

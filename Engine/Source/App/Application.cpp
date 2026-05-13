@@ -14,6 +14,7 @@
 #include "Managers/WindowManager.h"
 #include "Scene/SceneManager.h"
 #include "ToolWindow.h"
+#include "Pipeline/DynamicInstancePool.h"
 #include "UI/UIManager.h"
 
 bool Application::Initialize(const ApplicationDesc& desc)
@@ -41,6 +42,7 @@ bool Application::Initialize(const ApplicationDesc& desc)
         GET_SINGLE(InputManager)->AddAllowedWindow(item->GetHWnd());
 
     GET_SINGLE(UIManager)->Init(GET_SINGLE(DisplayContext)->GetWidthF(), GET_SINGLE(DisplayContext)->GetHeightF());
+    GET_SINGLE(DynamicInstancePool)->Init();
 
     GET_SINGLE(AudioDataTable)->Load(L"../Resources/Data/AudioData.xml");
     GET_SINGLE(AudioManager)->Init(L"../Resources/Audio/");

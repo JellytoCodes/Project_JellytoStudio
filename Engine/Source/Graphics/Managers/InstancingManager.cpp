@@ -7,6 +7,7 @@
 #include "Graphics/Model/ModelRenderer.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Pipeline/Shader.h"
+#include "Pipeline/DynamicInstancePool.h"
 #include "Scene/ChunkManager.h"
 
 InstanceID InstancingManager::GetMeshInstanceID(Entity* entity) const
@@ -52,12 +53,12 @@ void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
 
     for (auto& [id, newVec] : newMeshCache)
     {
-        const auto   oldIt   = _meshCache.find(id);
+        const auto   oldIt = _meshCache.find(id);
         const uint32 oldSize = (oldIt != _meshCache.end())
-                             ? static_cast<uint32>(oldIt->second.size()) : 0u;
+            ? static_cast<uint32>(oldIt->second.size()) : 0u;
         const uint32 newSize = static_cast<uint32>(newVec.size());
 
-        const bool sizeChanged    = (oldSize != newSize);
+        const bool sizeChanged = (oldSize != newSize);
         const bool transformDirty = (_partialDirtyMesh.count(id) > 0);
 
         if (!sizeChanged && !transformDirty)
@@ -78,11 +79,11 @@ void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
             if (mr && tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
             {
                 InstancingData data;
-                data.world         = packet.matWorld;
+                data.world = packet.matWorld;
                 data.materialIndex = packet.materialIndex;
-                data._instPad[0]   = 0u;
-                data._instPad[1]   = 0u;
-                data._instPad[2]   = 0u;
+                data._instPad[0] = 0u;
+                data._instPad[1] = 0u;
+                data._instPad[2] = 0u;
                 worldVec.push_back(data);
             }
         }
@@ -116,8 +117,13 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
 {
     if (entities.empty()) return;
 
+    // [H-1] 프레임 시작 시 동적 풀의 슬롯을 선택.
+    // 이후 동적 그룹의 첫 번째 Append 가 DISCARD,
+    // 두 번째 이후 Append 가 NO_OVERWRITE 로 처리된다.
+    GET_SINGLE(DynamicInstancePool)->BeginFrame();
+
     const bool fullModelRebuild = _bDirty;
-    const bool fullMeshRebuild  = _meshDirty;
+    const bool fullMeshRebuild = _meshDirty;
 
     if (fullModelRebuild)
     {
@@ -156,11 +162,11 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             if (tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
             {
                 InstancingData data;
-                data.world         = packet.matWorld;
+                data.world = packet.matWorld;
                 data.materialIndex = packet.materialIndex;
-                data._instPad[0]   = 0u;
-                data._instPad[1]   = 0u;
-                data._instPad[2]   = 0u;
+                data._instPad[0] = 0u;
+                data._instPad[1] = 0u;
+                data._instPad[2] = 0u;
                 _meshWorldCache[id].push_back(data);
             }
         }
@@ -170,12 +176,12 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             {
                 const InstanceID id = modelR->GetInstanceID();
                 InstancingData data;
-                data.world         = modelR->GetModelScaleMatrix()
-                                   * entity->GetComponent<Transform>()->GetWorldMatrix();
+                data.world = modelR->GetModelScaleMatrix()
+                    * entity->GetComponent<Transform>()->GetWorldMatrix();
                 data.materialIndex = 0u;
-                data._instPad[0]   = 0u;
-                data._instPad[1]   = 0u;
-                data._instPad[2]   = 0u;
+                data._instPad[0] = 0u;
+                data._instPad[1] = 0u;
+                data._instPad[2] = 0u;
                 _modelCache[id].push_back(entity);
                 _modelWorldCache[id].push_back(data);
             }
@@ -199,7 +205,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 buf.AddData(d);
             buf.UploadData();
         }
-        _meshDirty    = false;
+        _meshDirty = false;
         _meshGroupDirty = false;
         _partialDirtyMesh.clear();
     }
@@ -226,11 +232,11 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 if (mr && tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
                 {
                     InstancingData data;
-                    data.world         = packet.matWorld;
+                    data.world = packet.matWorld;
                     data.materialIndex = packet.materialIndex;
-                    data._instPad[0]   = 0u;
-                    data._instPad[1]   = 0u;
-                    data._instPad[2]   = 0u;
+                    data._instPad[0] = 0u;
+                    data._instPad[1] = 0u;
+                    data._instPad[2] = 0u;
                     worldVec.push_back(data);
                 }
             }
@@ -275,12 +281,12 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
                 if (auto* modelR = entity->GetComponent<ModelRenderer>())
                 {
                     InstancingData data;
-                    data.world         = modelR->GetModelScaleMatrix()
-                                       * entity->GetComponent<Transform>()->GetWorldMatrix();
+                    data.world = modelR->GetModelScaleMatrix()
+                        * entity->GetComponent<Transform>()->GetWorldMatrix();
                     data.materialIndex = 0u;
-                    data._instPad[0]   = 0u;
-                    data._instPad[1]   = 0u;
-                    data._instPad[2]   = 0u;
+                    data._instPad[0] = 0u;
+                    data._instPad[1] = 0u;
+                    data._instPad[2] = 0u;
                     worldVec.push_back(data);
                 }
             }
@@ -302,6 +308,8 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
     RenderAnimRenderer();
 
     _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
+
+    GET_SINGLE(DynamicInstancePool)->EndFrame();
 
     PruneEmptyGroups();
 }
@@ -388,15 +396,15 @@ void InstancingManager::RenderAnimRenderer()
         for (int32 i = 0; i < static_cast<int32>(entityVec.size()); i++)
         {
             Entity* entity = entityVec[i];
-            auto*   anim   = entity->GetComponent<ModelAnimator>();
-            auto*   tr     = entity->GetComponent<Transform>();
+            auto* anim = entity->GetComponent<ModelAnimator>();
+            auto* tr = entity->GetComponent<Transform>();
 
             InstancingData data;
-            data.world         = tr->GetWorldMatrix();
+            data.world = tr->GetWorldMatrix();
             data.materialIndex = 0u;
-            data._instPad[0]   = 0u;
-            data._instPad[1]   = 0u;
-            data._instPad[2]   = 0u;
+            data._instPad[0] = 0u;
+            data._instPad[1] = 0u;
+            data._instPad[2] = 0u;
 
             AddData(id, data, true);
 
@@ -422,12 +430,12 @@ void InstancingManager::AddData(InstanceID instanceID, const InstancingData& dat
 
 void InstancingManager::DumpInstancingStats() const
 {
-    ::OutputDebugStringW(L"\n========== [InstancingManager Stats — C-1/C-2 Fix] ==========\n");
+    ::OutputDebugStringW(L"\n========== [InstancingManager Stats] ==========\n");
 
     wchar_t buf[1024];
 
     size_t totalMesh = 0;
-    for (const auto& [id, v] : _meshCache)  totalMesh  += v.size();
+    for (const auto& [id, v] : _meshCache)  totalMesh += v.size();
     size_t totalModel = 0;
     for (const auto& [id, v] : _modelCache) totalModel += v.size();
 
@@ -436,18 +444,20 @@ void InstancingManager::DumpInstancingStats() const
         if (bufPtr) { if (bufPtr->IsDynamic()) ++dynamicCount; else ++staticCount; }
 
     swprintf_s(buf,
-        L"[C-1 Ring Buffer]  Dynamic(MAP_WRITE_DISCARD): %u  Static(UpdateSubresource): %u\n"
-        L"[C-2 SmartRebuild] 재업로드 그룹: %u  생략 그룹: %u\n"
-        L"  → 생략률 %.1f%% (카메라 이동 시 불필요한 GPU 업로드 차단)\n"
+        L"[H-1 Pool]  Dynamic(DISCARD x1 + NO_OVERWRITE x%u): groups=%u\n"
+        L"[H-1 Pool]  Static(UpdateSubresource): groups=%u\n"
+        L"[SmartRebuild] rebuilt=%u  skipped=%u  skipRate=%.1f%%\n"
         L"[DrawCall]  Mesh=%zu  Model=%zu  Total=%zu\n"
-        L"[Instance]  Mesh=%zu entity → %zu DC (%.1f%% 절감)\n"
-        L"            Model=%zu entity → %zu DC\n"
-        L"=============================================================\n",
-        dynamicCount, staticCount,
+        L"[Instance]  Mesh=%zu entities -> %zu DC (%.1f%% saved)\n"
+        L"            Model=%zu entities -> %zu DC\n"
+        L"================================================\n",
+        dynamicCount > 0 ? dynamicCount - 1 : 0,
+        dynamicCount,
+        staticCount,
         _stats.meshGroupsRebuilt, _stats.meshGroupsSkipped,
         (_stats.meshGroupsRebuilt + _stats.meshGroupsSkipped > 0
             ? static_cast<double>(_stats.meshGroupsSkipped)
-              / (_stats.meshGroupsRebuilt + _stats.meshGroupsSkipped) * 100.0
+            / (_stats.meshGroupsRebuilt + _stats.meshGroupsSkipped) * 100.0
             : 0.0),
         _meshCache.size(), _modelCache.size(), _meshCache.size() + _modelCache.size(),
         totalMesh, _meshCache.size(),

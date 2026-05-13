@@ -183,6 +183,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Graphics\Model\ModelRenderer.cpp" />
     <ClCompile Include="Source\Graphics\RenderPacket.cpp" />
     <ClCompile Include="Source\Graphics\ShadowPass.cpp" />
+    <ClCompile Include="Source\Pipeline\DynamicInstancePool.cpp" />
     <ClCompile Include="Source\Pipeline\ShaderPass.cpp" />
     <ClCompile Include="Source\Pipeline\ShaderTechnique.cpp" />
     <ClCompile Include="Source\Pipeline\Managers\SharedCBufferManager.cpp" />
@@ -266,6 +267,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Graphics\Model\ModelRenderer.h" />
     <ClInclude Include="Source\Graphics\RenderPacket.h" />
     <ClInclude Include="Source\Graphics\ShadowPass.h" />
+    <ClInclude Include="Source\Pipeline\DynamicInstancePool.h" />
     <ClInclude Include="Source\Pipeline\ShaderPass.h" />
     <ClInclude Include="Source\Pipeline\ShaderTechnique.h" />
     <ClInclude Include="Source\Pipeline\Managers\SharedCBufferManager.h" />
