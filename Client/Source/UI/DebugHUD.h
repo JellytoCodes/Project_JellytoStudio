@@ -23,12 +23,12 @@ private:
 
     void RebuildLines();
 
-    static constexpr float kPanelX      = 10.f;
-    static constexpr float kPanelY      = 10.f;
-    static constexpr float kPanelW      = 310.f;
-    static constexpr float kLineH       = 22.f;
-    static constexpr float kPadX        = 10.f;
-    static constexpr float kPadY        = 8.f;
-    static constexpr int   kFontSize    = 15;
-    static constexpr int   kLineCount   = 5;
+    static constexpr float kPanelX = 10.f;
+    static constexpr float kPanelY = 10.f;
+    static constexpr float kPanelW = 370.f;
+    static constexpr float kLineH = 22.f;
+    static constexpr float kPadX = 10.f;
+    static constexpr float kPadY = 8.f;
+    static constexpr int   kFontSize = 15;
+    static constexpr int   kLineCount = 6;
 };
