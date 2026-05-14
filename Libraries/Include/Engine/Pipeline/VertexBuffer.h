@@ -1,4 +1,5 @@
 #pragma once
+#include "Graphics/Graphics.h"
 
 class VertexBuffer
 {
@@ -6,19 +7,19 @@ public:
 	VertexBuffer() = default;
 	~VertexBuffer() = default;
 
-	ComPtr<ID3D11Buffer> GetComPtr()	{ return _vertexBuffer; }
+	ComPtr<ID3D11Buffer> GetComPtr() { return _vertexBuffer; }
 
-	uint32 GetStride() const			{ return _stride; }
-	uint32 GetOffset() const			{ return _offset; }
-	uint32 GetCount() const				{ return _count; }
-	uint32 GetSlot() const				{ return _slot; }
+	uint32 GetStride() const { return _stride; }
+	uint32 GetOffset() const { return _offset; }
+	uint32 GetCount() const { return _count; }
+	uint32 GetSlot() const { return _slot; }
 
 	template<typename T>
 	void Create(const ComPtr<ID3D11Device>& device, const std::vector<T>& vertices, uint32 slot = 0, bool cpuWrite = false, bool gpuWrite = false);
 
 	void PushData(const ComPtr<ID3D11DeviceContext>& deviceContext)
 	{
-		deviceContext->IASetVertexBuffers(_slot, 1, _vertexBuffer.GetAddressOf(), &_stride, &_offset);
+		GET_SINGLE(Graphics)->SetVertexBuffer(_slot, _vertexBuffer.Get(), _stride, _offset);
 	}
 
 private:
@@ -27,10 +28,9 @@ private:
 	uint32 _stride = 0;
 	uint32 _offset = 0;
 	uint32 _count = 0;
-
 	uint32 _slot = 0;
-	bool _cpuWrite = false;
-	bool _gpuWrite = false;
+	bool   _cpuWrite = false;
+	bool   _gpuWrite = false;
 };
 
 template <typename T>
@@ -38,7 +38,6 @@ void VertexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<
 {
 	_stride = sizeof(T);
 	_count = static_cast<uint32>(vertices.size());
-
 	_slot = slot;
 	_cpuWrite = cpuWrite;
 	_gpuWrite = gpuWrite;
@@ -72,4 +71,3 @@ void VertexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<
 	HRESULT hr = device->CreateBuffer(&desc, &data, _vertexBuffer.GetAddressOf());
 	CHECK(hr);
 }
-

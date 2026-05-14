@@ -3,9 +3,9 @@
 
 void Graphics::Initialize(HWND hwnd, UINT width, UINT height)
 {
-    _hwnd          = hwnd;
-    _windowSize.x  = static_cast<float>(width);
-    _windowSize.y  = static_cast<float>(height);
+    _hwnd = hwnd;
+    _windowSize.x = static_cast<float>(width);
+    _windowSize.y = static_cast<float>(height);
 
     SetViewport(_windowSize.x, _windowSize.y);
     CreateDeviceAndSwapChain();
@@ -55,22 +55,21 @@ void Graphics::RenderEnd()
 void Graphics::CreateDeviceAndSwapChain()
 {
     DXGI_SWAP_CHAIN_DESC desc = {};
-    desc.BufferDesc.Width                   = static_cast<UINT>(_windowSize.x);
-    desc.BufferDesc.Height                  = static_cast<UINT>(_windowSize.y);
-    desc.BufferDesc.RefreshRate.Numerator   = 60;
+    desc.BufferDesc.Width = static_cast<UINT>(_windowSize.x);
+    desc.BufferDesc.Height = static_cast<UINT>(_windowSize.y);
+    desc.BufferDesc.RefreshRate.Numerator = 60;
     desc.BufferDesc.RefreshRate.Denominator = 1;
-    desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
-    desc.BufferDesc.ScanlineOrdering        = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-    desc.BufferDesc.Scaling                 = DXGI_MODE_SCALING_UNSPECIFIED;
-    desc.SampleDesc.Count                   = 1;
-    desc.SampleDesc.Quality                 = 0;
-    desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    desc.BufferCount                        = 1;
-    desc.OutputWindow                       = _hwnd;
-    desc.Windowed                           = TRUE;
-    desc.SwapEffect                         = DXGI_SWAP_EFFECT_DISCARD;
+    desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+    desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    desc.BufferCount = 1;
+    desc.OutputWindow = _hwnd;
+    desc.Windowed = TRUE;
+    desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-    
     CHECK(::D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
@@ -97,20 +96,20 @@ void Graphics::CreateDepthStencilView()
 {
     {
         D3D11_TEXTURE2D_DESC desc = {};
-        desc.Width            = static_cast<UINT>(_windowSize.x);
-        desc.Height           = static_cast<UINT>(_windowSize.y);
-        desc.MipLevels        = 1;
-        desc.ArraySize        = 1;
-        desc.Format           = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        desc.Width = static_cast<UINT>(_windowSize.x);
+        desc.Height = static_cast<UINT>(_windowSize.y);
+        desc.MipLevels = 1;
+        desc.ArraySize = 1;
+        desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
         desc.SampleDesc.Count = 1;
-        desc.Usage            = D3D11_USAGE_DEFAULT;
-        desc.BindFlags        = D3D11_BIND_DEPTH_STENCIL;
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
         CHECK(_device->CreateTexture2D(&desc, nullptr, _depthStencilTexture.GetAddressOf()));
     }
     {
         D3D11_DEPTH_STENCIL_VIEW_DESC desc = {};
-        desc.Format             = DXGI_FORMAT_D24_UNORM_S8_UINT;
-        desc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+        desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
         desc.Texture2D.MipSlice = 0;
         CHECK(_device->CreateDepthStencilView(_depthStencilTexture.Get(), &desc, _depthStencilView.GetAddressOf()));
     }
@@ -123,9 +122,11 @@ void Graphics::SetViewport(float width, float height, float x, float y, float mi
 
 void Graphics::InvalidateStateCache()
 {
-    _stateCache.rsValid    = false;
-    _stateCache.dssValid   = false;
+    _stateCache.rsValid = false;
+    _stateCache.dssValid = false;
     _stateCache.blendValid = false;
+    _stateCache.vb0Valid = false;
+    _stateCache.ibValid = false;
 }
 
 void Graphics::SetRasterizerState(ID3D11RasterizerState* state)
@@ -139,13 +140,13 @@ void Graphics::SetRasterizerState(ID3D11RasterizerState* state)
 void Graphics::SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencilRef)
 {
     if (_stateCache.dssValid
-        && _stateCache.dssState  == state
+        && _stateCache.dssState == state
         && _stateCache.stencilRef == stencilRef) return;
 
     _deviceContext->OMSetDepthStencilState(state, stencilRef);
-    _stateCache.dssState   = state;
+    _stateCache.dssState = state;
     _stateCache.stencilRef = stencilRef;
-    _stateCache.dssValid   = true;
+    _stateCache.dssValid = true;
 }
 
 void Graphics::SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask)
@@ -165,4 +166,36 @@ void Graphics::SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, 
     _stateCache.sampleMask = sampleMask;
     _stateCache.blendValid = true;
     ::memcpy(_stateCache.blendFactor, blendFactor, sizeof(FLOAT) * 4);
+}
+
+void Graphics::SetVertexBuffer(UINT slot, ID3D11Buffer* buffer, UINT stride, UINT offset)
+{
+    if (slot == 0)
+    {
+        if (_stateCache.vb0Valid
+            && _stateCache.vb0 == buffer
+            && _stateCache.vb0Stride == stride
+            && _stateCache.vb0Offset == offset) return;
+
+        _stateCache.vb0 = buffer;
+        _stateCache.vb0Stride = stride;
+        _stateCache.vb0Offset = offset;
+        _stateCache.vb0Valid = true;
+    }
+
+    _deviceContext->IASetVertexBuffers(slot, 1, &buffer, &stride, &offset);
+}
+
+void Graphics::SetIndexBuffer(ID3D11Buffer* buffer, DXGI_FORMAT format, UINT offset)
+{
+    if (_stateCache.ibValid
+        && _stateCache.ib == buffer
+        && _stateCache.ibFormat == format
+        && _stateCache.ibOffset == offset) return;
+
+    _deviceContext->IASetIndexBuffer(buffer, format, offset);
+    _stateCache.ib = buffer;
+    _stateCache.ibFormat = format;
+    _stateCache.ibOffset = offset;
+    _stateCache.ibValid = true;
 }

@@ -11,15 +11,18 @@ public:
     void                                RenderEnd();
     void                                ResizeBuffers(UINT width, UINT height);
 
-    ComPtr<ID3D11Device>                GetDevice()         { return _device;        }
-    ComPtr<ID3D11DeviceContext>         GetDeviceContext()  { return _deviceContext; }
+    ComPtr<ID3D11Device>                GetDevice() { return _device; }
+    ComPtr<ID3D11DeviceContext>         GetDeviceContext() { return _deviceContext; }
 
     void                                SetViewport(float width, float height, float x = 0, float y = 0, float minDepth = 0, float maxDepth = 1);
-    Viewport&                           GetViewport()       { return _vp; }
+    Viewport& GetViewport() { return _vp; }
 
     void                                SetRasterizerState(ID3D11RasterizerState* state);
     void                                SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencilRef);
     void                                SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask);
+    void                                SetVertexBuffer(UINT slot, ID3D11Buffer* buffer, UINT stride, UINT offset);
+    void                                SetIndexBuffer(ID3D11Buffer* buffer, DXGI_FORMAT format, UINT offset);
+
     void                                InvalidateStateCache();
 
     Vec2                                GetWindowSize() const { return _windowSize; }
@@ -43,15 +46,25 @@ private:
 
     struct ShadowStateCache
     {
-        ID3D11RasterizerState*          rsState    = nullptr;
-        ID3D11DepthStencilState*        dssState   = nullptr;
-        UINT                            stencilRef = 0;
-        ID3D11BlendState*               blendState = nullptr;
-        FLOAT                           blendFactor[4] = { 0, 0, 0, 0 };
-        UINT                            sampleMask = 0xFFFFFFFF;
-        bool                            rsValid    = false;
-        bool                            dssValid   = false;
-        bool                            blendValid = false;
+        ID3D11RasterizerState* rsState = nullptr;
+        ID3D11DepthStencilState* dssState = nullptr;
+        UINT                     stencilRef = 0;
+        ID3D11BlendState* blendState = nullptr;
+        FLOAT                    blendFactor[4] = { 0, 0, 0, 0 };
+        UINT                     sampleMask = 0xFFFFFFFF;
+        bool                     rsValid = false;
+        bool                     dssValid = false;
+        bool                     blendValid = false;
+
+        ID3D11Buffer* vb0 = nullptr;
+        UINT                     vb0Stride = 0;
+        UINT                     vb0Offset = 0;
+        bool                     vb0Valid = false;
+
+        ID3D11Buffer* ib = nullptr;
+        DXGI_FORMAT              ibFormat = DXGI_FORMAT_UNKNOWN;
+        UINT                     ibOffset = 0;
+        bool                     ibValid = false;
     };
     ShadowStateCache                    _stateCache;
 
