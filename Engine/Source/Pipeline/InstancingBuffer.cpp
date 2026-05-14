@@ -3,30 +3,16 @@
 #include "DynamicInstancePool.h"
 #include "Graphics/Graphics.h"
 
-InstancingBuffer::InstancingBuffer(bool isDynamic)
-    : _isDynamic(isDynamic)
+uint32 InstancingBuffer::NextTier(uint32 count)
 {
-    CreateBuffers(MAX_MESH_INSTANCE);
+    if (count <= kTierSmall)  return kTierSmall;
+    if (count <= kTierMedium) return kTierMedium;
+    if (count <= kTierLarge)  return kTierLarge;
+    return kTierMax;
 }
 
-void InstancingBuffer::CreateBuffers(uint32 maxCount)
+void InstancingBuffer::AllocStaticBuffer(uint32 maxCount)
 {
-    _maxCount = maxCount;
-    _data.clear();
-    _data.reserve(maxCount);
-
-    // 동적 버퍼는 DynamicInstancePool 의 공유 버퍼를 사용하므로
-    // 자체 D3D11 버퍼를 할당하지 않는다.
-    if (_isDynamic)
-    {
-        _frameIndex = 0;
-        _currentSlot = 0;
-        _poolElementOffset = 0;
-        _dirty = true;
-        _uploaded = false;
-        return;
-    }
-
     auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
 
     D3D11_BUFFER_DESC desc = {};
@@ -38,9 +24,16 @@ void InstancingBuffer::CreateBuffers(uint32 maxCount)
     _ringBuffers[0].Reset();
     CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
 
+    _maxCount = maxCount;
+    _currentSlot = 0;
+}
+
+InstancingBuffer::InstancingBuffer(bool isDynamic)
+    : _isDynamic(isDynamic)
+{
+    _maxCount = 0;
     _frameIndex = 0;
     _currentSlot = 0;
-    _poolElementOffset = 0;
     _dirty = true;
     _uploaded = false;
 }
@@ -53,6 +46,7 @@ void InstancingBuffer::PromoteToDynamic()
     for (uint32 i = 0; i < kRingCount; ++i)
         _ringBuffers[i].Reset();
 
+    _maxCount = 0;
     _frameIndex = 0;
     _currentSlot = 0;
     _poolElementOffset = 0;
@@ -76,6 +70,15 @@ void InstancingBuffer::AddData(const InstancingData& data)
     _dirty = true;
 }
 
+void InstancingBuffer::SetData(const InstancingData* data, uint32 count)
+{
+    _data.resize(count);
+    if (count > 0)
+        ::memcpy(_data.data(), data, sizeof(InstancingData) * count);
+    _dirty = true;
+    _uploaded = false;
+}
+
 void InstancingBuffer::UploadData()
 {
     const uint32 count = GetCount();
@@ -83,41 +86,20 @@ void InstancingBuffer::UploadData()
 
     if (_isDynamic)
     {
-        // [H-1 핵심]
-        // 동적 그룹은 DynamicInstancePool 에 위임한다.
-        //   첫 번째 그룹 → Pool 내부에서 MAP_WRITE_DISCARD  (1회)
-        //   이후 그룹들  → Pool 내부에서 MAP_WRITE_NO_OVERWRITE (N-1회)
-        // Map 비용이 그룹 수에 비례하지 않고 상수(1)에 수렴한다.
         _poolElementOffset =
             GET_SINGLE(DynamicInstancePool)->Append(_data.data(), count);
-
         _dirty = false;
         _uploaded = true;
         return;
     }
 
-    // 정적 버퍼 — 원본 로직 유지 (UpdateSubresource)
-    if (count > _maxCount)
+    if (!_ringBuffers[0])
     {
-        std::vector<InstancingData> saved = std::move(_data);
-
-        const uint32 newCount = max(_maxCount * 2u, count);
-        _maxCount = newCount;
-
-        auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
-
-        D3D11_BUFFER_DESC desc = {};
-        desc.ByteWidth = sizeof(InstancingData) * newCount;
-        desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-        desc.Usage = D3D11_USAGE_DEFAULT;
-        desc.CPUAccessFlags = 0;
-
-        _ringBuffers[0].Reset();
-        CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
-
-        _data = std::move(saved);
-        _data.reserve(newCount);
-        _currentSlot = 0;
+        AllocStaticBuffer(NextTier(count));
+    }
+    else if (count > _maxCount)
+    {
+        AllocStaticBuffer(NextTier(count));
     }
 
     auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
@@ -139,7 +121,6 @@ void InstancingBuffer::BindBuffer() const
 
     if (_isDynamic)
     {
-        // DynamicInstancePool 이 현재 슬롯의 공유 버퍼를 element offset 기준으로 바인딩.
         GET_SINGLE(DynamicInstancePool)->BindSlice(_poolElementOffset);
         return;
     }
