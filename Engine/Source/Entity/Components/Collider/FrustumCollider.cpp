@@ -32,9 +32,9 @@ Matrix FrustumCollider::GetDebugWorldMatrix()
 		minPt.y = std::min(minPt.y, corners[i].y);
 		minPt.z = std::min(minPt.z, corners[i].z);
 
-		maxPt.x = max(maxPt.x, corners[i].x);
-		maxPt.y = max(maxPt.y, corners[i].y);
-		maxPt.z = max(maxPt.z, corners[i].z);
+		maxPt.x = std::max(maxPt.x, corners[i].x);
+		maxPt.y = std::max(maxPt.y, corners[i].y);
+		maxPt.z = std::max(maxPt.z, corners[i].z);
 	}
 
 	Vec3 center = (minPt + maxPt) * 0.5f;

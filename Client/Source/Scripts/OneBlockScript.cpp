@@ -160,7 +160,7 @@ void OneBlockScript::TickTween(float dt)
         const float scaleY = 1.f - ease;
         const float scaleXZ = 1.f + ease * 0.6f;
 
-        tf->SetLocalScale(Vec3(scaleXZ, max(scaleY, 0.001f), scaleXZ));
+        tf->SetLocalScale(Vec3(scaleXZ, std::max(scaleY, 0.001f), scaleXZ));
         if (col) col->InvalidateBounds();
         GET_SINGLE(InstancingManager)->SetDirty();
 

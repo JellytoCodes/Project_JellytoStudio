@@ -1,34 +1,9 @@
 ﻿#include "Framework.h"
 #include "ChunkManager.h"
+#include "Scene/PickUtils.h"
 
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Transform.h"
-
-namespace
-{
-    void UpdatePickHit(BlockPickHit& hit, Entity* entity, const Vec3& normal, float dist)
-    {
-        if (dist >= hit.dist) return;
-
-        hit.valid  = true;
-        hit.entity = entity;
-        hit.normal = normal;
-        hit.dist   = dist;
-    }
-
-    void UpdateMatchingPickHits(uint8 queryMask, AABBCollider* aabb, Entity* entity, const Vec3& normal, float dist,
-                                BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
-    {
-        if ((queryMask & static_cast<uint8>(CollisionChannel::Priming)) && aabb->CanBePickedBy(CollisionChannel::Priming))
-            UpdatePickHit(priming, entity, normal, dist);
-
-        if ((queryMask & static_cast<uint8>(CollisionChannel::Floor)) && aabb->CanBePickedBy(CollisionChannel::Floor))
-            UpdatePickHit(floor, entity, normal, dist);
-
-        if ((queryMask & static_cast<uint8>(CollisionChannel::Mushroom)) && aabb->CanBePickedBy(CollisionChannel::Mushroom))
-            UpdatePickHit(mushroom, entity, normal, dist);
-    }
-}
 
 uint64 ChunkManager::CoordKey(int32 cx, int32 cz)
 {
@@ -66,9 +41,9 @@ void ChunkManager::Chunk::RebuildAABB()
         minP.x = std::min(minP.x, c.x - x.x);
         minP.y = std::min(minP.y, c.y - x.y);
         minP.z = std::min(minP.z, c.z - x.z);
-        maxP.x = max(maxP.x, c.x + x.x);
-        maxP.y = max(maxP.y, c.y + x.y);
-        maxP.z = max(maxP.z, c.z + x.z);
+        maxP.x = std::max(maxP.x, c.x + x.x);
+        maxP.y = std::max(maxP.y, c.y + x.y);
+        maxP.z = std::max(maxP.z, c.z + x.z);
     }
 
     aabb.Center  = { (minP.x + maxP.x) * 0.5f,
@@ -193,7 +168,8 @@ bool ChunkManager::TryGetChunkKey(Entity* entity, uint64& outKey) const
     return true;
 }
 
-bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist)
+bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan,
+                              Entity*& outEntity, Vec3& outHitNormal, float& outDist)
 {
     outEntity    = nullptr;
     outDist      = FLT_MAX;
@@ -237,8 +213,7 @@ bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, Collisio
     return outEntity != nullptr;
 }
 
-bool ChunkManager::PickBlocks(const Vec3& rayOrigin, const Vec3& rayDir, uint8 queryMask,
-                              BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
+bool ChunkManager::PickBlocks(const Vec3& rayOrigin, const Vec3& rayDir, uint8 queryMask, BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
 {
     const XMVECTOR vOrigin = XMLoadFloat3(&rayOrigin);
     const XMVECTOR vDir    = XMLoadFloat3(&rayDir);

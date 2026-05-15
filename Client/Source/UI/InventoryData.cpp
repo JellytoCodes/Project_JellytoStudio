@@ -17,7 +17,7 @@ void InventoryData::AddItem(SlotType type, int32 amount)
     if (idx < 0 || idx >= kTypeCount) return;
     if (type == SlotType::Eraser)     return;
 
-    _typeCounts[idx] = max(0, _typeCounts[idx] + amount);
+    _typeCounts[idx] = std::max(0, _typeCounts[idx] + amount);
 }
 
 // ── 소비 ─────────────────────────────────────────────────────

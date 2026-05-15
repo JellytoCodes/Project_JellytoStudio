@@ -11,32 +11,7 @@
 #include "UI/UIManager.h"
 #include "Graphics/Managers/InstancingManager.h"
 #include "Scene/ChunkManager.h"
-
-namespace
-{
-    void UpdatePickHit(BlockPickHit& hit, Entity* entity, const Vec3& normal, float dist)
-    {
-        if (dist >= hit.dist) return;
-
-        hit.valid  = true;
-        hit.entity = entity;
-        hit.normal = normal;
-        hit.dist   = dist;
-    }
-
-    void UpdateMatchingPickHits(uint8 queryMask, AABBCollider* aabb, Entity* entity, const Vec3& normal, float dist,
-                                BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
-    {
-        if ((queryMask & static_cast<uint8>(CollisionChannel::Priming)) && aabb->CanBePickedBy(CollisionChannel::Priming))
-            UpdatePickHit(priming, entity, normal, dist);
-
-        if ((queryMask & static_cast<uint8>(CollisionChannel::Floor)) && aabb->CanBePickedBy(CollisionChannel::Floor))
-            UpdatePickHit(floor, entity, normal, dist);
-
-        if ((queryMask & static_cast<uint8>(CollisionChannel::Mushroom)) && aabb->CanBePickedBy(CollisionChannel::Mushroom))
-            UpdatePickHit(mushroom, entity, normal, dist);
-    }
-}
+#include "Scene/PickUtils.h"
 
 Scene::Scene()
 {
@@ -280,7 +255,8 @@ bool Scene::PickGroundPoint(int32 screenX, int32 screenY, Vec3& outWorldPos, flo
     return true;
 }
 
-bool Scene::PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist)
+bool Scene::PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan,
+                      Entity*& outEntity, Vec3& outHitNormal, float& outDist)
 {
     Vec3 rayOrigin, rayDir;
     if (!BuildPickRay(screenX, screenY, rayOrigin, rayDir)) return false;
@@ -317,8 +293,7 @@ bool Scene::PickBlock(int32 screenX, int32 screenY, CollisionChannel queryChan, 
     return outEntity != nullptr;
 }
 
-bool Scene::PickBlocks(int32 screenX, int32 screenY, uint8 queryMask,
-                       BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
+bool Scene::PickBlocks(int32 screenX, int32 screenY, uint8 queryMask, BlockPickHit& priming, BlockPickHit& floor, BlockPickHit& mushroom)
 {
     priming.Reset();
     floor.Reset();

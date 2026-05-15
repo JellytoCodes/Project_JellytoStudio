@@ -77,7 +77,7 @@ void IsometricCameraController::HandleZoom(float dt)
 	auto input = GET_SINGLE(InputManager);
 	if (input->GetButton(KEY_TYPE::Z)) _targetDistance += _zoomSpeed * dt;
 	if (input->GetButton(KEY_TYPE::C)) _targetDistance -= _zoomSpeed * dt;
-	_targetDistance = max(_minDist, std::min(_maxDist, _targetDistance));
+	_targetDistance = std::max(_minDist, std::min(_maxDist, _targetDistance));
 }
 
 void IsometricCameraController::HandleOrbit(float dt)

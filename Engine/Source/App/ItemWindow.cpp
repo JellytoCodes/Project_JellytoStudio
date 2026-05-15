@@ -156,7 +156,7 @@ void ItemWindow::UpdateScrollRange()
 	si.cbSize = sizeof(si);
 	si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
 	si.nMin = 0;
-	si.nMax = max(0, contentH - 1);
+	si.nMax = std::max(0, contentH - 1);
 	si.nPage = viewH;
 	si.nPos = _scrollY;
 	::SetScrollInfo(_hGridPanel, SB_VERT, &si, TRUE);
@@ -398,7 +398,7 @@ LRESULT CALLBACK ItemWindow::GridWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPA
 			case SB_THUMBTRACK:    newPos = si.nTrackPos; break;
 			case SB_THUMBPOSITION: newPos = si.nTrackPos; break;
 			}
-			newPos = max(0, std::min(newPos, si.nMax - (int)si.nPage + 1));
+			newPos = std::max(0, std::min(newPos, si.nMax - (int)si.nPage + 1));
 
 			if (newPos != self->_scrollY)
 			{

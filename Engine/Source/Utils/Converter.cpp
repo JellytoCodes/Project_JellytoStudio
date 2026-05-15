@@ -483,7 +483,7 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
                 {
                     const double t = keys[k].mTime;
                     if (std::isfinite(t) && t >= 0.0)
-                        maxTick = max(maxTick, static_cast<uint32>(t));
+                        maxTick = std::max(maxTick, static_cast<uint32>(t));
                 }
             };
 
@@ -533,7 +533,7 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
             {
                 const double t = keys[i].mTime;
                 if (!std::isfinite(t) || t < 0.0) continue;
-                maxFrame = max(maxFrame, static_cast<uint32>(t));
+                maxFrame = std::max(maxFrame, static_cast<uint32>(t));
             }
 
             std::vector<uint32> map(maxFrame + 1, UINT32_MAX);
