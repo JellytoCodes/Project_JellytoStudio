@@ -1,0 +1,124 @@
+{
+    "materials": [
+        {
+            "name": "Character_Rasta_boy_body",
+            "diffuseFile": "OccupyGuy_diffuse.jpg",
+            "specularFile": "OccupyGuy_spec.jpg",
+            "normalFile": "OccupyGuy_normal.jpg",
+            "ambient": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "diffuse": [
+                0.80000001,
+                0.80000001,
+                0.80000001,
+                1.0
+            ],
+            "specular": [
+                0.5,
+                0.5,
+                0.5,
+                4.390244
+            ],
+            "emissive": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        },
+        {
+            "name": "Rasta_Brows_MAT1",
+            "diffuseFile": "OccupyGuy_FaceAnimMap.png",
+            "specularFile": "OccupyGuy_FaceAnimMap.png",
+            "normalFile": "OccupyGuy_FaceAnimMap.png",
+            "ambient": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "diffuse": [
+                0.80000001,
+                0.80000001,
+                0.80000001,
+                1.0
+            ],
+            "specular": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "emissive": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        },
+        {
+            "name": "Rasta_Eyes_MAT1",
+            "diffuseFile": "OccupyGuy_FaceAnimMap.png",
+            "specularFile": "OccupyGuy_FaceAnimMap.png",
+            "normalFile": "OccupyGuy_FaceAnimMap.png",
+            "ambient": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "diffuse": [
+                0.80000001,
+                0.80000001,
+                0.80000001,
+                1.0
+            ],
+            "specular": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "emissive": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        },
+        {
+            "name": "Rasta_Mouth_MAT1",
+            "diffuseFile": "OccupyGuy_FaceAnimMap.png",
+            "specularFile": "OccupyGuy_FaceAnimMap.png",
+            "normalFile": "OccupyGuy_FaceAnimMap.png",
+            "ambient": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "diffuse": [
+                0.80000001,
+                0.80000001,
+                0.80000001,
+                1.0
+            ],
+            "specular": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "emissive": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        }
+    ]
+}
