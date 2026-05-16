@@ -13,8 +13,7 @@ PaletteWidget::PaletteWidget(const std::wstring& name)
            "PaletteWidget 생성 전 BlockTable::Load() 가 선행되어야 합니다.");
 
     const auto& allRecords = GET_SINGLE(BlockTable)->GetAllRecords();
-    assert(static_cast<int32>(allRecords.size()) == SLOT_COUNT &&
-           "BlockMaster.xml 의 Block 수와 SlotType::Count 가 다름.");
+    assert(static_cast<int32>(allRecords.size()) == SLOT_COUNT && "BlockMaster.json 의 Block 수와 SlotType::Count 가 다름.");
 
     for (int32 i = 0; i < SLOT_COUNT; ++i)
     {

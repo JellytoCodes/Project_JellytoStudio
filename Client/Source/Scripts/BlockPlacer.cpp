@@ -345,7 +345,7 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerP
 
 	if (!model || model->GetMeshCount() == 0)
 	{
-		assert(false && "FBX 모델 로드 실패 — BlockMaster.xml 의 modelName 확인");
+		assert(false && "FBX 모델 로드 실패 — BlockMaster.json 의 modelName 확인");
 		return nullptr;
 	}
 
@@ -381,7 +381,7 @@ Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type,
 	const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
 	if (!rec)
 	{
-		assert(false && "BlockRecord 없음 — BlockMaster.xml id 확인");
+		assert(false && "BlockRecord 없음 — BlockMaster.json id 확인");
 		return nullptr;
 	}
 

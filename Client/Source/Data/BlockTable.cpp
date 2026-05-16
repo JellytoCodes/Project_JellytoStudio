@@ -1,176 +1,213 @@
 ﻿#include "pch.h"
 #include "BlockTable.h"
-#include "Utils/tinyxml2.h"
 
+// nlohmann/json — Framework.h(→pch.h) 를 통해 포함됨
+using json    = nlohmann::json;
 using SlotType = PaletteWidget::SlotType;
 using CH       = CollisionChannel;
 using PF       = PlaceFace;
 
-std::wstring BlockTable::Utf8ToWide(const char* utf8)
+// ─────────────────────────────────────────────────────────────────────────────
+// 내부 파싱 헬퍼 — 헤더에 노출하지 않음
+// ─────────────────────────────────────────────────────────────────────────────
+namespace
 {
-    if (!utf8 || utf8[0] == '\0') return {};
-    const int n = ::MultiByteToWideChar(CP_UTF8, 0, utf8, -1, nullptr, 0);
-    if (n <= 1) return {};
-    std::wstring w(static_cast<size_t>(n - 1), L'\0');
-    ::MultiByteToWideChar(CP_UTF8, 0, utf8, -1, w.data(), n);
-    return w;
+    // UTF-8 std::string → wstring
+    std::wstring Utf8ToWide(const std::string& utf8)
+    {
+        if (utf8.empty()) return {};
+        const int wlen = ::MultiByteToWideChar(
+            CP_UTF8, 0, utf8.c_str(), static_cast<int>(utf8.size()), nullptr, 0);
+        if (wlen <= 0) return {};
+        std::wstring result(static_cast<size_t>(wlen), L'\0');
+        ::MultiByteToWideChar(
+            CP_UTF8, 0, utf8.c_str(), static_cast<int>(utf8.size()),
+            result.data(), wlen);
+        return result;
+    }
+
+    // wstring → UTF-8 std::string (파일 경로 전달용)
+    std::string WideToUtf8(const std::wstring& w)
+    {
+        if (w.empty()) return {};
+        const int n = ::WideCharToMultiByte(
+            CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
+        std::string s(static_cast<size_t>(n - 1), '\0');
+        ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, s.data(), n, nullptr, nullptr);
+        return s;
+    }
+
+    // ── 문자열 열거형 변환 ────────────────────────────────────────────────────
+
+    ColliderSize ParseCollider(const std::string& s)
+    {
+        if (s == "Small") return ColliderSize::Small;
+        if (s == "Tall")  return ColliderSize::Tall;
+        if (s == "Wide")  return ColliderSize::Wide;
+        return ColliderSize::Unit;
+    }
+
+    CollisionChannel ParseChannel(const std::string& s)
+    {
+        if (s == "Priming")   return CH::Priming;
+        if (s == "Floor")     return CH::Floor;
+        if (s == "Mushroom")  return CH::Mushroom;
+        if (s == "Character") return CH::Character;
+        return CH::Default;
+    }
+
+    BlockRenderType ParseRenderType(const std::string& s)
+    {
+        return (s == "Model") ? BlockRenderType::Model : BlockRenderType::Mesh;
+    }
+
+    // ── JSON 배열 → 비트마스크 (pickable / faces) ────────────────────────────
+    //
+    // XML 시절: ParsePickable("Priming|Floor|Character") — 수동 find() 루프
+    // JSON 이후: ParsePickable(["Priming","Floor","Character"]) — 배열 순회
+    //
+    // 파이프 파싱 코드 완전 제거, 가독성 및 유지보수성 향상.
+
+    uint8 ParsePickable(const json& arr)
+    {
+        if (!arr.is_array() || arr.empty()) return 0xFF;
+        if (arr.size() == 1 && arr[0].get<std::string>() == "All") return 0xFF;
+
+        uint8 mask = 0;
+        for (const auto& item : arr)
+        {
+            const std::string ch = item.get<std::string>();
+            if      (ch == "Priming")   mask |= static_cast<uint8>(CH::Priming);
+            else if (ch == "Floor")     mask |= static_cast<uint8>(CH::Floor);
+            else if (ch == "Mushroom")  mask |= static_cast<uint8>(CH::Mushroom);
+            else if (ch == "Character") mask |= static_cast<uint8>(CH::Character);
+        }
+        return mask ? mask : 0xFF;
+    }
+
+    uint8 ParseFaces(const json& arr)
+    {
+        if (!arr.is_array() || arr.empty()) return 0xFF;
+        if (arr.size() == 1 && arr[0].get<std::string>() == "All") return 0xFF;
+
+        uint8 mask = 0;
+        for (const auto& item : arr)
+        {
+            const std::string face = item.get<std::string>();
+            if      (face == "Top")  mask |= static_cast<uint8>(PF::Top);
+            else if (face == "Side") mask |= static_cast<uint8>(PF::Side);
+            else if (face == "Bot")  mask |= static_cast<uint8>(PF::Bottom);
+        }
+        return mask ? mask : 0xFF;
+    }
+
+    // ── JSON color 배열([R,G,B,A]) → Color ───────────────────────────────────
+    Color ParseColor(const json& j, float defAlpha = 1.f)
+    {
+        if (!j.is_array() || j.size() < 3) return Color(0, 0, 0, defAlpha);
+        return Color(
+            j[0].get<float>(),
+            j[1].get<float>(),
+            j[2].get<float>(),
+            j.size() >= 4 ? j[3].get<float>() : defAlpha);
+    }
 }
 
-std::string BlockTable::WideToUtf8(const std::wstring& w)
-{
-    if (w.empty()) return {};
-    const int n = ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    std::string s(static_cast<size_t>(n - 1), '\0');
-    ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, s.data(), n, nullptr, nullptr);
-    return s;
-}
-
-float BlockTable::AttrFloat(const tinyxml2::XMLElement* e, const char* name, float def)
-{
-    float v = def;
-    if (e) e->QueryFloatAttribute(name, &v);
-    return v;
-}
-
-ColliderSize BlockTable::ParseCollider(const char* s)
-{
-    if (!s) return ColliderSize::Unit;
-    const std::string str(s);
-    if (str == "Small") return ColliderSize::Small;
-    if (str == "Tall")  return ColliderSize::Tall;
-    if (str == "Wide")  return ColliderSize::Wide;
-    return ColliderSize::Unit;
-}
-
-CollisionChannel BlockTable::ParseChannel(const char* s)
-{
-    if (!s) return CH::Default;
-    const std::string str(s);
-    if (str == "Priming")   return CH::Priming;
-    if (str == "Floor")     return CH::Floor;
-    if (str == "Mushroom")  return CH::Mushroom;
-    if (str == "Character") return CH::Character;
-    return CH::Default;
-}
-
-uint8 BlockTable::ParsePickable(const char* s)
-{
-    if (!s) return 0xFF;
-    const std::string str(s);
-    if (str == "All") return 0xFF;
-    uint8 mask = 0;
-    if (str.find("Priming")   != std::string::npos) mask |= static_cast<uint8>(CH::Priming);
-    if (str.find("Floor")     != std::string::npos) mask |= static_cast<uint8>(CH::Floor);
-    if (str.find("Mushroom")  != std::string::npos) mask |= static_cast<uint8>(CH::Mushroom);
-    if (str.find("Character") != std::string::npos) mask |= static_cast<uint8>(CH::Character);
-    return mask ? mask : 0xFF;
-}
-
-uint8 BlockTable::ParseFaces(const char* s)
-{
-    if (!s) return 0xFF;
-    const std::string str(s);
-    if (str == "All") return 0xFF;
-    uint8 mask = 0;
-    if (str.find("Top")  != std::string::npos) mask |= static_cast<uint8>(PF::Top);
-    if (str.find("Side") != std::string::npos) mask |= static_cast<uint8>(PF::Side);
-    if (str.find("Bot")  != std::string::npos) mask |= static_cast<uint8>(PF::Bottom);
-    return mask ? mask : 0xFF;
-}
-
-BlockRenderType BlockTable::ParseRenderType(const char* s)
-{
-    if (s && std::string(s) == "Model") return BlockRenderType::Model;
-    return BlockRenderType::Mesh;
-}
-
-void BlockTable::Load(const std::wstring& xmlPath)
+void BlockTable::Load(const std::wstring& jsonPath)
 {
     assert(!_loaded && "BlockTable::Load() 는 앱 시작 시 1회만 호출해야 합니다.");
 
-    tinyxml2::XMLDocument doc;
-    const auto err = doc.LoadFile(WideToUtf8(xmlPath).c_str());
-    assert(err == tinyxml2::XML_SUCCESS && "BlockMaster.xml 로드 실패");
-    if (err != tinyxml2::XML_SUCCESS) return;
+    std::ifstream file(WideToUtf8(jsonPath));
+    assert(file.is_open() && "BlockMaster.json 을 찾을 수 없습니다.");
+    if (!file.is_open()) return;
 
-    const auto* root = doc.RootElement();
-    assert(root);
-
-    if (const char* pal = root->Attribute("paletteTex"))
-        _palettePath = Utf8ToWide(pal);
-    if (_palettePath.empty())
-        _palettePath = L"../Resources/Textures/MapModel/Main_texture.png";
-
-    const auto* blocksElem = root->FirstChildElement("Blocks");
-    assert(blocksElem && "<Blocks> 요소 없음");
-
-    for (const auto* e = blocksElem->FirstChildElement("Block");
-         e; e = e->NextSiblingElement("Block"))
+    json doc;
+    try
     {
+        file >> doc;
+    }
+    catch (const json::parse_error& e)
+    {
+        ::OutputDebugStringA(e.what());
+        assert(false && "BlockMaster.json 파싱 실패 — JSON 문법 오류");
+        return;
+    }
+
+    _palettePath = doc.contains("paletteTex")
+        ? Utf8ToWide(doc["paletteTex"].get<std::string>())
+        : L"../Resources/Textures/MapModel/Main_texture.png";
+
+    assert(doc.contains("blocks") && "BlockMaster.json 에 \"blocks\" 키가 없습니다.");
+    const auto& blocks = doc["blocks"];
+
+    for (const auto& b : blocks)
+    {
+        if (!b.contains("id")) continue;
+
         BlockRecord rec;
 
-        e->QueryIntAttribute("id", &rec.typeId);
+        rec.typeId       = b["id"].get<int32>();
+        rec.key          = Utf8ToWide(b.value("key",          ""));
+        rec.label        = Utf8ToWide(b.value("label",        ""));
+        rec.paletteLabel = Utf8ToWide(b.value("paletteLabel", ""));
+        rec.isEraser     = b.value("isEraser", false);
 
-        if (const char* v = e->Attribute("key"))          rec.key          = Utf8ToWide(v);
-        if (const char* v = e->Attribute("label"))        rec.label        = Utf8ToWide(v);
-        if (const char* v = e->Attribute("paletteLabel")) rec.paletteLabel = Utf8ToWide(v);
+        if (b.contains("color"))
+            rec.color = ParseColor(b["color"]);
 
-        rec.color    = Color(AttrFloat(e,"colorR"), AttrFloat(e,"colorG"),
-                             AttrFloat(e,"colorB"), AttrFloat(e,"colorA", 1.f));
-        //rec.isEraser = (std::string(e->Attribute("isEraser","false")) == "true");
-
-        rec.renderType = ParseRenderType(e->Attribute("renderType"));
+        rec.renderType = ParseRenderType(b.value("renderType", "Mesh"));
 
         if (rec.renderType == BlockRenderType::Model)
         {
-            if (const char* v = e->Attribute("modelName")) rec.modelName = Utf8ToWide(v);
-            e->QueryFloatAttribute("modelScale", &rec.modelScale);
+            rec.modelName   = Utf8ToWide(b.value("modelName", ""));
+            rec.modelScale  = b.value("modelScale", 0.01f);
             rec.paletteRect = { 0.f, 0.f, 1.f, 1.f };
         }
         else
         {
-            e->QueryFloatAttribute("paletteU", &rec.paletteRect.uOffset);
-            e->QueryFloatAttribute("paletteV", &rec.paletteRect.vOffset);
-            rec.paletteRect.uScale = 0.f;
-            rec.paletteRect.vScale = 0.f;
+            rec.paletteRect.uOffset = b.value("paletteU", 0.f);
+            rec.paletteRect.vOffset = b.value("paletteV", 0.f);
+            rec.paletteRect.uScale  = 0.f;
+            rec.paletteRect.vScale  = 0.f;
         }
 
-        if (const char* v = e->Attribute("collider"))   rec.collider    = ParseCollider(v);
-        if (const char* v = e->Attribute("ownChannel")) rec.ownChannel  = ParseChannel(v);
-        if (const char* v = e->Attribute("pickable"))   rec.pickableMask = ParsePickable(v);
-        if (const char* v = e->Attribute("faces"))      rec.faceMask    = ParseFaces(v);
+        rec.collider    = ParseCollider(b.value("collider",   "Unit"));
+        rec.ownChannel  = ParseChannel (b.value("ownChannel", "Default"));
+
+        if (b.contains("pickable"))
+            rec.pickableMask = ParsePickable(b["pickable"]);
+        if (b.contains("faces"))
+            rec.faceMask     = ParseFaces   (b["faces"]);
 
         const int32 slot = rec.typeId;
         if (slot >= static_cast<int32>(_records.size()))
         {
-            _records.resize(slot + 1);
-            _uvRects.resize(slot + 1, BlockUVRect{});
+            _records.resize(static_cast<size_t>(slot + 1));
+            _uvRects.resize(static_cast<size_t>(slot + 1), BlockUVRect{});
         }
-        _records[slot]  = rec;
-        _uvRects[slot]  = rec.paletteRect;
+        _records[slot] = rec;
+        _uvRects [slot] = rec.paletteRect;
     }
 
     _keyMap.reserve(_records.size());
     for (const auto& rec : _records)
         if (!rec.key.empty()) _keyMap.emplace(rec.key, &rec);
 
-    const auto* phaseElem = root->FirstChildElement("PhaseSequence");
-    assert(phaseElem && "<PhaseSequence> 요소 없음");
+    assert(doc.contains("phaseSequence") &&
+           "BlockMaster.json 에 \"phaseSequence\" 키가 없습니다.");
 
-    for (const auto* e = phaseElem->FirstChildElement("Phase");
-         e; e = e->NextSiblingElement("Phase"))
+    for (const auto& p : doc["phaseSequence"])
     {
-        const std::wstring slotKey = Utf8ToWide(e->Attribute("slotKey"));
+        const std::wstring slotKey = Utf8ToWide(p.value("slotKey", ""));
         const BlockRecord* slotRec = GetRecordByKey(slotKey);
-        assert(slotRec && "PhaseSequence slotKey 가 Blocks 에 없음");
+        assert(slotRec && "phaseSequence.slotKey 가 blocks 에 없습니다.");
         if (!slotRec) continue;
 
         PhaseRecord phase;
         phase.dropSlot     = static_cast<SlotType>(slotRec->typeId);
         phase.modelName    = slotRec->modelName;
-        phase.phaseName    = Utf8ToWide(e->Attribute("phaseName"));
-        phase.breaksToNext = 0;
-        e->QueryIntAttribute("breaksToNext", &phase.breaksToNext);
+        phase.phaseName    = Utf8ToWide(p.value("phaseName",   ""));
+        phase.breaksToNext = p.value("breaksToNext", 0);
         _phases.push_back(std::move(phase));
     }
 

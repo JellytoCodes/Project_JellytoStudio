@@ -13,74 +13,73 @@ Model::~Model() = default;
 
 void Model::ReadMaterial(const std::wstring& filename)
 {
-	std::wstring fullPath = _texturePath + filename + L".xml";
-	auto parentPath = std::filesystem::path(fullPath).parent_path();
-
-	tinyxml2::XMLDocument document;
-	tinyxml2::XMLError error = document.LoadFile(Utils::ToString(fullPath).c_str());
-	assert(error == tinyxml2::XML_SUCCESS);
-
-	tinyxml2::XMLElement* root         = document.FirstChildElement();
-	tinyxml2::XMLElement* materialNode = root->FirstChildElement();
-
-	while (materialNode)
-	{
-		auto material = std::make_unique<Material>();
-
-		tinyxml2::XMLElement* node = materialNode->FirstChildElement();
-		material->SetName(Utils::ToWString(node->GetText()));
-
-		// Diffuse Texture
-		node = node->NextSiblingElement();
-		if (node->GetText())
-		{
-			std::wstring textureStr = Utils::ToWString(node->GetText());
-			if (!textureStr.empty())
-				material->SetDiffuseMap(GET_SINGLE(ResourceManager)->GetOrAddTexture(
-					textureStr, (parentPath / textureStr).wstring()));
-		}
-
-		// Specular Texture
-		node = node->NextSiblingElement();
-		if (node->GetText())
-		{
-			std::wstring textureStr = Utils::ToWString(node->GetText());
-			if (!textureStr.empty())
-				material->SetSpecularMap(GET_SINGLE(ResourceManager)->GetOrAddTexture(
-					textureStr, (parentPath / textureStr).wstring()));
-		}
-
-		// Normal Texture
-		node = node->NextSiblingElement();
-		if (node->GetText())
-		{
-			std::wstring textureStr = Utils::ToWString(node->GetText());
-			if (!textureStr.empty())
-				material->SetNormalMap(GET_SINGLE(ResourceManager)->GetOrAddTexture(
-					textureStr, (parentPath / textureStr).wstring()));
-		}
-
-		// Ambient
-		node = node->NextSiblingElement();
-		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().ambient = c; }
-
-		// Diffuse
-		node = node->NextSiblingElement();
-		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().diffuse = c; }
-
-		// Specular
-		node = node->NextSiblingElement();
-		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().specular = c; }
-
-		// Emissive
-		node = node->NextSiblingElement();
-		{ Color c; c.x = node->FloatAttribute("R"); c.y = node->FloatAttribute("G"); c.z = node->FloatAttribute("B"); c.w = node->FloatAttribute("A"); material->GetMaterialDesc().emissive = c; }
-
-		_materials.push_back(std::move(material));
-		materialNode = materialNode->NextSiblingElement();
-	}
-
-	BindCacheInfo();
+    const std::wstring fullPath   = _texturePath + filename + L".json";
+    const auto         parentPath = std::filesystem::path(fullPath).parent_path();
+ 
+    std::ifstream ifs(Utils::ToString(fullPath));
+    assert(ifs.is_open() && "머티리얼 JSON 파일을 열 수 없습니다. 경로 확인 필요.");
+    if (!ifs.is_open()) return;
+ 
+    nlohmann::json doc;
+    try
+    {
+        ifs >> doc;
+    }
+    catch (const nlohmann::json::parse_error& e)
+    {
+        ::OutputDebugStringA(e.what());
+        assert(false && "머티리얼 JSON 파싱 실패");
+        return;
+    }
+ 
+    assert(doc.contains("materials") && "JSON 에 \"materials\" 배열이 없습니다.");
+ 
+    auto ReadColor = [](const nlohmann::json& j, const char* key) -> Color
+    {
+        Color c;
+        if (j.contains(key) && j[key].is_array() && j[key].size() == 4)
+        {
+            c.x = j[key][0].get<float>();
+            c.y = j[key][1].get<float>();
+            c.z = j[key][2].get<float>();
+            c.w = j[key][3].get<float>();
+        }
+        return c;
+    };
+ 
+    for (const auto& m : doc["materials"])
+    {
+        auto material = std::make_unique<Material>();
+ 
+        material->SetName(Utils::ToWString(m.value("name", "")));
+ 
+        auto LoadTex = [&](const char* key,
+                           auto (Material::* setter)(std::shared_ptr<Texture>))
+        {
+            const std::string file = m.value(key, "");
+            if (!file.empty())
+            {
+                const std::wstring wFile = Utils::ToWString(file);
+                (material.get()->*setter)(
+                    GET_SINGLE(ResourceManager)->GetOrAddTexture(
+                        wFile, (parentPath / file).wstring()));
+            }
+        };
+ 
+        LoadTex("diffuseFile",  &Material::SetDiffuseMap);
+        LoadTex("specularFile", &Material::SetSpecularMap);
+        LoadTex("normalFile",   &Material::SetNormalMap);
+ 
+        MaterialDesc& desc    = material->GetMaterialDesc();
+        desc.ambient  = ReadColor(m, "ambient");
+        desc.diffuse  = ReadColor(m, "diffuse");
+        desc.specular = ReadColor(m, "specular");
+        desc.emissive = ReadColor(m, "emissive");
+ 
+        _materials.push_back(std::move(material));
+    }
+ 
+    BindCacheInfo();
 }
 
 void Model::ReadModel(const std::wstring& filename)

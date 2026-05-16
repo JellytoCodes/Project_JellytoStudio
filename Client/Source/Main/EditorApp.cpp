@@ -178,12 +178,12 @@ void EditorApp::Update()
 
 	if ((::GetKeyState(VK_CONTROL) & 0x8000) && GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
 	{
-		SceneSerializer::Save(scene, L"../Saved/scene.xml");
+		SceneSerializer::Save(scene, L"../Saved/scene.json");
 	}
 
 	if ((::GetKeyState(VK_CONTROL) & 0x8000) && GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
 	{
-		SceneSerializer::Load(scene, L"../Saved/scene.xml");
+		SceneSerializer::Load(scene, L"../Saved/scene.json");
 		if (_detailWindow) _detailWindow->MarkDirty();
 	}
 }

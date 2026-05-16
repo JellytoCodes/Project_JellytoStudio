@@ -44,7 +44,7 @@ bool Application::Initialize(const ApplicationDesc& desc)
     GET_SINGLE(UIManager)->Init(GET_SINGLE(DisplayContext)->GetWidthF(), GET_SINGLE(DisplayContext)->GetHeightF());
     GET_SINGLE(DynamicInstancePool)->Init();
 
-    GET_SINGLE(AudioDataTable)->Load(L"../Resources/Data/AudioData.xml");
+    GET_SINGLE(AudioDataTable)->Load(L"../Resources/Data/AudioData.json");
     GET_SINGLE(AudioManager)->Init(L"../Resources/Audio/");
     GET_SINGLE(AudioManager)->PlayBGM(L"BGM_Main");
 

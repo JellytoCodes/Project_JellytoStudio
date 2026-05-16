@@ -318,6 +318,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Utils\Geometry\GeometryHelper.h" />
     <ClInclude Include="Source\Resource\Texture.h" />
     <ClInclude Include="Source\Core\Managers\TimeManager.h" />
+    <ClInclude Include="Source\Utils\json.hpp" />
     <ClInclude Include="Source\Utils\SimpleMath.h" />
     <ClInclude Include="Source\Utils\tinyxml2.h" />
     <ClInclude Include="Source\Utils\Utils.h" />

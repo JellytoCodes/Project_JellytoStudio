@@ -79,7 +79,7 @@ void Converter::ExportModelData(std::wstring savePath)
 
 void Converter::ExportMaterialData(std::wstring savePath)
 {
-    std::wstring finalPath = _texturePath + savePath + L".xml";
+    std::wstring finalPath = _texturePath + savePath + L".json";
     ReadMaterialData();
     WriteMaterialData(finalPath);
 }
@@ -349,56 +349,39 @@ void Converter::WriteMaterialData(std::wstring finalPath)
 {
     auto path = std::filesystem::path(finalPath);
     std::filesystem::create_directories(path.parent_path());
-
-    std::string folder = path.parent_path().string();
-
-    auto document = std::make_shared<tinyxml2::XMLDocument>();
-    tinyxml2::XMLDeclaration* decl = document->NewDeclaration();
-    document->LinkEndChild(decl);
-
-    tinyxml2::XMLElement* root = document->NewElement("Materials");
-    document->LinkEndChild(root);
-
-    for (const auto& material : _materials)
+ 
+    nlohmann::json doc;
+    nlohmann::json matsArray = nlohmann::json::array();
+ 
+    const std::string folder = path.parent_path().string();
+ 
+    for (const auto& mat : _materials)
     {
-        tinyxml2::XMLElement* node = document->NewElement("Material");
-        root->LinkEndChild(node);
-
-        tinyxml2::XMLElement* element = nullptr;
-
-        element = document->NewElement("Name");
-        element->SetText(material->name.c_str());
-        node->LinkEndChild(element);
-
-        element = document->NewElement("DiffuseFile");
-        element->SetText(WriteTexture(folder, material->diffuseFile).c_str());
-        node->LinkEndChild(element);
-
-        element = document->NewElement("SpecularFile");
-        element->SetText(WriteTexture(folder, material->specularFile).c_str());
-        node->LinkEndChild(element);
-
-        element = document->NewElement("NormalFile");
-        element->SetText(WriteTexture(folder, material->normalFile).c_str());
-        node->LinkEndChild(element);
-
-        auto writeColor = [&](const char* tag, const Color& c)
-            {
-                element = document->NewElement(tag);
-                element->SetAttribute("R", c.x);
-                element->SetAttribute("G", c.y);
-                element->SetAttribute("B", c.z);
-                element->SetAttribute("A", c.w);
-                node->LinkEndChild(element);
-            };
-
-        writeColor("Ambient", material->ambient);
-        writeColor("Diffuse", material->diffuse);
-        writeColor("Specular", material->specular);
-        writeColor("Emissive", material->emissive);
+        nlohmann::json m;
+        m["name"]         = mat->name;
+        m["diffuseFile"]  = WriteTexture(folder, mat->diffuseFile);
+        m["specularFile"] = WriteTexture(folder, mat->specularFile);
+        m["normalFile"]   = WriteTexture(folder, mat->normalFile);
+ 
+        auto ColorToArray = [](const Color& c) -> nlohmann::json
+        {
+            return nlohmann::json::array({ c.x, c.y, c.z, c.w });
+        };
+ 
+        m["ambient"]  = ColorToArray(mat->ambient);
+        m["diffuse"]  = ColorToArray(mat->diffuse);
+        m["specular"] = ColorToArray(mat->specular);
+        m["emissive"] = ColorToArray(mat->emissive);
+ 
+        matsArray.push_back(std::move(m));
     }
-
-    document->SaveFile(Utils::ToString(finalPath).c_str());
+ 
+    doc["materials"] = std::move(matsArray);
+ 
+    std::ofstream ofs(finalPath);
+    assert(ofs.is_open() && "머티리얼 JSON 저장 실패 — 경로 확인 필요");
+    if (ofs.is_open())
+        ofs << doc.dump(4);
 }
 
 std::string Converter::WriteTexture(std::string saveFolder, std::string file)

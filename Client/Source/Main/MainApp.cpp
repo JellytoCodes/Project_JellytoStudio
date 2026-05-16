@@ -31,7 +31,7 @@ MainApp::~MainApp() {}
 void MainApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
-    GET_SINGLE(BlockTable)->Load(L"../Resources/Data/BlockMaster.xml");
+    GET_SINGLE(BlockTable)->Load(L"../Resources/Data/BlockMaster.json");
 
     SceneSerializer::RegisterActor(L"SkySphereActor",  [] { return std::make_unique<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"CubeActor",       [] { return std::make_unique<CubeActor>(); });
@@ -73,7 +73,7 @@ void MainApp::InitScene()
 
     // ── StartBlock (원블록) ─────────────────────────────────────────────────
     const BlockRecord* startRec = GET_SINGLE(BlockTable)->GetRecordByKey(L"Priming1");
-    assert(startRec && "BlockMaster.xml 에 key='Priming1' 항목이 없습니다.");
+    assert(startRec && "BlockMaster.json 에 key='Priming1' 항목이 없습니다.");
 
     std::shared_ptr<Shader> meshShader = std::make_shared<Shader>(L"../Engine/Shaders/StaticMeshShader.hlsl");
 
@@ -158,7 +158,7 @@ void MainApp::CreatePlacementSystem()
 
     auto placer = std::make_unique<BlockPlacer>();
     placer->SetPalette(_palette);
-    placer->SetSavePath(L"../Saved/scene.xml");
+    placer->SetSavePath(L"../Saved/scene.json");
 
     _blockPlacer = placer.get();
     placerEntity->AddComponent(std::move(placer));

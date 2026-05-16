@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <optional>
 #include <filesystem>
+#include <fstream>
 
 ///////////////////////////////////////////////////
 /// DirectX11
@@ -82,7 +83,7 @@ using namespace DirectX;
 #include "Utils/Geometry/Geometry.h"
 #include "Utils/Geometry/GeometryHelper.h"
 
-#include "Utils/tinyxml2.h"
+#include "Utils/json.hpp"
 
 ///////////////////////////////////////////////////
 /// Libraries

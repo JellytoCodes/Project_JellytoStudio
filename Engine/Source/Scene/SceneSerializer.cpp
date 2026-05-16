@@ -6,152 +6,158 @@
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Camera.h"
 #include "UI/Widget.h"
-#include "Utils/tinyxml2.h"
 #include "Scene/BlockPlacerInterface.h"
+
+// nlohmann/json — Framework.h 를 통해 포함됨
+using json = nlohmann::json;
 
 std::unordered_map<std::wstring, SceneSerializer::ActorFactory> SceneSerializer::_factories;
 
 void SceneSerializer::RegisterActor(const std::wstring& actorType, ActorFactory factory)
 {
-	_factories[actorType] = std::move(factory);
+    _factories[actorType] = std::move(factory);
 }
 
-// ── Save ──────────────────────────────────────────────────────────────────
+// ── Save ──────────────────────────────────────────────────────────────────────
 bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer* placer)
 {
-	if (!scene) return false;
+    if (!scene) return false;
 
-	std::filesystem::path fsPath = WstrToStr(path);
-	auto dir = fsPath.parent_path();
-	if (!dir.empty() && !std::filesystem::exists(dir))
-	{
-		std::filesystem::create_directories(dir);
-	}
+    // 출력 디렉터리 생성
+    std::filesystem::path fsPath = WstrToStr(path);
+    if (auto dir = fsPath.parent_path(); !dir.empty())
+        std::filesystem::create_directories(dir);
 
-	tinyxml2::XMLDocument doc;
-	doc.InsertFirstChild(doc.NewDeclaration());
+    // ── JSON 빌드 ─────────────────────────────────────────────────────────────
+    json doc;
+    doc["name"] = WstrToStr(scene->GetName());
 
-	tinyxml2::XMLElement* sceneElem = doc.NewElement("Scene");
-	sceneElem->SetAttribute("name", WstrToStr(scene->GetName()).c_str());
-	doc.InsertEndChild(sceneElem);
+    // 엔티티 직렬화 (Widget, Camera 는 제외)
+    json entities = json::array();
+    for (const auto& entityPtr : scene->GetEntities())
+    {
+        if (!entityPtr)                                 continue;
+        if (dynamic_cast<Widget*>(entityPtr.get()))     continue;
+        if (entityPtr->GetComponent<Camera>())          continue;
 
-	for (const auto& entityPtr : scene->GetEntities())
-	{
-		if (!entityPtr) continue;
-		if (dynamic_cast<Widget*>(entityPtr.get())) continue;
-		if (entityPtr->GetComponent<Camera>()) continue;
+        json e;
+        e["name"] = WstrToStr(entityPtr->GetEntityName());
 
-		std::wstring actorType = FindActorType(entityPtr->GetEntityName());
+        const std::wstring actorType = FindActorType(entityPtr->GetEntityName());
+        if (!actorType.empty())
+            e["actor"] = WstrToStr(actorType);
 
-		tinyxml2::XMLElement* entityElem = doc.NewElement("Entity");
-		entityElem->SetAttribute("name", WstrToStr(entityPtr->GetEntityName()).c_str());
-		if (!actorType.empty())
-			entityElem->SetAttribute("actor", WstrToStr(actorType).c_str());
+        if (const Transform* tf = entityPtr->GetComponent<Transform>())
+        {
+            const Vec3 pos = tf->GetLocalPosition();
+            const Vec3 rot = tf->GetLocalRotation();
+            const Vec3 scl = tf->GetLocalScale();
 
-		if (Transform* tf = entityPtr->GetComponent<Transform>())
-		{
-			Vec3 pos = tf->GetLocalPosition();
-			Vec3 rot = tf->GetLocalRotation();
-			Vec3 scl = tf->GetLocalScale();
+            e["transform"] = {
+                { "position", { pos.x, pos.y, pos.z } },
+                { "rotation", { rot.x, rot.y, rot.z } },
+                { "scale",    { scl.x, scl.y, scl.z } }
+            };
+        }
+        entities.push_back(std::move(e));
+    }
+    doc["entities"] = std::move(entities);
 
-			tinyxml2::XMLElement* tfElem = doc.NewElement("Transform");
-			tfElem->SetAttribute("px", pos.x); tfElem->SetAttribute("py", pos.y); tfElem->SetAttribute("pz", pos.z);
-			tfElem->SetAttribute("rx", rot.x); tfElem->SetAttribute("ry", rot.y); tfElem->SetAttribute("rz", rot.z);
-			tfElem->SetAttribute("sx", scl.x); tfElem->SetAttribute("sy", scl.y); tfElem->SetAttribute("sz", scl.z);
-			entityElem->InsertEndChild(tfElem);
-		}
-		sceneElem->InsertEndChild(entityElem);
-	}
+    // 블록 직렬화
+    if (placer && !placer->GetPlacedBlocks().empty())
+    {
+        json blocks = json::array();
+        for (const PlacedBlockRecord& rec : placer->GetPlacedBlocks())
+        {
+            blocks.push_back({
+                { "x",    rec.x    },
+                { "y",    rec.y    },
+                { "z",    rec.z    },
+                { "type", rec.type }
+            });
+        }
+        doc["blocks"] = std::move(blocks);
+    }
 
-	if (placer && !placer->GetPlacedBlocks().empty())
-	{
-		tinyxml2::XMLElement* blocksElem = doc.NewElement("Blocks");
-		for (const PlacedBlockRecord& rec : placer->GetPlacedBlocks())
-		{
-			tinyxml2::XMLElement* blockElem = doc.NewElement("Block");
-			blockElem->SetAttribute("x",    rec.x);
-			blockElem->SetAttribute("y",    rec.y);
-			blockElem->SetAttribute("z",    rec.z);
-			blockElem->SetAttribute("type", rec.type);
-			blocksElem->InsertEndChild(blockElem);
-		}
-		sceneElem->InsertEndChild(blocksElem);
-	}
-
-	tinyxml2::XMLError err = doc.SaveFile(WstrToStr(path).c_str());
-	if (err != tinyxml2::XML_SUCCESS) return false;
-
-	return true;
+    // ── 파일 쓰기 (들여쓰기 4칸) ─────────────────────────────────────────────
+    std::ofstream ofs(WstrToStr(path));
+    if (!ofs.is_open()) return false;
+    ofs << doc.dump(4);
+    return ofs.good();
 }
 
-// ── Load ──────────────────────────────────────────────────────────────────
+// ── Load ──────────────────────────────────────────────────────────────────────
 bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer* placer)
 {
-	if (!scene) return false;
+    if (!scene) return false;
 
-	tinyxml2::XMLDocument doc;
-	if (doc.LoadFile(WstrToStr(path).c_str()) != tinyxml2::XML_SUCCESS)
-	{
-		::OutputDebugStringW((L"[SceneSerializer] 파일 없음: " + path + L"\n").c_str());
-		return false;
-	}
+    std::ifstream ifs(WstrToStr(path));
+    if (!ifs.is_open())
+    {
+        ::OutputDebugStringW((L"[SceneSerializer] 파일 없음: " + path + L"\n").c_str());
+        return false;
+    }
 
-	tinyxml2::XMLElement* sceneElem = doc.FirstChildElement("Scene");
-	if (!sceneElem) return false;
+    json doc;
+    try
+    {
+        ifs >> doc;
+    }
+    catch (const json::parse_error& e)
+    {
+        ::OutputDebugStringA(e.what());
+        return false;
+    }
 
-	if (placer)
-		placer->ClearAllBlocks();
+    if (placer)
+        placer->ClearAllBlocks();
 
-	int blockCount = 0;
-	if (tinyxml2::XMLElement* blocksElem = sceneElem->FirstChildElement("Blocks"))
-	{
-		for (tinyxml2::XMLElement* blockElem = blocksElem->FirstChildElement("Block");
-		     blockElem;
-		     blockElem = blockElem->NextSiblingElement("Block"))
-		{
-			float x = 0.f, y = 0.f, z = 0.f;
-			int   type = 0;
-			blockElem->QueryFloatAttribute("x",    &x);
-			blockElem->QueryFloatAttribute("y",    &y);
-			blockElem->QueryFloatAttribute("z",    &z);
-			blockElem->QueryIntAttribute  ("type", &type);
-			if (placer->PlaceBlock(x, y, z, type))
-				blockCount++;
-		}
-	}
+    // 블록 복원
+    if (doc.contains("blocks") && doc["blocks"].is_array())
+    {
+        for (const auto& b : doc["blocks"])
+        {
+            const float x    = b.value("x",    0.f);
+            const float y    = b.value("y",    0.f);
+            const float z    = b.value("z",    0.f);
+            const int   type = b.value("type", 0);
+            if (placer) placer->PlaceBlock(x, y, z, type);
+        }
+    }
 
-	return true;
+    return true;
 }
 
-// ── 유틸 ─────────────────────────────────────────────────────────────────
+// ── 유틸 ──────────────────────────────────────────────────────────────────────
 std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
 {
-	static const std::unordered_map<std::wstring, std::wstring> nameToType = {
-		{ L"SkySphere",        L"SkySphereActor" },
-		{ L"Floor",            L"FloorActor"     },
-		{ L"Cube",             L"CubeActor"      },
-		{ L"Sphere",           L"SphereActor"    },
-		{ L"Character",        L"CharacterActor" },
-		{ L"DirectionalLight", L"LightActor"     },
-	};
-	auto it = nameToType.find(entityName);
-	return it != nameToType.end() ? it->second : L"";
+    static const std::unordered_map<std::wstring, std::wstring> kNameToType = {
+        { L"SkySphere",        L"SkySphereActor" },
+        { L"Floor",            L"FloorActor"     },
+        { L"Cube",             L"CubeActor"      },
+        { L"Sphere",           L"SphereActor"    },
+        { L"Character",        L"CharacterActor" },
+        { L"DirectionalLight", L"LightActor"     },
+    };
+    const auto it = kNameToType.find(entityName);
+    return it != kNameToType.end() ? it->second : L"";
 }
 
 std::string SceneSerializer::WstrToStr(const std::wstring& wStr)
 {
-	if (wStr.empty()) return {};
-	int size = ::WideCharToMultiByte(CP_UTF8, 0, wStr.c_str(), -1, nullptr, 0, nullptr, nullptr);
-	std::string result(size - 1, 0);
-	::WideCharToMultiByte(CP_UTF8, 0, wStr.c_str(), -1, result.data(), size, nullptr, nullptr);
-	return result;
+    if (wStr.empty()) return {};
+    const int size = ::WideCharToMultiByte(
+        CP_UTF8, 0, wStr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    std::string result(static_cast<size_t>(size - 1), '\0');
+    ::WideCharToMultiByte(CP_UTF8, 0, wStr.c_str(), -1, result.data(), size, nullptr, nullptr);
+    return result;
 }
 
 std::wstring SceneSerializer::StrToWstr(const std::string& str)
 {
-	if (str.empty()) return {};
-	int size = ::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
-	std::wstring result(size - 1, 0);
-	::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
-	return result;
+    if (str.empty()) return {};
+    const int size = ::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    std::wstring result(static_cast<size_t>(size - 1), '\0');
+    ::MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), size);
+    return result;
 }

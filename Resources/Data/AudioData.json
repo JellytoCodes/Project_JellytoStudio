@@ -1,0 +1,47 @@
+{
+    "_comment": "AudioData.json — AudioDataTable 의 단일 진실 소스 (AudioData.xml 에서 마이그레이션)",
+    "_schema": {
+        "clip.key"    : "고유 문자열 식별자 — AudioManager 호출 시 이 값을 그대로 사용",
+        "clip.path"   : "오디오 루트 디렉터리 기준 상대 경로",
+        "clip.is3D"   : "3D 공간 사운드 여부",
+        "clip.isLoop" : "반복 재생 여부",
+        "clip.minDist": "3D 최소 감쇠 거리 (is3D=false 시 무시)",
+        "clip.maxDist": "3D 최대 감쇠 거리 (is3D=false 시 무시)"
+    },
+    "clips": [
+        {
+            "_comment": "SFX",
+            "key"    : "BlockPlace",
+            "path"   : "SFX/block_place.wav",
+            "is3D"   : true,
+            "isLoop" : false,
+            "minDist": 1.0,
+            "maxDist": 30.0
+        },
+        {
+            "key"    : "BlockRemove",
+            "path"   : "SFX/block_remove.wav",
+            "is3D"   : true,
+            "isLoop" : false,
+            "minDist": 1.0,
+            "maxDist": 30.0
+        },
+        {
+            "key"    : "UIClick",
+            "path"   : "SFX/ui_click.wav",
+            "is3D"   : false,
+            "isLoop" : false,
+            "minDist": 1.0,
+            "maxDist": 30.0
+        },
+        {
+            "_comment": "BGM",
+            "key"    : "BGM_Main",
+            "path"   : "BGM/bgm_main.wav",
+            "is3D"   : false,
+            "isLoop" : true,
+            "minDist": 1.0,
+            "maxDist": 30.0
+        }
+    ]
+}

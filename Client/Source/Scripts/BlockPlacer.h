@@ -87,7 +87,7 @@ private:
 	bool         _placingMode  = false;
 	bool         _previewValid = false;
 	bool         _previewDirty = true;
-	std::wstring _savePath     = L"../Saved/scene.xml";
+	std::wstring _savePath     = L"../Saved/scene.json";
 
 	std::shared_ptr<Mesh> _cubeMesh;
 
