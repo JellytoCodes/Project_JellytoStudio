@@ -1,9 +1,8 @@
 #include "ShaderCommon.hlsli"
 #include "Lighting.hlsli"
 
-Texture2D g_BlockAtlas : register(t0);
-
-float4 g_AtlasRects[8];
+Texture2D                g_BlockAtlas  : register(t0);
+StructuredBuffer<float4> g_AtlasRects  : register(t1);
 
 struct VertexBlockMesh
 {
@@ -49,8 +48,8 @@ float4 PS(BlockMeshOutput input) : SV_TARGET
 {
     float3 N = normalize(input.normal);
 
-    float4 rect     = g_AtlasRects[input.materialIndex];
-    float2 atlasUV  = input.uv * rect.zw + rect.xy;
+    float4 rect    = g_AtlasRects[input.materialIndex];
+    float2 atlasUV = input.uv * rect.zw + rect.xy;
 
     float4 texColor = g_BlockAtlas.Sample(LinearSampler, atlasUV);
         

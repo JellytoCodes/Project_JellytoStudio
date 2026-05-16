@@ -5,7 +5,6 @@
 #include "Data/BlockTable.h"
 
 class Mesh;
-class Texture;
 class Model;
 class InventoryData;
 
@@ -68,8 +67,7 @@ private:
 	Entity* SpawnMeshBlock  (const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale);
 	Entity* SpawnModelBlock (const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale);
 
-	void AttachCollider  (Entity* entity, const BlockRecord& rec);
-	void PushPaletteRects();
+	void AttachCollider(Entity* entity, const BlockRecord& rec);
 
 	struct PlaceTween
 	{

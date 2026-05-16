@@ -18,14 +18,14 @@ struct RenderStats
 {
     uint32 modelDrawCalls  = 0;
     uint32 meshDrawCalls   = 0;
-	uint32 totalDrawCalls  = 0;
+    uint32 totalDrawCalls  = 0;
     uint32 totalInstances  = 0;
 
     uint32 dynamicBuffers  = 0;
     uint32 staticBuffers   = 0;
 
-    uint32 meshGroupsRebuilt = 0; 
-    uint32 meshGroupsSkipped = 0; 
+    uint32 meshGroupsRebuilt = 0;
+    uint32 meshGroupsSkipped = 0;
 };
 
 class InstancingManager
@@ -38,9 +38,8 @@ public:
     void Render   (std::vector<Entity*>& entities);
     void ClearData();
 
-    void SetDirty    () { _bDirty    = true; }
-    void SetMeshDirty() { _meshDirty = true; }
-
+    void SetDirty        () { _bDirty        = true; }
+    void SetMeshDirty    () { _meshDirty      = true; }
     void SetMeshGroupDirty() { _meshGroupDirty = true; }
 
     InstanceID GetMeshInstanceID(Entity* entity) const;
@@ -57,6 +56,10 @@ public:
         if (!id.IsValid()) return;
         _partialDirtyModel.insert(id);
     }
+
+    // 청크 키를 포함한 정확한 InstanceID 로 dirty 마크.
+    // TickPlaceTweens 등 엔티티 포인터를 보유한 호출처에서 사용한다.
+    void MarkEntityMeshDirty(Entity* entity);
 
     void DumpInstancingStats() const;
 
@@ -76,7 +79,7 @@ private:
     using BufferMap   = std::unordered_map<InstanceID, std::unique_ptr<InstancingBuffer>, InstanceIDHash>;
     using EntityCache = std::unordered_map<InstanceID, std::vector<Entity*>,              InstanceIDHash>;
     using WorldCache  = std::unordered_map<InstanceID, std::vector<InstancingData>,       InstanceIDHash>;
-    using DirtySet    = std::unordered_set<InstanceID, InstanceIDHash>;
+    using DirtySet    = std::unordered_set<InstanceID,                                    InstanceIDHash>;
 
     BufferMap   _buffers;
 
@@ -87,8 +90,8 @@ private:
     WorldCache  _meshWorldCache;
     WorldCache  _modelWorldCache;
 
-    bool _bDirty       = true;
-    bool _meshDirty    = true;   
+    bool _bDirty         = true;
+    bool _meshDirty      = true;
     bool _meshGroupDirty = false;
 
     DirtySet _partialDirtyMesh;

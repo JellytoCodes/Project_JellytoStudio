@@ -17,7 +17,6 @@
 #include "Scene/ChunkManager.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Resource/Mesh.h"
-#include "Pipeline/Shader.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Managers/InstancingManager.h"
 
@@ -48,26 +47,6 @@ void BlockPlacer::Awake()
 	assert(_cubeMesh && "Cube 메시를 찾을 수 없습니다.");
 
 	GET_SINGLE(BlockMaterialProvider)->Init();
-
-	PushPaletteRects();
-}
-
-void BlockPlacer::PushPaletteRects()
-{
-	auto shader = GET_SINGLE(BlockMaterialProvider)->GetBlockShader();
-	if (!shader) return;
-
-	const auto& rects = GET_SINGLE(BlockTable)->GetUVRects();
-	if (rects.empty()) return;
-
-	auto var = shader->GetVector("g_AtlasRects");
-	if (var && var->IsValid())
-	{
-		var->SetFloatVectorArray(
-			reinterpret_cast<float*>(const_cast<BlockUVRect*>(rects.data())),
-			0,
-			static_cast<uint32>(rects.size()));
-	}
 }
 
 void BlockPlacer::Start()     {}
@@ -517,8 +496,7 @@ void BlockPlacer::TickPlaceTweens(float dt)
 				if (auto* col = tw.entity->GetComponent<AABBCollider>())
 					col->InvalidateBounds();
 
-				if (auto* mr = tw.entity->GetComponent<MeshRenderer>())
-					instMgr->MarkMeshDirty(mr->GetInstanceID());
+				instMgr->MarkEntityMeshDirty(tw.entity);
 
 				return t >= 1.f;
 			}),

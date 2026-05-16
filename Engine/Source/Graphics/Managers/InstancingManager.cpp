@@ -26,6 +26,14 @@ InstanceID InstancingManager::GetMeshInstanceID(Entity* entity) const
     return id;
 }
 
+void InstancingManager::MarkEntityMeshDirty(Entity* entity)
+{
+    const InstanceID id = GetMeshInstanceID(entity);
+    if (!id.IsValid()) return;
+    _partialDirtyMesh.insert(id);
+    _dynamicMeshIds.insert(id);
+}
+
 InstancingBuffer& InstancingManager::GetOrCreateMeshBuffer(const InstanceID& id)
 {
     const bool shouldBeDynamic = (_dynamicMeshIds.count(id) > 0);
@@ -431,12 +439,11 @@ void InstancingManager::DumpInstancingStats() const
         if (bufPtr) { if (bufPtr->IsDynamic()) ++dynamicCount; else ++staticCount; }
 
     swprintf_s(buf,
-        L"[H-1 Pool]  Dynamic(DISCARD x1 + NO_OVERWRITE x%u) / Static(UpdateSubresource x%u)\n"
-        L"[H-2 SetData] push_back 루프 제거 — resize+memcpy 단일 호출\n"
+        L"[Pool] Dynamic(DISCARD x1 + NO_OVERWRITE x%u) / Static(UpdateSubresource x%u)\n"
         L"[SmartRebuild] rebuilt=%u  skipped=%u  skipRate=%.1f%%\n"
-        L"[DrawCall]  Mesh=%zu  Model=%zu  Total=%zu\n"
-        L"[Instance]  Mesh=%zu entity -> %zu DC (%.1f%% saved)\n"
-        L"            Model=%zu entity -> %zu DC\n"
+        L"[DrawCall] Mesh=%zu  Model=%zu  Total=%zu\n"
+        L"[Instance] Mesh=%zu -> %zu DC (%.1f%% saved)\n"
+        L"           Model=%zu -> %zu DC\n"
         L"================================================\n",
         dynamicCount > 0 ? dynamicCount - 1 : 0,
         staticCount,
