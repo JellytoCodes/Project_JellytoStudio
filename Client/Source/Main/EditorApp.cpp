@@ -21,6 +21,7 @@
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
 #include "Scripts/IsometricCameraController.h"
+#include "Scripts/BlockPlacer.h"
 #include "Entity/Components/Light.h"
 #include "App/Managers/WindowManager.h"
 #include "UI/Widget.h"
@@ -28,6 +29,7 @@
 #include "UI/Components/UIButton.h"
 #include "Scene/SceneSerializer.h"
 #include "Core/DisplayContext.h"
+#include "Data/BlockTable.h"
 
 EditorApp::EditorApp()  {}
 EditorApp::~EditorApp() {}
@@ -36,13 +38,16 @@ void EditorApp::Init()
 {
     GET_SINGLE(ResourceManager)->Init();
 
+    GET_SINGLE(BlockTable)->Load(L"../Resources/Data/BlockMaster.json");
+
     _scene = std::make_unique<Scene>();
     _scene->SetName(L"Main Scene");
 
     _itemWindow       = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>  (L"ItemWindow");
     _detailWindow     = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
-
     _chunkDebugWindow = GET_SINGLE(WindowManager)->RegisterWindow<ChunkDebugWindow>(L"ChunkDebugWindow");
+    _blockTestPanel   = GET_SINGLE(WindowManager)->RegisterWindow<BlockTestPanel>  (L"BlockTestPanel");
+    _stressPanel      = GET_SINGLE(WindowManager)->RegisterWindow<StressPanel>     (L"StressPanel");
 
     SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_unique<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"FloorActor",     [] { return std::make_unique<FloorActor>();     });
@@ -60,6 +65,9 @@ void EditorApp::Init()
 
     if (_itemWindow)   _itemWindow  ->SetScene(rawScene);
     if (_detailWindow) _detailWindow->SetScene(rawScene);
+
+    if (_blockTestPanel) _blockTestPanel->Load();
+    if (_stressPanel && _stressPlacer) _stressPanel->SetPlacer(_stressPlacer);
 
     RegisterActors();
 }
@@ -97,6 +105,13 @@ void EditorApp::SpawnDefaultActors()
     Actor* lightActor = spawn(std::make_unique<LightActor>());
     if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
         scene->SetMainLight(lightComp);
+
+    auto placerEntity = std::make_unique<Entity>(L"StressPlacer");
+    placerEntity->AddComponent(std::make_unique<Transform>());
+    auto placer     = std::make_unique<BlockPlacer>();
+    _stressPlacer   = placer.get();
+    placerEntity->AddComponent(std::move(placer));
+    scene->Add(std::move(placerEntity));
 }
 
 void EditorApp::CreateHUD()
@@ -127,10 +142,10 @@ void EditorApp::CreateHUD()
     hud->AddUIComponent(std::move(saveText));
 
     auto hintText = std::make_unique<UIText>();
-    hintText->SetRect(0.f, 70.f, 300.f, 18.f);
+    hintText->SetRect(0.f, 70.f, 500.f, 18.f);
     hintText->SetFontSize(12);
     hintText->SetTextGetter([]() {
-        return std::wstring(L"F2 : Chunk Debug  |  Ctrl+S : 저장  |  Ctrl+L : 로드  |  Del : 삭제");
+        return std::wstring(L"F2:Chunk  F3:Block  F4:Stress  |  Ctrl+S:저장  Ctrl+L:로드  Del:삭제");
     });
     hud->AddUIComponent(std::move(hintText));
 
@@ -161,7 +176,7 @@ void EditorApp::CreateCamera()
     isoCtrl->SetMinDistance(5.f);
     isoCtrl->SetMaxDistance(60.f);
 
-    _isoCamCtrl = isoCtrl.get();
+    _isoCamCtrl     = isoCtrl.get();
     Camera* camComp = cam->GetComponent<Camera>();
 
     cam->AddComponent(std::move(isoCtrl));
@@ -198,18 +213,36 @@ void EditorApp::Update()
         _chunkDebugWindow->Toggle();
     prevF2 = curF2;
 
+    static bool prevF3 = false;
+    const  bool curF3  = (::GetAsyncKeyState(VK_F3) & 0x8000) != 0;
+    if (curF3 && !prevF3 && _blockTestPanel)
+        _blockTestPanel->Toggle();
+    prevF3 = curF3;
+
+    static bool prevF4 = false;
+    const  bool curF4  = (::GetAsyncKeyState(VK_F4) & 0x8000) != 0;
+    if (curF4 && !prevF4 && _stressPanel)
+        _stressPanel->Toggle();
+    prevF4 = curF4;
+
     if (_chunkDebugWindow && _chunkDebugWindow->IsVisible())
     {
         _chunkRefreshTimer += dt;
         if (_chunkRefreshTimer >= kChunkRefreshInterval)
         {
             _chunkRefreshTimer = 0.f;
-
-            Entity* selected = _detailWindow
-                ? _detailWindow->GetSelectedEntity()
-                : nullptr;
-
+            Entity* selected = _detailWindow ? _detailWindow->GetSelectedEntity() : nullptr;
             _chunkDebugWindow->Refresh(selected);
+        }
+    }
+
+    if (_stressPanel && _stressPanel->IsVisible())
+    {
+        _stressRefreshTimer += dt;
+        if (_stressRefreshTimer >= kStressRefreshInterval)
+        {
+            _stressRefreshTimer = 0.f;
+            _stressPanel->Refresh();
         }
     }
 
@@ -261,7 +294,7 @@ void EditorApp::UpdatePicking()
         }
     }
 
-    if (!GET_SINGLE(InputManager)->IsMainWindowActive())           return;
+    if (!GET_SINGLE(InputManager)->IsMainWindowActive())             return;
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
     const POINT mp     = GET_SINGLE(InputManager)->GetMousePos();
@@ -283,9 +316,7 @@ void EditorApp::UpdatePicking()
     if (!_detailWindow->IsVisible()) _detailWindow->Show();
 
     if (_chunkDebugWindow && _chunkDebugWindow->IsVisible())
-    {
         _chunkRefreshTimer = kChunkRefreshInterval;
-    }
 }
 
 void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
@@ -297,8 +328,7 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
         info.rendererType = L"ModelAnimator";
         if (auto mdl = animator->GetModel())
         {
-            info.modelName = (mdl->GetMeshCount() > 0)
-                ? mdl->GetMeshByIndex(0)->name : L"Unknown";
+            info.modelName   = (mdl->GetMeshCount() > 0) ? mdl->GetMeshByIndex(0)->name : L"Unknown";
             info.entityLabel = info.modelName;
             info.meshName    = info.modelName;
             info.boneCount   = (int)mdl->GetBoneCount();

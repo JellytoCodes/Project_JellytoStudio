@@ -4,13 +4,18 @@
 #include "App/ItemWindow.h"
 #include "App/DetailWindow.h"
 #include "App/ChunkDebugWindow.h"
+#include "UI/BlockTestPanel.h"
+#include "UI/StressPanel.h"
 
 class Scene;
 class Entity;
 class Actor;
+class BlockPlacer;
 class ItemWindow;
 class DetailWindow;
 class ChunkDebugWindow;
+class BlockTestPanel;
+class StressPanel;
 class IsometricCameraController;
 class UIText;
 
@@ -40,18 +45,23 @@ private:
     ItemWindow*                         _itemWindow       = nullptr;
     DetailWindow*                       _detailWindow     = nullptr;
     ChunkDebugWindow*                   _chunkDebugWindow = nullptr;
+    BlockTestPanel*                     _blockTestPanel   = nullptr;
+    StressPanel*                        _stressPanel      = nullptr;
 
     std::vector<std::unique_ptr<Actor>> _defaultActors;
 
     Entity*                             _pickedEntity     = nullptr;
     Entity*                             _characterEntity  = nullptr;
     IsometricCameraController*          _isoCamCtrl       = nullptr;
+    BlockPlacer*                        _stressPlacer     = nullptr;
 
-    UIText*      _saveStatusText   = nullptr;
+    UIText*      _saveStatusText  = nullptr;
     std::wstring _saveStatusMsg;
-    float        _saveStatusTimer  = 0.f;
-    static constexpr float kSaveStatusDuration = 3.0f;
+    float        _saveStatusTimer = 0.f;
+    static constexpr float kSaveStatusDuration   = 3.0f;
 
-    float _chunkRefreshTimer = 0.f;
-    static constexpr float kChunkRefreshInterval = ChunkDebugWindow::kRefreshInterval;
+    float _chunkRefreshTimer  = 0.f;
+    float _stressRefreshTimer = 0.f;
+    static constexpr float kChunkRefreshInterval  = ChunkDebugWindow::kRefreshInterval;
+    static constexpr float kStressRefreshInterval = StressPanel::kRefreshInterval;
 };

@@ -16,6 +16,8 @@
     <ClCompile Include="Source\UI\DebugHUD.cpp" />
     <ClCompile Include="Source\Data\BlockTable.cpp" />
     <ClCompile Include="Source\Resource\BlockMaterialProvider.cpp" />
+    <ClCompile Include="Source\UI\BlockTestPanel.cpp" />
+    <ClCompile Include="Source\UI\StressPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
@@ -32,5 +34,7 @@
     <ClInclude Include="Source\UI\DebugHUD.h" />
     <ClInclude Include="Source\Data\BlockTable.h" />
     <ClInclude Include="Source\Resource\BlockMaterialProvider.h" />
+    <ClInclude Include="Source\UI\BlockTestPanel.h" />
+    <ClInclude Include="Source\UI\StressPanel.h" />
   </ItemGroup>
 </Project>
