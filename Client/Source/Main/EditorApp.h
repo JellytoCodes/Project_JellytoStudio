@@ -10,34 +10,44 @@ class Actor;
 class ItemWindow;
 class DetailWindow;
 class IsometricCameraController;
+class UIText;
 
 class EditorApp : public IExecute
 {
 public:
-	EditorApp();
-	~EditorApp();
+    EditorApp();
+    ~EditorApp();
 
-	virtual void Init()   override;
-	virtual void Update() override;
-	virtual void Render() override;
+    virtual void Init()   override;
+    virtual void Update() override;
+    virtual void Render() override;
 
 private:
-	void RegisterActors();
-	void SpawnDefaultActors();
-	void CreateCamera();
-	void CreateHUD();
+    void RegisterActors();
+    void SpawnDefaultActors();
+    void CreateCamera();
+    void CreateHUD();
 
-	void UpdatePicking();
-	void FillDetailInfo(Entity* entity, DetailInfo& info);
+    void UpdatePicking();
 
-	std::unique_ptr<Scene> _scene;
+    void FillDetailInfo(Entity* entity, DetailInfo& out);
 
-	ItemWindow*   _itemWindow   = nullptr;
-	DetailWindow* _detailWindow = nullptr;
+    void SetSaveStatus(const std::wstring& msg);
 
-	std::vector<std::unique_ptr<Actor>> _defaultActors;
+    std::unique_ptr<Scene>              _scene;
 
-	Entity*                    _pickedEntity    = nullptr;
-	Entity*                    _characterEntity = nullptr;
-	IsometricCameraController* _isoCamCtrl      = nullptr;
+    ItemWindow*                         _itemWindow      = nullptr;
+    DetailWindow*                       _detailWindow    = nullptr;
+
+    std::vector<std::unique_ptr<Actor>> _defaultActors;
+
+    Entity*                             _pickedEntity    = nullptr;
+    Entity*                             _characterEntity = nullptr;
+    IsometricCameraController*          _isoCamCtrl      = nullptr;
+
+    std::unique_ptr<UIText>      _saveStatusText   = nullptr;
+    std::wstring                 _saveStatusMsg;             
+    float                        _saveStatusTimer  = 0.f;    
+
+    static constexpr float kSaveStatusDuration = 3.0f;
 };

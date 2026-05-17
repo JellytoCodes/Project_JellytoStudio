@@ -11,10 +11,15 @@
 #include "Entity/Actor.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Camera.h"
+#include "Entity/Components/MeshRenderer.h"
+#include "Entity/Components/Collider/BaseCollider.h"
+#include "Entity/Components/Collider/CollisionChannel.h"
 #include "Entity/Managers/CollisionManager.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
+#include "Resource/Material.h"
+#include "Resource/Mesh.h"
 #include "Scripts/IsometricCameraController.h"
 #include "Entity/Components/Light.h"
 #include "App/Managers/WindowManager.h"
@@ -24,247 +29,338 @@
 #include "Scene/SceneSerializer.h"
 #include "Core/DisplayContext.h"
 
-EditorApp::EditorApp()
-{
+EditorApp::EditorApp()  {}
+EditorApp::~EditorApp() {}
 
-}
-
-EditorApp::~EditorApp()
-{
-
-}
-
-// ── Init ──────────────────────────────────────────────────────────────────
 void EditorApp::Init()
 {
-	GET_SINGLE(ResourceManager)->Init();
+    GET_SINGLE(ResourceManager)->Init();
 
-	_scene = std::make_unique<Scene>();
-	_scene->SetName(L"Main Scene");
+    _scene = std::make_unique<Scene>();
+    _scene->SetName(L"Main Scene");
 
-	_itemWindow   = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
-	_detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
+    _itemWindow   = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
+    _detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
 
-	SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_unique<SkySphereActor>(); });
-	SceneSerializer::RegisterActor(L"FloorActor",     [] { return std::make_unique<FloorActor>(); });
-	SceneSerializer::RegisterActor(L"CubeActor",      [] { return std::make_unique<CubeActor>(); });
-	SceneSerializer::RegisterActor(L"SphereActor",    [] { return std::make_unique<SphereActor>(); });
-	SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_unique<CharacterActor>(); });
-	SceneSerializer::RegisterActor(L"LightActor",     [] { return std::make_unique<LightActor>(); });
+    SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_unique<SkySphereActor>(); });
+    SceneSerializer::RegisterActor(L"FloorActor",     [] { return std::make_unique<FloorActor>();     });
+    SceneSerializer::RegisterActor(L"CubeActor",      [] { return std::make_unique<CubeActor>();      });
+    SceneSerializer::RegisterActor(L"SphereActor",    [] { return std::make_unique<SphereActor>();    });
+    SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_unique<CharacterActor>(); });
+    SceneSerializer::RegisterActor(L"LightActor",     [] { return std::make_unique<LightActor>();     });
 
-	SpawnDefaultActors();
-	CreateCamera();
-	CreateHUD();
+    SpawnDefaultActors();
+    CreateCamera();
+    CreateHUD();
 
-	Scene* rawScene = _scene.get();
-	GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
+    Scene* rawScene = _scene.get();
+    GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 
-	if (_itemWindow)   _itemWindow->SetScene(rawScene);
-	if (_detailWindow) _detailWindow->SetScene(rawScene);
+    if (_itemWindow)   _itemWindow->SetScene(rawScene);
+    if (_detailWindow) _detailWindow->SetScene(rawScene);
 
-	RegisterActors();
+    RegisterActors();
 }
 
 void EditorApp::RegisterActors()
 {
-	if (!_itemWindow) return;
-
-	_itemWindow->RegisterActor(L"SkySphere",  [] { return std::make_unique<SkySphereActor>(); });
-	_itemWindow->RegisterActor(L"Floor",      [] { return std::make_unique<FloorActor>(); });
-	_itemWindow->RegisterActor(L"Cube",       [] { return std::make_unique<CubeActor>(); });
-	_itemWindow->RegisterActor(L"Sphere",     [] { return std::make_unique<SphereActor>(); });
-	_itemWindow->RegisterActor(L"Character",  [] { return std::make_unique<CharacterActor>(); });
+    if (!_itemWindow) return;
+    _itemWindow->RegisterActor(L"SkySphere",  [] { return std::make_unique<SkySphereActor>(); });
+    _itemWindow->RegisterActor(L"Floor",      [] { return std::make_unique<FloorActor>();     });
+    _itemWindow->RegisterActor(L"Cube",       [] { return std::make_unique<CubeActor>();      });
+    _itemWindow->RegisterActor(L"Sphere",     [] { return std::make_unique<SphereActor>();    });
+    _itemWindow->RegisterActor(L"Character",  [] { return std::make_unique<CharacterActor>(); });
 }
 
 void EditorApp::SpawnDefaultActors()
 {
-	Scene* scene = _scene.get();
+    Scene* scene = _scene.get();
 
-	auto spawn = [&](std::unique_ptr<Actor> actor) -> Actor*
-	{
-		actor->Spawn(scene);
-		Actor* raw = actor.get();
-		_defaultActors.push_back(std::move(actor));
-		return raw;
-	};
+    auto spawn = [&](std::unique_ptr<Actor> actor) -> Actor*
+    {
+        actor->Spawn(scene);
+        Actor* raw = actor.get();
+        _defaultActors.push_back(std::move(actor));
+        return raw;
+    };
 
-	spawn(std::make_unique<SkySphereActor>());
-	spawn(std::make_unique<FloorActor>());
-	spawn(std::make_unique<CubeActor>());
-	spawn(std::make_unique<SphereActor>());
+    spawn(std::make_unique<SkySphereActor>());
+    spawn(std::make_unique<FloorActor>());
+    spawn(std::make_unique<CubeActor>());
+    spawn(std::make_unique<SphereActor>());
 
-	Actor* charActor = spawn(std::make_unique<CharacterActor>());
-	_characterEntity = charActor->GetEntity();
+    Actor* charActor  = spawn(std::make_unique<CharacterActor>());
+    _characterEntity  = charActor->GetEntity();
 
-	Actor* lightActor = spawn(std::make_unique<LightActor>());
-	if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
-		scene->SetMainLight(lightComp);
+    Actor* lightActor = spawn(std::make_unique<LightActor>());
+    if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
+        scene->SetMainLight(lightComp);
 }
 
 void EditorApp::CreateHUD()
 {
-	Scene* scene = _scene.get();
+    Scene* scene  = _scene.get();
+    float  cx     = GET_SINGLE(DisplayContext)->GetWidthF() * 0.5f - 130.f;
 
-	std::unique_ptr<Widget> hud = std::make_unique<Widget>(L"HUD");
-	float cx = GET_SINGLE(DisplayContext)->GetWidthF() * 0.5f - 130.f;
-	hud->SetScreenPos(cx, 12.f);
+    auto hud = std::make_unique<Widget>(L"HUD");
+    hud->SetScreenPos(cx, 12.f);
 
-	std::unique_ptr<UIText> timeText = std::make_unique<UIText>();
-	timeText->SetRect(0.f, 0.f, 260.f, 36.f);
-	timeText->SetFontSize(20);
-	timeText->SetTextGetter([]()
-		{
-			float t = GET_SINGLE(TimeManager)->GetTotalTime();
-			wchar_t buf[64];
-			swprintf_s(buf, L"Time  %02d:%02d", (int)(t / 60), (int)t % 60);
-			return std::wstring(buf);
-		});
-	hud->AddUIComponent(std::move(timeText));
+    auto timeText = std::make_unique<UIText>();
+    timeText->SetRect(0.f, 0.f, 260.f, 36.f);
+    timeText->SetFontSize(20);
+    timeText->SetTextGetter([]()
+    {
+        const float t = GET_SINGLE(TimeManager)->GetTotalTime();
+        wchar_t buf[64];
+        swprintf_s(buf, L"Time  %02d:%02d", (int)(t / 60), (int)t % 60);
+        return std::wstring(buf);
+    });
+    hud->AddUIComponent(std::move(timeText));
 
-	std::unique_ptr<UIButton> resetButton = std::make_unique<UIButton>();
-	resetButton->SetRect(50.f, 44.f, 160.f, 28.f);
-	resetButton->SetText(L"Reset Timer");
-	resetButton->SetFontSize(15);
-	resetButton->SetOnClick([]() { ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n"); });
-	hud->AddUIComponent(std::move(resetButton));
+    _saveStatusText = std::make_unique<UIText>();
+    _saveStatusText->SetRect(0.f, 44.f, 260.f, 24.f);
+    _saveStatusText->SetFontSize(13);
+    _saveStatusText->SetTextGetter([this]() { return _saveStatusMsg; });
+    hud->AddUIComponent(std::move(_saveStatusText));
 
-	scene->Add(std::move(hud));
+    auto resetButton = std::make_unique<UIButton>();
+    resetButton->SetRect(50.f, 72.f, 160.f, 28.f);
+    resetButton->SetText(L"Reset Timer");
+    resetButton->SetFontSize(15);
+    resetButton->SetOnClick([]() {
+        ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n");
+    });
+    hud->AddUIComponent(std::move(resetButton));
+
+    scene->Add(std::move(hud));
 }
 
 void EditorApp::CreateCamera()
 {
-	Scene* scene = _scene.get();
+    Scene* scene = _scene.get();
 
-	auto cam = std::make_unique<Entity>(L"카메라");
-	cam->AddComponent(std::make_unique<Transform>());
-	cam->AddComponent(std::make_unique<Camera>());
+    auto cam = std::make_unique<Entity>(L"카메라");
+    cam->AddComponent(std::make_unique<Transform>());
+    cam->AddComponent(std::make_unique<Camera>());
 
-	auto isoCtrl = std::make_unique<IsometricCameraController>();
-	isoCtrl->SetDistance(20.f);
-	isoCtrl->SetPanSpeed(10.f);
-	isoCtrl->SetZoomSpeed(15.f);
-	isoCtrl->SetMinDistance(5.f);
-	isoCtrl->SetMaxDistance(60.f);
+    auto isoCtrl = std::make_unique<IsometricCameraController>();
+    isoCtrl->SetDistance(20.f);
+    isoCtrl->SetPanSpeed(10.f);
+    isoCtrl->SetZoomSpeed(15.f);
+    isoCtrl->SetMinDistance(5.f);
+    isoCtrl->SetMaxDistance(60.f);
 
-	_isoCamCtrl = isoCtrl.get();
-	Camera* camComp = cam->GetComponent<Camera>();
+    _isoCamCtrl  = isoCtrl.get();
+    Camera* camComp = cam->GetComponent<Camera>();
 
-	cam->AddComponent(std::move(isoCtrl));
-	scene->SetMainCamera(camComp);
-	scene->Add(std::move(cam));
+    cam->AddComponent(std::move(isoCtrl));
+    scene->SetMainCamera(camComp);
+    scene->Add(std::move(cam));
 
-	if (_characterEntity)
-		_isoCamCtrl->SetTarget(_characterEntity);
+    if (_characterEntity)
+        _isoCamCtrl->SetTarget(_characterEntity);
 }
 
-// ── Update ────────────────────────────────────────────────────────────────
 void EditorApp::Update()
 {
-	CollisionManager::CheckCollision();
-	UpdatePicking();
+    CollisionManager::CheckCollision();
+    UpdatePicking();
 
-	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-	if (_detailWindow && scene)
-	{
-		static size_t prevEntityCount = 0;
-		size_t curCount = scene->GetEntities().size();
-		if (curCount != prevEntityCount)
-		{
-			prevEntityCount = curCount;
-			_detailWindow->MarkDirty();
-			_detailWindow->RefreshEntityList();
-		}
-	}
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 
-	if ((::GetKeyState(VK_CONTROL) & 0x8000) && GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
-	{
-		SceneSerializer::Save(scene, L"../Saved/scene.json");
-	}
+    if (_detailWindow && scene)
+    {
+        static size_t prevCount = 0;
+        const size_t  curCount  = scene->GetEntities().size();
+        if (curCount != prevCount)
+        {
+            prevCount = curCount;
+            _detailWindow->MarkDirty();
+            _detailWindow->RefreshEntityList();
+        }
+    }
 
-	if ((::GetKeyState(VK_CONTROL) & 0x8000) && GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
-	{
-		SceneSerializer::Load(scene, L"../Saved/scene.json");
-		if (_detailWindow) _detailWindow->MarkDirty();
-	}
+    if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
+        GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
+    {
+        const bool ok = SceneSerializer::Save(scene, L"../Saved/scene.json");
+        SetSaveStatus(ok ? L"✔ 저장 완료" : L"✘ 저장 실패");
+    }
+
+    if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
+        GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
+    {
+        const bool ok = SceneSerializer::Load(scene, L"../Saved/scene.json");
+        SetSaveStatus(ok ? L"✔ 로드 완료" : L"✘ 로드 실패 — scene.json 없음");
+        if (_detailWindow) _detailWindow->MarkDirty();
+    }
+
+    if (!_saveStatusMsg.empty())
+    {
+        _saveStatusTimer += GET_SINGLE(TimeManager)->GetDeltaTime();
+        if (_saveStatusTimer >= kSaveStatusDuration)
+        {
+            _saveStatusMsg.clear();
+            _saveStatusTimer = 0.f;
+        }
+    }
 }
 
 void EditorApp::Render() {}
 
-// ── 피킹 ─────────────────────────────────────────────────────────────────
 void EditorApp::UpdatePicking()
 {
-	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 
-	if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::DEL))
-	{
-		Entity* selected = _detailWindow ? _detailWindow->GetSelectedEntity() : nullptr;
-		if (selected && scene)
-		{
-			scene->Remove(selected);
-			_pickedEntity = nullptr;
-			if (_detailWindow)
-			{
-				_detailWindow->ClearDetail();
-				_detailWindow->MarkDirty();
-				_detailWindow->RefreshEntityList();
-			}
-		}
-	}
+    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::DEL))
+    {
+        Entity* selected = _detailWindow ? _detailWindow->GetSelectedEntity() : nullptr;
+        if (selected && scene)
+        {
+            scene->Remove(selected);
+            _pickedEntity = nullptr;
+            if (_detailWindow)
+            {
+                _detailWindow->ClearDetail();
+                _detailWindow->MarkDirty();
+                _detailWindow->RefreshEntityList();
+            }
+        }
+    }
 
-	if (!GET_SINGLE(InputManager)->IsMainWindowActive()) return;
-	if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
+    if (!GET_SINGLE(InputManager)->IsMainWindowActive())      return;
+    if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
-	POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+    const POINT mp     = GET_SINGLE(InputManager)->GetMousePos();
+    Entity*     picked = scene ? scene->Pick((int32)mp.x, (int32)mp.y) : nullptr;
+    _pickedEntity      = picked;
 
-	Entity* picked = scene ? scene->Pick((int32)mp.x, (int32)mp.y) : nullptr;
-	_pickedEntity  = picked;
+    if (!picked)
+    {
+        if (_detailWindow) _detailWindow->ClearDetail();
+        return;
+    }
 
-	if (!picked)
-	{
-		if (_detailWindow) _detailWindow->ClearDetail();
-		return;
-	}
+    if (!_detailWindow) return;
 
-	if (!_detailWindow) return;
-
-	DetailInfo info;
-	FillDetailInfo(picked, info);
-	_detailWindow->UpdateDetail(info);
-	_detailWindow->SelectEntity(picked);
-	if (!_detailWindow->IsVisible()) _detailWindow->Show();
+    DetailInfo info;
+    FillDetailInfo(picked, info);
+    _detailWindow->UpdateDetail(info);
+    _detailWindow->SelectEntity(picked);
+    if (!_detailWindow->IsVisible()) _detailWindow->Show();
 }
 
 void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
 {
-	info.entityLabel = L"Entity";
+    info.entityLabel = entity->GetEntityName();
 
-	if (Transform* tf = entity->GetComponent<Transform>())
-	{
-		Vec3 pos = tf->GetPosition(), rot = tf->GetRotation(), scl = tf->GetScale();
-		info.tx = pos.x; info.ty = pos.y; info.tz = pos.z;
-		info.rx = XMConvertToDegrees(rot.x);
-		info.ry = XMConvertToDegrees(rot.y);
-		info.rz = XMConvertToDegrees(rot.z);
-		info.sx = scl.x; info.sy = scl.y; info.sz = scl.z;
-	}
+    if (ModelAnimator* animator = entity->GetComponent<ModelAnimator>())
+    {
+        info.rendererType = L"ModelAnimator";
 
-	if (ModelAnimator* animator = entity->GetComponent<ModelAnimator>())
-	{
-		if (std::shared_ptr<Model> mdl = animator->GetModel())
-		{
-			info.entityLabel = info.modelName =
-				(mdl->GetMeshCount() > 0) ? mdl->GetMeshByIndex(0)->name : L"Unknown";
-			info.boneCount = (int)mdl->GetBoneCount();
-			info.meshCount = (int)mdl->GetMeshCount();
+        if (auto mdl = animator->GetModel())
+        {
+            info.modelName = (mdl->GetMeshCount() > 0)
+                ? mdl->GetMeshByIndex(0)->name : L"Unknown";
+            info.entityLabel = info.modelName;
+            info.meshName    = info.modelName;
+            info.boneCount   = (int)mdl->GetBoneCount();
+            info.meshCount   = (int)mdl->GetMeshCount();
 
-			if (mdl->GetAnimationCount() > 0)
-			{
-				ModelAnimation* anim = mdl->GetAnimationByIndex(0);
-				info.animName   = anim->name;
-				info.frameCount = (int)anim->frameCount;
-				info.frameRate  = anim->frameRate;
-				info.duration   = anim->duration;
-			}
-		}
-	}
+            if (mdl->GetAnimationCount() > 0)
+            {
+                ModelAnimation* anim = mdl->GetAnimationByIndex(0);
+                info.animName   = anim->name;
+                info.frameCount = (int)anim->frameCount;
+                info.frameRate  = anim->frameRate;
+                info.duration   = anim->duration;
+            }
+        }
+    }
+    else if (MeshRenderer* renderer = entity->GetComponent<MeshRenderer>())
+    {
+        info.rendererType = L"MeshRenderer";
+        if (auto mesh = renderer->GetMesh())     info.meshName     = mesh->GetName();
+        if (auto mat  = renderer->GetMaterial()) info.materialName = mat->GetName();
+    }
+    else
+    {
+        info.rendererType = L"없음";
+    }
+
+    if (BaseCollider* col = entity->GetComponent<BaseCollider>())
+    {
+        auto ShapeStr = [](ColliderType t) -> std::wstring
+        {
+            switch (t)
+            {
+            case ColliderType::AABB:    return L"AABB (Box)";
+            case ColliderType::OBB:     return L"OBB (Box·회전)";
+            case ColliderType::Sphere:  return L"Sphere";
+            case ColliderType::Frustum: return L"Frustum";
+            default:                    return L"알 수 없음";
+            }
+        };
+
+        auto MaskStr = [](uint8 mask) -> std::wstring
+        {
+            if (mask == 0)    return L"None";
+            if (mask == 0xFF) return L"All";
+
+            static const std::pair<CollisionChannel, const wchar_t*> kMap[] = {
+                { CollisionChannel::Default,   L"Default"   },
+                { CollisionChannel::Character, L"Character" },
+                { CollisionChannel::Priming,   L"Priming"   },
+                { CollisionChannel::Mushroom,  L"Mushroom"  },
+                { CollisionChannel::Floor,     L"Floor"     },
+            };
+
+            std::wstring r;
+            for (auto& [ch, name] : kMap)
+                if (ChannelInMask(ch, mask)) { if (!r.empty()) r += L" | "; r += name; }
+            return r.empty() ? L"None" : r;
+        };
+
+        auto ChName = [](CollisionChannel ch) -> std::wstring
+        {
+            switch (ch)
+            {
+            case CollisionChannel::Default:   return L"Default";
+            case CollisionChannel::Character: return L"Character";
+            case CollisionChannel::Priming:   return L"Priming";
+            case CollisionChannel::Mushroom:  return L"Mushroom";
+            case CollisionChannel::Floor:     return L"Floor";
+            default:                          return L"None";
+            }
+        };
+
+        info.hasCollider      = true;
+        info.colliderShape    = ShapeStr(col->GetColliderType());
+        info.ownChannel       = ChName(col->GetOwnChannel());
+        info.pickableChannels = MaskStr(col->GetPickableMask());
+        info.isStatic         = col->IsStatic();
+
+        const Vec3 ext = col->GetOffsetScale();
+        info.extX = ext.x; info.extY = ext.y; info.extZ = ext.z;
+    }
+
+    if (Transform* tf = entity->GetComponent<Transform>())
+    {
+        const Vec3 pos = tf->GetPosition();
+        const Vec3 rot = tf->GetRotation();
+        const Vec3 scl = tf->GetScale();
+
+        info.tx = pos.x; info.ty = pos.y; info.tz = pos.z;
+        info.rx = XMConvertToDegrees(rot.x);
+        info.ry = XMConvertToDegrees(rot.y);
+        info.rz = XMConvertToDegrees(rot.z);
+        info.sx = scl.x; info.sy = scl.y; info.sz = scl.z;
+    }
+}
+
+void EditorApp::SetSaveStatus(const std::wstring& msg)
+{
+    _saveStatusMsg   = msg;
+    _saveStatusTimer = 0.f;
+    ::OutputDebugStringW((msg + L"\n").c_str());
 }

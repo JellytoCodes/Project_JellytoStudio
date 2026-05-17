@@ -282,7 +282,7 @@ void BlockPlacer::AttachCollider(Entity* entity, const BlockRecord& rec)
 {
 	const Vec3 half = GetHalfExtents(rec.collider);
 	auto col = std::make_unique<AABBCollider>();
-	col->SetShowDebug(true);
+	col->SetShowDebug(false);
 	col->SetBoxExtents(half);
 	const float yOffset = (rec.renderType == BlockRenderType::Model) ? half.y : 0.f;
 	col->SetOffsetPosition(Vec3(0.f, yOffset, 0.f));

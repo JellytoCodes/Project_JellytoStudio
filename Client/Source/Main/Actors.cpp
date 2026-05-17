@@ -52,10 +52,10 @@ void FloorActor::BuildEntity()
 	GET_SINGLE(ResourceManager)->Add(L"FloorMat", material);
 
 	std::unique_ptr<TileMap> tileMap = std::make_unique<TileMap>();
-	_entity->AddComponent(std::move(tileMap));
 	tileMap->Create(20, 20, 1.f, GET_SINGLE(ResourceManager)->Get<Material>(L"FloorMat"));
 
-	_entity->GetComponent<Transform>()->SetLocalPosition(Vec3(-10.f, 0.f, -10.f));
+	_entity->AddComponent(std::move(tileMap));
+	_entity->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 0.f, -10.f));
 }
 
 void CubeActor::BuildEntity()

@@ -40,7 +40,7 @@ void TileMap::Create(int32 cols, int32 rows, float tileSize, std::shared_ptr<Mat
 	AABBCollider* col = entity->GetComponent<AABBCollider>();
 	float hw = cols * tileSize * 0.5f;
 	float hd = rows * tileSize * 0.5f;
-	col->SetBoxExtents(Vec3(hw, 0.05f, hd));  
+	col->SetBoxExtents(Vec3(hw, 0.05f, hd));
 	col->SetOffsetPosition(Vec3(hw, 0.f, hd));
 	col->SetShowDebug(false);
 }

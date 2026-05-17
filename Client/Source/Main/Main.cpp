@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "App/Application.h"
 
-//#define EDITOR_MODE
+#define EDITOR_MODE
 
 #ifdef EDITOR_MODE
     #include "EditorApp.h"

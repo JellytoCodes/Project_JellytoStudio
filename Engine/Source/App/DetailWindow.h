@@ -6,92 +6,111 @@ class Entity;
 
 struct DetailInfo
 {
-	std::wstring entityLabel;
+    std::wstring entityLabel;     
 
-	std::wstring	modelName;
-	int				boneCount = 0;
-	int				meshCount = 0;
+    std::wstring rendererType;    
+    std::wstring meshName;        
+    std::wstring materialName;    
 
-	std::wstring	animName;
-	int				frameCount = 0;
-	float			frameRate = 0.f;
-	float			duration = 0.f;
+    std::wstring modelName;
+    int          boneCount  = 0;
+    int          meshCount  = 0;
 
-	float			tx = 0.f, ty = 0.f, tz = 0.f;
-	float			rx = 0.f, ry = 0.f, rz = 0.f;
-	float			sx = 1.f, sy = 1.f, sz = 1.f;
+    std::wstring animName;
+    int          frameCount = 0;
+    float        frameRate  = 0.f;
+    float        duration   = 0.f;
+
+    bool         hasCollider      = false;
+    std::wstring colliderShape;   
+    std::wstring ownChannel;      
+    std::wstring pickableChannels;
+    bool         isStatic         = false;
+    float        extX = 0.f, extY = 0.f, extZ = 0.f;
+
+    float tx = 0.f, ty = 0.f, tz = 0.f;
+    float rx = 0.f, ry = 0.f, rz = 0.f;
+    float sx = 1.f, sy = 1.f, sz = 1.f;
 };
 
 class DetailWindow : public IWindow
 {
 public:
-	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
+    virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
 
-	virtual void Show()   override;
-	virtual void Hide()   override;
-	virtual void Toggle() override;
+    virtual void Show()   override;
+    virtual void Hide()   override;
+    virtual void Toggle() override;
 
-	virtual bool IsVisible() const override { return _visible; }
-	virtual HWND GetHWnd()   const override { return _hWnd; }
+    virtual bool IsVisible() const override { return _visible; }
+    virtual HWND GetHWnd()   const override { return _hWnd;    }
 
-	void SetScene(Scene* scene);
+    void SetScene(Scene* scene);
 
-	void MarkDirty();
-	void RefreshEntityList();
+    void MarkDirty();
+    void RefreshEntityList();
 
-	void UpdateDetail(const DetailInfo& info);
-	void ClearDetail();
+    void UpdateDetail(const DetailInfo& info);
+    void ClearDetail();
 
-	Entity* GetSelectedEntity() const { return _selectedEntity; }
-	const std::vector<Entity*>& GetEntitySnapshot() const { return _entitySnapshot; }
+    Entity* GetSelectedEntity() const                    { return _selectedEntity;  }
+    const std::vector<Entity*>& GetEntitySnapshot() const{ return _entitySnapshot;  }
 
-	void	SelectEntity(Entity* entity);
+    void SelectEntity(Entity* entity);
 
 private:
-	void	BuildUI();
-	void	OnEntityListClicked();
-	void	FillDetailFromEntity(Entity* entity);
+    void BuildUI();
 
-	void    ApplyTransform();
-	float   GetEditFloat(HWND hEdit, float fallback = 0.f);
-	bool    IsTransformEditFocused() const;
+    void OnEntityListClicked();
+    void FillDetailFromEntity(Entity* entity);
 
-	void	RegisterWindowClass(HINSTANCE hInstance);
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    void ApplyTransform();
+    float GetEditFloat(HWND hEdit, float fallback = 0.f);
+    bool  IsTransformEditFocused() const;
 
-	HWND						_hWnd = nullptr;
-	HINSTANCE					_hInstance = nullptr;
-	bool						_visible = false;
-	bool						_created = false;
+    void RegisterWindowClass(HINSTANCE hInstance);
+    static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	bool						_listDirty = false;
+    HWND        _hWnd      = nullptr;
+    HINSTANCE   _hInstance = nullptr;
+    bool        _visible   = false;
+    bool        _created   = false;
+    bool        _listDirty = false;
 
-	Scene*						_scene          = nullptr;
-	Entity*						_selectedEntity = nullptr;
+    Scene*              _scene          = nullptr;
+    Entity*             _selectedEntity = nullptr;
+    std::vector<Entity*> _entitySnapshot;
 
-	std::vector<Entity*>		_entitySnapshot;
+    HWND _hSceneName    = nullptr;
 
-	HWND						_hSceneName = nullptr;
+    HWND _hEntityCount  = nullptr;
+    HWND _hEntityList   = nullptr;
+    HWND _hPickedLabel  = nullptr;
 
-	HWND						_hEntityCount = nullptr;
-	HWND						_hEntityList = nullptr;
+    HWND _hRendererType    = nullptr;
+    HWND _hMeshName        = nullptr;
+    HWND _hMaterialName    = nullptr;
 
-	HWND						_hPickedLabel = nullptr;
-	HWND						_hModelName = nullptr;
-	HWND						_hBoneCount = nullptr;
-	HWND						_hMeshCount = nullptr;
-	HWND						_hAnimName = nullptr;
-	HWND						_hFrameCount = nullptr;
-	HWND						_hFrameRate = nullptr;
-	HWND						_hDuration = nullptr;
+    HWND _hModelName    = nullptr;
+    HWND _hBoneCount    = nullptr;
+    HWND _hMeshCount    = nullptr;
+    HWND _hAnimName     = nullptr;
+    HWND _hFrameCount   = nullptr;
+    HWND _hFrameRate    = nullptr;
+    HWND _hDuration     = nullptr;
 
-	HWND						_hPosX = nullptr, _hPosY = nullptr, _hPosZ = nullptr;
-	HWND						_hRotX = nullptr, _hRotY = nullptr, _hRotZ = nullptr;
-	HWND						_hSclX = nullptr, _hSclY = nullptr, _hSclZ = nullptr;
+    HWND _hColliderShape      = nullptr;
+    HWND _hOwnChannel         = nullptr;
+    HWND _hPickableChannels   = nullptr;
+    HWND _hIsStatic           = nullptr;
+    HWND _hExtents            = nullptr;
 
-	HWND						_hApplyBtn = nullptr;
+    HWND _hPosX = nullptr, _hPosY = nullptr, _hPosZ = nullptr;
+    HWND _hRotX = nullptr, _hRotY = nullptr, _hRotZ = nullptr;
+    HWND _hSclX = nullptr, _hSclY = nullptr, _hSclZ = nullptr;
+    HWND _hApplyBtn = nullptr;
 
-	static constexpr wchar_t	CLASS_NAME[] = L"JellytoDetailPanel";
-	static constexpr int		ID_LIST_ENTITY = 501;
-	static constexpr int		ID_BTN_APPLY = 502;
+    static constexpr wchar_t CLASS_NAME[]     = L"JellytoDetailPanel";
+    static constexpr int     ID_LIST_ENTITY   = 501;
+    static constexpr int     ID_BTN_APPLY     = 502;
 };
