@@ -13,6 +13,7 @@ public:
 
     void Register  (Entity* entity);
     void Unregister(Entity* entity);
+    void MarkDirty (Entity* entity);
     void Clear();
 
     void CollectVisible(const DirectX::BoundingFrustum& frustum, std::vector<Entity*>& outEntities);

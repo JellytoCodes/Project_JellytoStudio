@@ -120,31 +120,9 @@ void BlockPlacer::HandleInput(const FramePickResult& pick)
 	const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(st));
 	if (!rec) return;
 
-	Entity* hitEntity = nullptr;
-	Vec3    hitNormal;
-	float   hitDist   = FLT_MAX;
-	bool    hit       = false;
-
-	if ((rec->pickableMask & static_cast<uint8>(CH::Priming)) && pick.priming.valid)
-	{
-		hit       = true;
-		hitEntity = pick.priming.entity;
-		hitNormal = pick.priming.normal;
-		hitDist   = pick.priming.dist;
-	}
-
-	if ((rec->pickableMask & static_cast<uint8>(CH::Floor)) && pick.floor.valid)
-	{
-		if (!hit || pick.floor.dist < hitDist)
-		{
-			hit       = true;
-			hitEntity = pick.floor.entity;
-			hitNormal = pick.floor.normal;
-			hitDist   = pick.floor.dist;
-		}
-	}
-
-	if (hit) TryPlaceOnHit(hitEntity, hitNormal, st);
+	Vec3 centerPos;
+	if (ResolvePlaceTarget(pick, st, centerPos))
+		PlaceBlockAt(centerPos, st);
 }
 
 bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
@@ -172,6 +150,38 @@ bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
 	if (IsOverlappingCharacter(newCenter, newHalf)) return false;
 
 	outCenterPos = newCenter;
+	return true;
+}
+
+bool BlockPlacer::ResolvePlaceTarget(const FramePickResult& pick, SlotType type, Vec3& outCenterPos) const
+{
+	const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
+	if (!rec) return false;
+
+	bool  found    = false;
+	float bestDist = FLT_MAX;
+	Vec3  bestPos;
+
+	auto tryHit = [&](CollisionChannel channel, const FramePickResult::Hit& hit)
+	{
+		if (!hit.valid) return;
+		if ((rec->pickableMask & static_cast<uint8>(channel)) == 0) return;
+		if (hit.dist >= bestDist) return;
+
+		Vec3 pos;
+		if (!CalcPlacePos(type, hit.entity, hit.normal, pos)) return;
+
+		found    = true;
+		bestDist = hit.dist;
+		bestPos  = pos;
+	};
+
+	tryHit(CH::Priming,  pick.priming);
+	tryHit(CH::Floor,    pick.floor);
+	tryHit(CH::Mushroom, pick.mushroom);
+
+	if (!found) return false;
+	outCenterPos = bestPos;
 	return true;
 }
 
@@ -220,18 +230,9 @@ void BlockPlacer::UpdatePreview(const FramePickResult& pick)
 
 		previewScale = Vec3(half.x * 2.f * 0.95f, 0.06f, half.z * 2.f * 0.95f);
 
-		if ((rec->pickableMask & static_cast<uint8>(CH::Priming)) && pick.priming.valid)
-		{
-			Vec3 cp;
-			if (CalcPlacePos(st, pick.priming.entity, pick.priming.normal, cp))
-			{ canAct = hasStock; previewPos = cp; }
-		}
-		else if ((rec->pickableMask & static_cast<uint8>(CH::Floor)) && pick.floor.valid)
-		{
-			Vec3 cp;
-			if (CalcPlacePos(st, pick.floor.entity, pick.floor.normal, cp))
-			{ canAct = hasStock; previewPos = cp; }
-		}
+		Vec3 cp;
+		if (ResolvePlaceTarget(pick, st, cp))
+		{ canAct = hasStock; previewPos = cp; }
 	}
 
 	_previewValid = canAct;
@@ -495,8 +496,12 @@ void BlockPlacer::TickPlaceTweens(float dt)
 
 				if (auto* col = tw.entity->GetComponent<AABBCollider>())
 					col->InvalidateBounds();
+				GET_SINGLE(ChunkManager)->MarkDirty(tw.entity);
 
-				instMgr->MarkEntityMeshDirty(tw.entity);
+				if (tw.entity->GetComponent<MeshRenderer>())
+					instMgr->SetMeshDirty();
+				else if (tw.entity->GetComponent<ModelRenderer>())
+					instMgr->SetDirty();
 
 				return t >= 1.f;
 			}),

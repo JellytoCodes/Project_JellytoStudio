@@ -45,11 +45,13 @@ Matrix AABBCollider::GetDebugWorldMatrix()
 
 bool AABBCollider::Intersects(Ray& ray, float& distance)
 {
+	Update();
 	return _boundingBox.Intersects(ray.position, ray.direction, OUT distance);
 }
 
 bool AABBCollider::Intersects(BaseCollider* other)
 {
+	Update();
 	switch (other->GetColliderType())
 	{
 	case ColliderType::Sphere:
@@ -65,6 +67,7 @@ bool AABBCollider::Intersects(BaseCollider* other)
 }
 bool AABBCollider::IntersectsWithNormal(Ray& ray, float& distance, Vec3& outHitNormal)
 {
+	Update();
 	if (!_boundingBox.Intersects(ray.position, ray.direction, distance))
 		return false;
 

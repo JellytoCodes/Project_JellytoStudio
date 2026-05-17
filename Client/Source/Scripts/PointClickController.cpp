@@ -4,11 +4,13 @@
 #include "Entity/Entity.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/AnimStateMachine.h"
+#include "Entity/Components/Collider/BaseCollider.h"
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scene/ChunkManager.h"
 
 PointClickController::PointClickController() {}
 
@@ -104,6 +106,9 @@ void PointClickController::MoveToDestination(float dt)
     }
 
     transform->SetLocalPosition(pos + dir * moveStep);
+
+    if (auto* col = GetEntity()->GetComponent<AABBCollider>())
+        col->InvalidateBounds();
 }
 
 // ── 블록 측면 충돌 체크 ───────────────────────────────────────────────────
@@ -138,12 +143,14 @@ bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
 
     const float charFeetY = nextEntityPos.y;
 
-    for (const auto& entity : scene->GetEntities())
-    {
-        // entity 는 const unique_ptr<Entity>& → .get() 로 raw ptr 비교
-        if (entity.get() == selfEntity) continue;
+    std::vector<BaseCollider*> candidates;
+    candidates.reserve(32);
+    GET_SINGLE(ChunkManager)->CollectStaticColliders(nextCharBox, candidates);
 
-        AABBCollider* blockAabb = entity->GetComponent<AABBCollider>();
+    for (BaseCollider* candidate : candidates)
+    {
+        if (!candidate || candidate->GetEntity() == selfEntity) continue;
+        AABBCollider* blockAabb = dynamic_cast<AABBCollider*>(candidate);
         if (!blockAabb) continue;
 
         if (blockAabb->GetOwnChannel() != CollisionChannel::Priming) continue;

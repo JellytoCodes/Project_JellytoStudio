@@ -164,7 +164,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             auto* tr = entity->GetComponent<Transform>();
             if (tr && mr->FillPacket(tr->GetWorldMatrix(), packet))
             {
-                InstancingData data;
+                InstancingData data{};
                 data.world         = packet.matWorld;
                 data.materialIndex = packet.materialIndex;
                 data._instPad[0]   = 0u;
@@ -178,7 +178,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             if (auto* modelR = entity->GetComponent<ModelRenderer>())
             {
                 const InstanceID id = modelR->GetInstanceID();
-                InstancingData data;
+                InstancingData data{};
                 data.world         = modelR->GetModelScaleMatrix()
                                    * entity->GetComponent<Transform>()->GetWorldMatrix();
                 data.materialIndex = 0u;
@@ -394,7 +394,7 @@ void InstancingManager::RenderAnimRenderer()
             auto*   anim   = entity->GetComponent<ModelAnimator>();
             auto*   tr     = entity->GetComponent<Transform>();
 
-            InstancingData data;
+            InstancingData data{};
             data.world         = tr->GetWorldMatrix();
             data.materialIndex = 0u;
             data._instPad[0]   = 0u;

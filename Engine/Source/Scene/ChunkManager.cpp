@@ -93,6 +93,17 @@ void ChunkManager::Unregister(Entity* entity)
         _chunks.erase(chunkIt);
 }
 
+void ChunkManager::MarkDirty(Entity* entity)
+{
+    auto it = _entityToKey.find(entity);
+    if (it == _entityToKey.end()) return;
+
+    auto chunkIt = _chunks.find(it->second);
+    if (chunkIt == _chunks.end()) return;
+
+    chunkIt->second.aabbDirty = true;
+}
+
 void ChunkManager::Clear()
 {
     _chunks.clear();

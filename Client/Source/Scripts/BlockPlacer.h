@@ -61,6 +61,7 @@ private:
 	bool TryRemoveEntity(Entity* entity);
 
 	bool CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity, const Vec3& hitNormal, Vec3& outCenterPos) const;
+	bool ResolvePlaceTarget(const FramePickResult& pick, PaletteWidget::SlotType type, Vec3& outCenterPos) const;
 	bool IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
 
 	Entity* SpawnBlockEntity(const Vec3& centerPos, PaletteWidget::SlotType type, const Vec3& initialScale, const Vec3& finalScale);

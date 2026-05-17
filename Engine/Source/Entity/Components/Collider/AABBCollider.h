@@ -15,7 +15,7 @@ public:
 	// 히트 노말 반환 버전 — PickBlock에서 배치 면 판별에 사용
 	bool IntersectsWithNormal(Ray& ray, float& distance, Vec3& outHitNormal);
 
-	BoundingBox& GetBoundingBox()					{ return _boundingBox; }
+	BoundingBox& GetBoundingBox()					{ Update(); return _boundingBox; }
 
 	Vec3 GetBoxExtents() const						{ return _boxExtents; }
 	void SetBoxExtents(const Vec3& e)				{ _boxExtents = e; }
