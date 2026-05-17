@@ -3,6 +3,8 @@
 
 #include "Actors.h"
 #include "Resource/Managers/ResourceManager.h"
+#include "Resource/Material.h"
+#include "Resource/Mesh.h"
 #include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Scene/SceneManager.h"
@@ -18,8 +20,6 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
-#include "Resource/Material.h"
-#include "Resource/Mesh.h"
 #include "Scripts/IsometricCameraController.h"
 #include "Entity/Components/Light.h"
 #include "App/Managers/WindowManager.h"
@@ -39,8 +39,10 @@ void EditorApp::Init()
     _scene = std::make_unique<Scene>();
     _scene->SetName(L"Main Scene");
 
-    _itemWindow   = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>(L"ItemWindow");
-    _detailWindow = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
+    _itemWindow       = GET_SINGLE(WindowManager)->GetWindow<ItemWindow>  (L"ItemWindow");
+    _detailWindow     = GET_SINGLE(WindowManager)->GetWindow<DetailWindow>(L"DetailWindow");
+
+    _chunkDebugWindow = GET_SINGLE(WindowManager)->RegisterWindow<ChunkDebugWindow>(L"ChunkDebugWindow");
 
     SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_unique<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"FloorActor",     [] { return std::make_unique<FloorActor>();     });
@@ -56,7 +58,7 @@ void EditorApp::Init()
     Scene* rawScene = _scene.get();
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
 
-    if (_itemWindow)   _itemWindow->SetScene(rawScene);
+    if (_itemWindow)   _itemWindow  ->SetScene(rawScene);
     if (_detailWindow) _detailWindow->SetScene(rawScene);
 
     RegisterActors();
@@ -89,8 +91,8 @@ void EditorApp::SpawnDefaultActors()
     spawn(std::make_unique<CubeActor>());
     spawn(std::make_unique<SphereActor>());
 
-    Actor* charActor  = spawn(std::make_unique<CharacterActor>());
-    _characterEntity  = charActor->GetEntity();
+    Actor* charActor = spawn(std::make_unique<CharacterActor>());
+    _characterEntity = charActor->GetEntity();
 
     Actor* lightActor = spawn(std::make_unique<LightActor>());
     if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
@@ -99,8 +101,8 @@ void EditorApp::SpawnDefaultActors()
 
 void EditorApp::CreateHUD()
 {
-    Scene* scene  = _scene.get();
-    float  cx     = GET_SINGLE(DisplayContext)->GetWidthF() * 0.5f - 130.f;
+    Scene* scene = _scene.get();
+    float  cx    = GET_SINGLE(DisplayContext)->GetWidthF() * 0.5f - 130.f;
 
     auto hud = std::make_unique<Widget>(L"HUD");
     hud->SetScreenPos(cx, 12.f);
@@ -117,14 +119,23 @@ void EditorApp::CreateHUD()
     });
     hud->AddUIComponent(std::move(timeText));
 
-    _saveStatusText = std::make_unique<UIText>();
-    _saveStatusText->SetRect(0.f, 44.f, 260.f, 24.f);
-    _saveStatusText->SetFontSize(13);
-    _saveStatusText->SetTextGetter([this]() { return _saveStatusMsg; });
-    hud->AddUIComponent(std::move(_saveStatusText));
+    auto saveText = std::make_unique<UIText>();
+    saveText->SetRect(0.f, 44.f, 300.f, 22.f);
+    saveText->SetFontSize(13);
+    saveText->SetTextGetter([this]() { return _saveStatusMsg; });
+    _saveStatusText = saveText.get();
+    hud->AddUIComponent(std::move(saveText));
+
+    auto hintText = std::make_unique<UIText>();
+    hintText->SetRect(0.f, 70.f, 300.f, 18.f);
+    hintText->SetFontSize(12);
+    hintText->SetTextGetter([]() {
+        return std::wstring(L"F2 : Chunk Debug  |  Ctrl+S : 저장  |  Ctrl+L : 로드  |  Del : 삭제");
+    });
+    hud->AddUIComponent(std::move(hintText));
 
     auto resetButton = std::make_unique<UIButton>();
-    resetButton->SetRect(50.f, 72.f, 160.f, 28.f);
+    resetButton->SetRect(50.f, 94.f, 160.f, 28.f);
     resetButton->SetText(L"Reset Timer");
     resetButton->SetFontSize(15);
     resetButton->SetOnClick([]() {
@@ -150,7 +161,7 @@ void EditorApp::CreateCamera()
     isoCtrl->SetMinDistance(5.f);
     isoCtrl->SetMaxDistance(60.f);
 
-    _isoCamCtrl  = isoCtrl.get();
+    _isoCamCtrl = isoCtrl.get();
     Camera* camComp = cam->GetComponent<Camera>();
 
     cam->AddComponent(std::move(isoCtrl));
@@ -166,7 +177,8 @@ void EditorApp::Update()
     CollisionManager::CheckCollision();
     UpdatePicking();
 
-    Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    const float dt    = GET_SINGLE(TimeManager)->GetDeltaTime();
+    Scene*      scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 
     if (_detailWindow && scene)
     {
@@ -180,24 +192,45 @@ void EditorApp::Update()
         }
     }
 
+    static bool prevF2 = false;
+    const  bool curF2  = (::GetAsyncKeyState(VK_F2) & 0x8000) != 0;
+    if (curF2 && !prevF2 && _chunkDebugWindow)
+        _chunkDebugWindow->Toggle();
+    prevF2 = curF2;
+
+    if (_chunkDebugWindow && _chunkDebugWindow->IsVisible())
+    {
+        _chunkRefreshTimer += dt;
+        if (_chunkRefreshTimer >= kChunkRefreshInterval)
+        {
+            _chunkRefreshTimer = 0.f;
+
+            Entity* selected = _detailWindow
+                ? _detailWindow->GetSelectedEntity()
+                : nullptr;
+
+            _chunkDebugWindow->Refresh(selected);
+        }
+    }
+
     if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
         GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
     {
         const bool ok = SceneSerializer::Save(scene, L"../Saved/scene.json");
-        SetSaveStatus(ok ? L"✔ 저장 완료" : L"✘ 저장 실패");
+        SetSaveStatus(ok ? L"✔ 저장 완료 — scene.json" : L"✘ 저장 실패");
     }
 
     if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
         GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
     {
         const bool ok = SceneSerializer::Load(scene, L"../Saved/scene.json");
-        SetSaveStatus(ok ? L"✔ 로드 완료" : L"✘ 로드 실패 — scene.json 없음");
+        SetSaveStatus(ok ? L"✔ 로드 완료 — scene.json" : L"✘ 로드 실패 — 파일 없음");
         if (_detailWindow) _detailWindow->MarkDirty();
     }
 
     if (!_saveStatusMsg.empty())
     {
-        _saveStatusTimer += GET_SINGLE(TimeManager)->GetDeltaTime();
+        _saveStatusTimer += dt;
         if (_saveStatusTimer >= kSaveStatusDuration)
         {
             _saveStatusMsg.clear();
@@ -228,7 +261,7 @@ void EditorApp::UpdatePicking()
         }
     }
 
-    if (!GET_SINGLE(InputManager)->IsMainWindowActive())      return;
+    if (!GET_SINGLE(InputManager)->IsMainWindowActive())           return;
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
     const POINT mp     = GET_SINGLE(InputManager)->GetMousePos();
@@ -248,6 +281,11 @@ void EditorApp::UpdatePicking()
     _detailWindow->UpdateDetail(info);
     _detailWindow->SelectEntity(picked);
     if (!_detailWindow->IsVisible()) _detailWindow->Show();
+
+    if (_chunkDebugWindow && _chunkDebugWindow->IsVisible())
+    {
+        _chunkRefreshTimer = kChunkRefreshInterval;
+    }
 }
 
 void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
@@ -257,7 +295,6 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
     if (ModelAnimator* animator = entity->GetComponent<ModelAnimator>())
     {
         info.rendererType = L"ModelAnimator";
-
         if (auto mdl = animator->GetModel())
         {
             info.modelName = (mdl->GetMeshCount() > 0)
@@ -306,7 +343,6 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
         {
             if (mask == 0)    return L"None";
             if (mask == 0xFF) return L"All";
-
             static const std::pair<CollisionChannel, const wchar_t*> kMap[] = {
                 { CollisionChannel::Default,   L"Default"   },
                 { CollisionChannel::Character, L"Character" },
@@ -314,17 +350,16 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
                 { CollisionChannel::Mushroom,  L"Mushroom"  },
                 { CollisionChannel::Floor,     L"Floor"     },
             };
-
             std::wstring r;
             for (auto& [ch, name] : kMap)
                 if (ChannelInMask(ch, mask)) { if (!r.empty()) r += L" | "; r += name; }
             return r.empty() ? L"None" : r;
         };
 
-        auto ChName = [](CollisionChannel ch) -> std::wstring
-        {
-            switch (ch)
-            {
+        info.hasCollider      = true;
+        info.colliderShape    = ShapeStr(col->GetColliderType());
+        info.ownChannel       = [&]() -> std::wstring {
+            switch (col->GetOwnChannel()) {
             case CollisionChannel::Default:   return L"Default";
             case CollisionChannel::Character: return L"Character";
             case CollisionChannel::Priming:   return L"Priming";
@@ -332,11 +367,7 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
             case CollisionChannel::Floor:     return L"Floor";
             default:                          return L"None";
             }
-        };
-
-        info.hasCollider      = true;
-        info.colliderShape    = ShapeStr(col->GetColliderType());
-        info.ownChannel       = ChName(col->GetOwnChannel());
+        }();
         info.pickableChannels = MaskStr(col->GetPickableMask());
         info.isStatic         = col->IsStatic();
 

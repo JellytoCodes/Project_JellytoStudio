@@ -166,6 +166,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClCompile Include="Source\Audio\AudioClip.cpp" />
     <ClCompile Include="Source\Audio\AudioDataTable.cpp" />
     <ClCompile Include="Source\Audio\AudioManager.cpp" />
+    <ClCompile Include="Source\App\ChunkDebugWindow.cpp" />
     <ClCompile Include="Source\Core\DisplayContext.cpp" />
     <ClCompile Include="Source\Entity\Actor.cpp" />
     <ClCompile Include="Source\Entity\Components\AnimStateMachine.cpp" />
@@ -251,6 +252,7 @@ copy /Y "$(OutDir)$(TargetName).lib" "$(SolutionDir)Libraries\Lib\Engine\$(Targe
     <ClInclude Include="Source\Audio\AudioClip.h" />
     <ClInclude Include="Source\Audio\AudioDataTable.h" />
     <ClInclude Include="Source\Audio\AudioManager.h" />
+    <ClInclude Include="Source\App\ChunkDebugWindow.h" />
     <ClInclude Include="Source\Core\DisplayContext.h" />
     <ClInclude Include="Source\Entity\Actor.h" />
     <ClInclude Include="Source\Entity\Components\AnimStateMachine.h" />

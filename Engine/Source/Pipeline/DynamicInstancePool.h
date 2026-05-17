@@ -6,7 +6,7 @@ class DynamicInstancePool
     DECLARE_SINGLE(DynamicInstancePool)
 
 public:
-    static constexpr uint32 kRingCount = 3;
+    static constexpr uint32 kRingCount    = 3;
     static constexpr uint32 kMaxInstances = 30000;
 
     void Init();
@@ -19,12 +19,16 @@ public:
 
     bool IsReady() const { return _ready; }
 
+    uint32 GetUsedInstances() const { return _writeOffset; }
+
+    uint32 GetCurrentSlot() const { return _currentSlot; }
+
 private:
     ComPtr<ID3D11Buffer> _ringBuffers[kRingCount];
 
-    uint32 _frameIndex = 0;
-    uint32 _currentSlot = 0;
-    uint32 _writeOffset = 0;
-    bool   _firstAppend = true;
-    bool   _ready = false;
+    uint32 _frameIndex   = 0;
+    uint32 _currentSlot  = 0;
+    uint32 _writeOffset  = 0;
+    bool   _firstAppend  = true;
+    bool   _ready        = false;
 };

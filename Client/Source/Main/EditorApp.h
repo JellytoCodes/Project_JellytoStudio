@@ -3,12 +3,14 @@
 #include "Core/Interfaces/IExecute.h"
 #include "App/ItemWindow.h"
 #include "App/DetailWindow.h"
+#include "App/ChunkDebugWindow.h"
 
 class Scene;
 class Entity;
 class Actor;
 class ItemWindow;
 class DetailWindow;
+class ChunkDebugWindow;
 class IsometricCameraController;
 class UIText;
 
@@ -29,25 +31,27 @@ private:
     void CreateHUD();
 
     void UpdatePicking();
-
     void FillDetailInfo(Entity* entity, DetailInfo& out);
 
     void SetSaveStatus(const std::wstring& msg);
 
     std::unique_ptr<Scene>              _scene;
 
-    ItemWindow*                         _itemWindow      = nullptr;
-    DetailWindow*                       _detailWindow    = nullptr;
+    ItemWindow*                         _itemWindow       = nullptr;
+    DetailWindow*                       _detailWindow     = nullptr;
+    ChunkDebugWindow*                   _chunkDebugWindow = nullptr;
 
     std::vector<std::unique_ptr<Actor>> _defaultActors;
 
-    Entity*                             _pickedEntity    = nullptr;
-    Entity*                             _characterEntity = nullptr;
-    IsometricCameraController*          _isoCamCtrl      = nullptr;
+    Entity*                             _pickedEntity     = nullptr;
+    Entity*                             _characterEntity  = nullptr;
+    IsometricCameraController*          _isoCamCtrl       = nullptr;
 
-    std::unique_ptr<UIText>      _saveStatusText   = nullptr;
-    std::wstring                 _saveStatusMsg;             
-    float                        _saveStatusTimer  = 0.f;    
-
+    UIText*      _saveStatusText   = nullptr;
+    std::wstring _saveStatusMsg;
+    float        _saveStatusTimer  = 0.f;
     static constexpr float kSaveStatusDuration = 3.0f;
+
+    float _chunkRefreshTimer = 0.f;
+    static constexpr float kChunkRefreshInterval = ChunkDebugWindow::kRefreshInterval;
 };

@@ -11,6 +11,12 @@ uint64 ChunkManager::CoordKey(int32 cx, int32 cz)
          |  static_cast<uint64>(static_cast<uint32>(cz));
 }
 
+void ChunkManager::KeyToCoord(uint64 key, int32& outCX, int32& outCZ)
+{
+    outCX = static_cast<int32>(static_cast<uint32>(key >> 32));
+    outCZ = static_cast<int32>(static_cast<uint32>(key & 0xFFFFFFFFull));
+}
+
 void ChunkManager::WorldToChunkCoord(const Vec3& pos, int32& outCX, int32& outCZ)
 {
     outCX = static_cast<int32>(std::floor(pos.x / kChunkSize));
@@ -86,7 +92,9 @@ void ChunkManager::Unregister(Entity* entity)
     if (chunkIt == _chunks.end()) return;
 
     Chunk& chunk = chunkIt->second;
-    chunk.entities.erase(std::remove(chunk.entities.begin(), chunk.entities.end(), entity), chunk.entities.end());
+    chunk.entities.erase(
+        std::remove(chunk.entities.begin(), chunk.entities.end(), entity),
+        chunk.entities.end());
     chunk.aabbDirty = true;
 
     if (chunk.entities.empty())
@@ -108,12 +116,17 @@ void ChunkManager::Clear()
 {
     _chunks.clear();
     _entityToKey.clear();
+    _lastVisibleCount = 0;
 }
 
 void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::vector<Entity*>& outEntities)
 {
+    _lastVisibleCount = 0;
+
     for (auto& [key, chunk] : _chunks)
     {
+        chunk.wasVisible = false;
+
         if (chunk.entities.empty()) continue;
 
         if (chunk.aabbDirty)
@@ -122,12 +135,16 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
         if (frustum.Contains(chunk.aabb) == DirectX::DISJOINT)
             continue;
 
+        chunk.wasVisible = true;
+        ++_lastVisibleCount;
+
         for (Entity* e : chunk.entities)
             outEntities.push_back(e);
     }
 }
 
-void ChunkManager::CollectStaticColliders(const DirectX::BoundingBox& bounds, std::vector<BaseCollider*>& outColliders)
+void ChunkManager::CollectStaticColliders(const DirectX::BoundingBox& bounds,
+                                          std::vector<BaseCollider*>& outColliders)
 {
     const Vec3 center  = { bounds.Center.x,  bounds.Center.y,  bounds.Center.z  };
     const Vec3 extents = { bounds.Extents.x, bounds.Extents.y, bounds.Extents.z };
@@ -158,7 +175,6 @@ void ChunkManager::CollectStaticColliders(const DirectX::BoundingBox& bounds, st
             {
                 auto* col = e->GetComponent<AABBCollider>();
                 if (!col || !col->IsStatic()) continue;
-
                 outColliders.push_back(col);
             }
         }
@@ -174,13 +190,52 @@ bool ChunkManager::TryGetChunkKey(Entity* entity, uint64& outKey) const
 {
     auto it = _entityToKey.find(entity);
     if (it == _entityToKey.end()) return false;
-
     outKey = it->second;
     return true;
 }
 
-bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan,
-                              Entity*& outEntity, Vec3& outHitNormal, float& outDist)
+std::vector<ChunkSnapshot> ChunkManager::GetChunkSnapshots() const
+{
+    std::vector<ChunkSnapshot> result;
+    result.reserve(_chunks.size());
+
+    for (const auto& [key, chunk] : _chunks)
+    {
+        ChunkSnapshot s;
+        KeyToCoord(key, s.cx, s.cz);
+        s.entityCount = static_cast<int32>(chunk.entities.size());
+        s.wasVisible  = chunk.wasVisible;
+        s.aabb        = chunk.aabb;
+        result.push_back(s);
+    }
+
+    std::sort(result.begin(), result.end(), [](const ChunkSnapshot& a, const ChunkSnapshot& b)
+    {
+        if (a.cz != b.cz) return a.cz < b.cz;
+        return a.cx < b.cx;
+    });
+
+    return result;
+}
+
+bool ChunkManager::TryGetChunkSnapshot(Entity* entity, ChunkSnapshot& outSnapshot) const
+{
+    auto it = _entityToKey.find(entity);
+    if (it == _entityToKey.end()) return false;
+
+    const uint64 key    = it->second;
+    auto chunkIt = _chunks.find(key);
+    if (chunkIt == _chunks.end()) return false;
+
+    const Chunk& chunk = chunkIt->second;
+    KeyToCoord(key, outSnapshot.cx, outSnapshot.cz);
+    outSnapshot.entityCount = static_cast<int32>(chunk.entities.size());
+    outSnapshot.wasVisible  = chunk.wasVisible;
+    outSnapshot.aabb        = chunk.aabb;
+    return true;
+}
+
+bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, CollisionChannel queryChan, Entity*& outEntity, Vec3& outHitNormal, float& outDist)
 {
     outEntity    = nullptr;
     outDist      = FLT_MAX;
@@ -192,9 +247,7 @@ bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, Collisio
     for (auto& [key, chunk] : _chunks)
     {
         if (chunk.entities.empty()) continue;
-
-        if (chunk.aabbDirty)
-            chunk.RebuildAABB();
+        if (chunk.aabbDirty) chunk.RebuildAABB();
 
         float chunkDist = 0.f;
         if (!chunk.aabb.Intersects(vOrigin, vDir, chunkDist)) continue;
@@ -208,8 +261,7 @@ bool ChunkManager::PickBlock(const Vec3& rayOrigin, const Vec3& rayDir, Collisio
 
             float dist = 0.f;
             Vec3  normal;
-            Vec3  origin = rayOrigin;
-            Vec3  dir    = rayDir;
+            Vec3  origin = rayOrigin, dir = rayDir;
             Ray   r(origin, dir);
 
             if (aabb->IntersectsWithNormal(r, dist, normal) && dist < outDist)
@@ -234,9 +286,7 @@ bool ChunkManager::PickBlocks(const Vec3& rayOrigin, const Vec3& rayDir, uint8 q
     for (auto& [key, chunk] : _chunks)
     {
         if (chunk.entities.empty()) continue;
-
-        if (chunk.aabbDirty)
-            chunk.RebuildAABB();
+        if (chunk.aabbDirty) chunk.RebuildAABB();
 
         bestKnownDist = std::min({ priming.dist, floor.dist, mushroom.dist });
 
@@ -252,12 +302,12 @@ bool ChunkManager::PickBlocks(const Vec3& rayOrigin, const Vec3& rayDir, uint8 q
 
             float dist = 0.f;
             Vec3  normal;
-            Vec3  origin = rayOrigin;
-            Vec3  dir    = rayDir;
+            Vec3  origin = rayOrigin, dir = rayDir;
             Ray   r(origin, dir);
 
             if (aabb->IntersectsWithNormal(r, dist, normal))
-                UpdateMatchingPickHits(queryMask, aabb, entity, normal, dist, priming, floor, mushroom);
+                UpdateMatchingPickHits(queryMask, aabb, entity, normal, dist,
+                                       priming, floor, mushroom);
         }
     }
 
