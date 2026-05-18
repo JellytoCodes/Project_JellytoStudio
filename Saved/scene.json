@@ -1,0 +1,151 @@
+{
+    "entities": [
+        {
+            "actor": "CharacterActor",
+            "name": "Character",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.009999999776482582,
+                    0.009999999776482582,
+                    0.009999999776482582
+                ]
+            }
+        },
+        {
+            "actor": "SkySphereActor",
+            "name": "SkySphere",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "actor": "FloorActor",
+            "name": "Floor",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    -10.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "actor": "CubeActor",
+            "name": "Cube",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            }
+        },
+        {
+            "name": "StressPlacer",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "actor": "SphereActor",
+            "name": "Sphere",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            }
+        },
+        {
+            "actor": "LightActor",
+            "name": "DirectionalLight",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "name": "Main Scene"
+}

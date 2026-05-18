@@ -310,3 +310,21 @@ void Shader::PushShadowData(const ShadowDesc& desc, ID3D11ShaderResourceView* sh
 	auto shadowMapVar = GetSRV("ShadowMap");
 	if (shadowMapVar) shadowMapVar->SetResource(shadowSrv);
 }
+
+bool Shader::HasVariable(const std::string& name) const
+{
+	D3DX11_EFFECT_DESC effectDesc = {};
+	if (FAILED(_shaderDesc.effect->GetDesc(&effectDesc)))
+		return false;
+
+	for (UINT i = 0; i < effectDesc.GlobalVariables; ++i)
+	{
+		ID3DX11EffectVariable* var = _shaderDesc.effect->GetVariableByIndex(i);
+		if (!var) continue;
+
+		D3DX11_EFFECT_VARIABLE_DESC varDesc = {};
+		if (SUCCEEDED(var->GetDesc(&varDesc)) && name == varDesc.Name)
+			return true;
+	}
+	return false;
+}

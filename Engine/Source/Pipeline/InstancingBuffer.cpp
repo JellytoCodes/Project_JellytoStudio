@@ -18,8 +18,8 @@ void InstancingBuffer::AllocStaticBuffer(uint32 maxCount)
     D3D11_BUFFER_DESC desc = {};
     desc.ByteWidth = sizeof(InstancingData) * maxCount;
     desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    desc.Usage = D3D11_USAGE_DEFAULT;
-    desc.CPUAccessFlags = 0;
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
     _ringBuffers[0].Reset();
     CHECK(device->CreateBuffer(&desc, nullptr, _ringBuffers[0].GetAddressOf()));
@@ -93,22 +93,20 @@ void InstancingBuffer::UploadData()
         return;
     }
 
-    if (!_ringBuffers[0])
-    {
+    if (!_ringBuffers[0] || count > _maxCount)
         AllocStaticBuffer(NextTier(count));
-    }
-    else if (count > _maxCount)
-    {
-        AllocStaticBuffer(NextTier(count));
-    }
 
     auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
-    ctx->UpdateSubresource(
-        _ringBuffers[0].Get(),
-        0, nullptr,
-        _data.data(),
-        sizeof(InstancingData) * count,
-        0);
+
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    HRESULT hr = ctx->Map(_ringBuffers[0].Get(), 0,
+        D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+    if (SUCCEEDED(hr))
+    {
+        ::memcpy(mapped.pData, _data.data(), sizeof(InstancingData) * count);
+        ctx->Unmap(_ringBuffers[0].Get(), 0);
+    }
 
     _currentSlot = 0;
     _dirty = false;

@@ -14,14 +14,14 @@ Material::~Material() {}
 void Material::SetShader(std::shared_ptr<Shader> shader)
 {
     _shader = shader;
-    if (shader)
-    {
-        _diffuseEffectBuffer  = shader->GetSRV("DiffuseMap");
-        _normalEffectBuffer   = shader->GetSRV("NormalMap");
-        _specularEffectBuffer = shader->GetSRV("SpecularMap");
+    if (!shader) return;
 
-        _textureArrayEffectBuffer = shader->GetSRV("g_BlockAtlas");
-    }
+    _diffuseEffectBuffer = shader->GetSRV("DiffuseMap");
+    _normalEffectBuffer = shader->GetSRV("NormalMap");
+    _specularEffectBuffer = shader->GetSRV("SpecularMap");
+
+    
+    _textureArrayEffectBuffer = shader->HasVariable("g_BlockAtlas") ? shader->GetSRV("g_BlockAtlas") : nullptr;
 }
 
 void Material::Update()
