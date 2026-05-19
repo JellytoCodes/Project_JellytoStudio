@@ -174,7 +174,7 @@ void Scene::AddImmediate(std::unique_ptr<Entity> object)
     if (Widget* w = dynamic_cast<Widget*>(object.get()))
         _widgetObjects.push_back(w);
 
-    _objects.insert(std::move(object));
+    _objects.push_back(std::move(object));
     GET_SINGLE(InstancingManager)->SetDirty();
     if (_mainCamera) _mainCamera->SetSortDirty();
 }
@@ -195,7 +195,10 @@ void Scene::RemoveImmediate(Entity* object)
             [object](Widget* w) { return static_cast<Entity*>(w) == object; }),
         _widgetObjects.end());
 
-    _objects.erase(it);
+    if (it != std::prev(_objects.end()))
+        *it = std::move(_objects.back());
+    _objects.pop_back();
+
     GET_SINGLE(InstancingManager)->SetDirty();
     if (_mainCamera) _mainCamera->SetSortDirty();
 }

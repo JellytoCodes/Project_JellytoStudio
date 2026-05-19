@@ -32,8 +32,8 @@ public:
     Light* GetLight()                                                           { return _mainLight; }
     void SetMainLight(Light* light)                                             { _mainLight = light; }
 
-    const std::unordered_set<std::unique_ptr<Entity>>& GetEntities() const      { return _objects; }
-    std::unordered_set<std::unique_ptr<Entity>>& GetEntities()                  { return _objects; }
+    const std::vector<std::unique_ptr<Entity>>& GetEntities() const             { return _objects; }
+    std::vector<std::unique_ptr<Entity>>& GetEntities()                         { return _objects; }
 
     const std::unordered_set<Entity*>& GetCollidableEntities() const            { return _collidableObjects; }
     std::unordered_set<Entity*>& GetCollidableEntities()                        { return _collidableObjects; }
@@ -55,7 +55,7 @@ private:
 
     std::wstring _name = L"Unnamed Scene";
 
-    std::unordered_set<std::unique_ptr<Entity>> _objects;
+    std::vector<std::unique_ptr<Entity>> _objects;  // 연속 메모리, swap-and-pop 삭제
 
     Camera* _mainCamera = nullptr;
     Light* _mainLight = nullptr;
