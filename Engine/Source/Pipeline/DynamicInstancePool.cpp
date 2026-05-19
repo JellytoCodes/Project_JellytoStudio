@@ -21,21 +21,31 @@ void DynamicInstancePool::Init()
     _frameIndex = 0;
     _currentSlot = 0;
     _writeOffset = 0;
-    _firstAppend = true;
+    _mappedPtr = nullptr;
     _ready = true;
 }
 
 void DynamicInstancePool::BeginFrame()
 {
+    if (!_ready) return;
+
     _currentSlot = _frameIndex % kRingCount;
     ++_frameIndex;
     _writeOffset = 0;
-    _firstAppend = true;
+
+    auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
+    D3D11_MAPPED_SUBRESOURCE mapped = {};
+    CHECK(ctx->Map(_ringBuffers[_currentSlot].Get(), 0,
+        D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+    _mappedPtr = static_cast<uint8_t*>(mapped.pData);
 }
 
 uint32 DynamicInstancePool::Append(const InstancingData* data, uint32 count)
 {
     if (!_ready || count == 0) return 0;
+
+    assert(_mappedPtr && "DynamicInstancePool::Append — BeginFrame() 호출 필요.");
+    if (!_mappedPtr) return 0;
 
     const uint32 required = _writeOffset + count;
     if (required > kMaxInstances)
@@ -44,33 +54,22 @@ uint32 DynamicInstancePool::Append(const InstancingData* data, uint32 count)
         return _writeOffset;
     }
 
-    auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
-
-    const D3D11_MAP mapType = _firstAppend
-        ? D3D11_MAP_WRITE_DISCARD
-        : D3D11_MAP_WRITE_NO_OVERWRITE;
-
-    D3D11_MAPPED_SUBRESOURCE mapped = {};
-    CHECK(ctx->Map(_ringBuffers[_currentSlot].Get(), 0, mapType, 0, &mapped));
-
-    const uint32 byteOffset = _writeOffset * sizeof(InstancingData);
-    ::memcpy(static_cast<uint8_t*>(mapped.pData) + byteOffset,
+    ::memcpy(_mappedPtr + _writeOffset * sizeof(InstancingData),
         data,
         sizeof(InstancingData) * count);
 
-    ctx->Unmap(_ringBuffers[_currentSlot].Get(), 0);
-
     const uint32 returnedOffset = _writeOffset;
     _writeOffset += count;
-    _firstAppend = false;
-
     return returnedOffset;
 }
 
 void DynamicInstancePool::EndFrame()
 {
-    // 현재는 Map/Unmap을 Append 내부에서 완결하므로 별도 Unmap 불필요.
-    // 향후 persistent mapping 도입 시 이 함수에서 Unmap.
+    if (!_ready || !_mappedPtr) return;
+
+    auto* ctx = GET_SINGLE(Graphics)->GetDeviceContext().Get();
+    ctx->Unmap(_ringBuffers[_currentSlot].Get(), 0);
+    _mappedPtr = nullptr;
 }
 
 void DynamicInstancePool::BindSlice(uint32 elementOffset) const
