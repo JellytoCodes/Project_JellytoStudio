@@ -38,7 +38,11 @@ public:
     void Render   (std::vector<Entity*>& entities);
     void ClearData();
 
-    void SetDirty        () { _bDirty        = true; }
+    void SetDirty()
+    {
+        _bDirty         = true;
+        _hasPendingPrune = true;
+    }
     void SetMeshDirty    () { _meshDirty      = true; }
     void SetMeshGroupDirty() { _meshGroupDirty = true; }
 
@@ -95,6 +99,7 @@ private:
     bool _bDirty         = true;
     bool _meshDirty      = true;
     bool _meshGroupDirty = false;
+    bool _hasPendingPrune = false;
 
     DirtySet _partialDirtyMesh;
     DirtySet _partialDirtyModel;

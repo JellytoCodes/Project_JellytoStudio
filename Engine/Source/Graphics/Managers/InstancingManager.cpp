@@ -118,7 +118,6 @@ void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
 
     std::swap(_meshCache, _tmpMeshCache);
     _tmpMeshCache.clear();
-
     _partialDirtyMesh.clear();
 }
 
@@ -311,7 +310,11 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
 
     _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
 
-    PruneEmptyGroups();
+    if (_hasPendingPrune)
+    {
+        PruneEmptyGroups();
+        _hasPendingPrune = false;
+    }
 }
 
 void InstancingManager::PruneEmptyGroups()
@@ -427,7 +430,7 @@ void InstancingManager::DrawAnimRenderer()
         if (it == _buffers.end() || !it->second->IsUploaded()) continue;
 
         auto* anim = entityVec[0]->GetComponent<ModelAnimator>();
-        anim->RenderInstancing(it->second.get());
+        anim->RenderInstancing(it->second.get());   // PushData → UploadData no-op + Bind + Draw
     }
 }
 
