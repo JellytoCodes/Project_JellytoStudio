@@ -47,6 +47,7 @@ void BlockPlacer::Awake()
 	assert(_cubeMesh && "Cube 메시를 찾을 수 없습니다.");
 
 	GET_SINGLE(BlockMaterialProvider)->Init();
+	WarmMeshPool();
 }
 
 void BlockPlacer::Start() {}
@@ -86,7 +87,7 @@ void BlockPlacer::Update()
 		const int32 mx = static_cast<int32>(pick.mousePos.x);
 		const int32 my = static_cast<int32>(pick.mousePos.y);
 
-		uint8 kQueryMask = CH::Priming | CH::Floor | CH::Mushroom;
+		const uint8 kQueryMask = CH::Priming | CH::Floor | CH::Mushroom;
 		scene->PickBlocks(mx, my, kQueryMask, pick.priming, pick.floor, pick.mushroom);
 	}
 
@@ -285,88 +286,196 @@ void BlockPlacer::AttachCollider(Entity* entity, const BlockRecord& rec)
 	entity->AddComponent(std::move(col));
 }
 
-Entity* BlockPlacer::SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPos,
-	const Vec3& initialScale, const Vec3& finalScale)
+void BlockPlacer::WarmMeshPool()
+{
+	if (!_cubeMesh) return;
+	_meshPool.reserve(kMeshPoolWarmSize);
+	for (int32 i = 0; i < kMeshPoolWarmSize; ++i)
+	{
+		auto entity = std::make_unique<Entity>(L"__PoolBlock__");
+		entity->AddComponent(std::make_unique<Transform>());
+		auto mr = std::make_unique<MeshRenderer>();
+		mr->SetMesh(_cubeMesh);
+		mr->SetMaterial(GET_SINGLE(BlockMaterialProvider)->GetBlockMaterial());
+		mr->SetPass(0);
+		entity->AddComponent(std::move(mr));
+		auto col = std::make_unique<AABBCollider>();
+		col->SetShowDebug(false);
+		col->SetStatic(true);
+		entity->AddComponent(std::move(col));
+		_meshPool.push_back(std::move(entity));
+	}
+}
+
+void BlockPlacer::WarmModelPool(const BlockRecord& rec)
+{
+	if (rec.modelName.empty()) return;
+	auto& pool = _modelPools[rec.modelName];
+	if (!pool.empty()) return;
+	pool.reserve(kModelPoolWarmSize);
+	for (int32 i = 0; i < kModelPoolWarmSize; ++i)
+	{
+		auto entity = std::make_unique<Entity>(L"__PoolBlock__");
+		entity->AddComponent(std::make_unique<Transform>());
+		auto modelR = std::make_unique<ModelRenderer>(
+			GET_SINGLE(BlockMaterialProvider)->GetModelShader(), false);
+		entity->AddComponent(std::move(modelR));
+		auto col = std::make_unique<AABBCollider>();
+		col->SetShowDebug(false);
+		col->SetStatic(true);
+		entity->AddComponent(std::move(col));
+		pool.push_back(std::move(entity));
+	}
+}
+
+Entity* BlockPlacer::AcquireMeshBlock(const BlockRecord& rec,
+	const Vec3& pos, const Vec3& scale)
 {
 	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 	if (!scene || !_cubeMesh) return nullptr;
 
-	auto entity = std::make_unique<Entity>(L"MapBlock");
-	entity->AddComponent(std::make_unique<Transform>());
+	std::unique_ptr<Entity> entity;
+	if (!_meshPool.empty())
+	{
+		entity = std::move(_meshPool.back());
+		_meshPool.pop_back();
+	}
+	else
+	{
+		entity = std::make_unique<Entity>(L"__PoolBlock__");
+		entity->AddComponent(std::make_unique<Transform>());
+		auto mr = std::make_unique<MeshRenderer>();
+		mr->SetMesh(_cubeMesh);
+		mr->SetMaterial(GET_SINGLE(BlockMaterialProvider)->GetBlockMaterial());
+		mr->SetPass(0);
+		entity->AddComponent(std::move(mr));
+		auto col = std::make_unique<AABBCollider>();
+		col->SetShowDebug(false);
+		col->SetStatic(true);
+		entity->AddComponent(std::move(col));
+	}
+
 	auto* tf = entity->GetComponent<Transform>();
-	tf->SetLocalPosition(centerPos);
-	tf->SetLocalScale(initialScale);
+	tf->SetLocalPosition(pos);
+	tf->SetLocalScale(scale);
 
-	auto mr = std::make_unique<MeshRenderer>();
-	mr->SetMesh(_cubeMesh);
-	mr->SetMaterial(GET_SINGLE(BlockMaterialProvider)->GetBlockMaterial());
+	auto* mr = entity->GetComponent<MeshRenderer>();
 	mr->SetMaterialIndex(static_cast<uint32>(rec.typeId));
-	mr->SetPass(0);
-	entity->AddComponent(std::move(mr));
 
-	AttachCollider(entity.get(), rec);
+	const Vec3 half = GetHalfExtents(rec.collider);
+	auto* col = entity->GetComponent<AABBCollider>();
+	col->SetBoxExtents(half);
+	col->SetOffsetPosition(Vec3::Zero);
+	col->SetOwnChannel(rec.ownChannel);
+	col->SetPickableMask(rec.pickableMask);
 
 	Entity* raw = entity.get();
-	scene->Add(std::move(entity));
-
-	if (auto* col = raw->GetComponent<AABBCollider>())
-		col->Update();
-
+	scene->AddDirect(std::move(entity));
+	col->Update();
 	return raw;
+}
+
+Entity* BlockPlacer::AcquireModelBlock(const BlockRecord& rec,
+	const Vec3& pos, const Vec3& scale)
+{
+	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+	if (!scene || rec.modelName.empty()) return nullptr;
+
+	auto& pool = _modelPools[rec.modelName];
+	std::unique_ptr<Entity> entity;
+	if (!pool.empty())
+	{
+		entity = std::move(pool.back());
+		pool.pop_back();
+	}
+	else
+	{
+		entity = std::make_unique<Entity>(L"__PoolBlock__");
+		entity->AddComponent(std::make_unique<Transform>());
+		auto modelR = std::make_unique<ModelRenderer>(
+			GET_SINGLE(BlockMaterialProvider)->GetModelShader(), false);
+		entity->AddComponent(std::move(modelR));
+		auto col = std::make_unique<AABBCollider>();
+		col->SetShowDebug(false);
+		col->SetStatic(true);
+		entity->AddComponent(std::move(col));
+	}
+
+	auto* tf = entity->GetComponent<Transform>();
+	tf->SetLocalPosition(pos);
+	tf->SetLocalScale(scale);
+
+	const auto cacheIt = _modelCache.find(rec.modelName);
+	if (cacheIt != _modelCache.end())
+	{
+		auto* modelR = entity->GetComponent<ModelRenderer>();
+		modelR->SetModel(cacheIt->second);
+		modelR->SetModelScale(Vec3(rec.modelScale));
+	}
+
+	const Vec3 half = GetHalfExtents(rec.collider);
+	auto* col = entity->GetComponent<AABBCollider>();
+	col->SetBoxExtents(half);
+	col->SetOffsetPosition(Vec3(0.f, half.y, 0.f));
+	col->SetOwnChannel(rec.ownChannel);
+	col->SetPickableMask(rec.pickableMask);
+
+	Entity* raw = entity.get();
+	scene->AddDirect(std::move(entity));
+	col->Update();
+	return raw;
+}
+
+void BlockPlacer::ReturnMeshBlock(Entity* entity)
+{
+	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+	if (!scene) return;
+	std::unique_ptr<Entity> owned = scene->Detach(entity);
+	if (!owned) return;
+	if (auto* col = owned->GetComponent<AABBCollider>())
+		col->SetOwnChannel(CH::None);
+	_meshPool.push_back(std::move(owned));
+}
+
+void BlockPlacer::ReturnModelBlock(Entity* entity, const std::wstring& modelName)
+{
+	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+	if (!scene) return;
+	std::unique_ptr<Entity> owned = scene->Detach(entity);
+	if (!owned) return;
+	if (auto* col = owned->GetComponent<AABBCollider>())
+		col->SetOwnChannel(CH::None);
+	_modelPools[modelName].push_back(std::move(owned));
+}
+
+Entity* BlockPlacer::SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPos,
+	const Vec3& initialScale, const Vec3& finalScale)
+{
+	return AcquireMeshBlock(rec, centerPos, initialScale);
 }
 
 Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerPos,
 	const Vec3& initialScale, const Vec3& finalScale)
 {
-	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-	if (!scene || rec.modelName.empty()) return nullptr;
-
-	std::shared_ptr<Model> model;
-	const auto cacheIt = _modelCache.find(rec.modelName);
-	if (cacheIt != _modelCache.end())
+	if (_modelCache.find(rec.modelName) == _modelCache.end())
 	{
-		model = cacheIt->second;
-	}
-	else
-	{
-		model = std::make_shared<Model>();
+		auto model = std::make_shared<Model>();
 		model->SetModelPath(L"../Resources/Models/MapModel/");
 		model->SetTexturePath(L"../Resources/Textures/MapModel/");
 		model->ReadModel(rec.modelName);
 		model->ReadMaterial(rec.modelName);
+		if (!model || model->GetMeshCount() == 0)
+		{
+			assert(false && "FBX 모델 로드 실패 — BlockMaster.json 의 modelName 확인");
+			return nullptr;
+		}
 		_modelCache[rec.modelName] = model;
-	}
-
-	if (!model || model->GetMeshCount() == 0)
-	{
-		assert(false && "FBX 모델 로드 실패 — BlockMaster.json 의 modelName 확인");
-		return nullptr;
+		WarmModelPool(rec);
 	}
 
 	const Vec3 half = GetHalfExtents(rec.collider);
 	const Vec3 bottomPos = Vec3(centerPos.x, centerPos.y - half.y, centerPos.z);
-
-	auto entity = std::make_unique<Entity>(L"MapBlock");
-	entity->AddComponent(std::make_unique<Transform>());
-	auto* tf = entity->GetComponent<Transform>();
-	tf->SetLocalPosition(bottomPos);
-	tf->SetLocalScale(initialScale);
-
-	auto modelR = std::make_unique<ModelRenderer>(
-		GET_SINGLE(BlockMaterialProvider)->GetModelShader(), false);
-	modelR->SetModel(model);
-	modelR->SetModelScale(Vec3(rec.modelScale));
-	entity->AddComponent(std::move(modelR));
-
-	AttachCollider(entity.get(), rec);
-
-	Entity* raw = entity.get();
-	scene->Add(std::move(entity));
-
-	if (auto* col = raw->GetComponent<AABBCollider>())
-		col->Update();
-
-	return raw;
+	return AcquireModelBlock(rec, bottomPos, initialScale);
 }
 
 Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type,
@@ -429,6 +538,8 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 		_pInventory->AddItem(static_cast<SlotType>(it->second.type), 1);
 
 	GET_SINGLE(ChunkManager)->Unregister(entity);
+
+	const PlacedBlockRecord savedRec = it->second;
 	_blockRecordMap.erase(it);
 	_placedCacheDirty = true;
 
@@ -437,12 +548,15 @@ bool BlockPlacer::TryRemoveEntity(Entity* entity)
 			[entity](const PlaceTween& tw) { return tw.entity == entity; }),
 		_placeTweens.end());
 
-	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
-	if (!scene) return false;
-	scene->Remove(entity);
+	const BlockRecord* blockRec = GET_SINGLE(BlockTable)->GetRecord(savedRec.type);
+	if (blockRec && blockRec->renderType == BlockRenderType::Mesh)
+		ReturnMeshBlock(entity);
+	else if (blockRec && blockRec->renderType == BlockRenderType::Model)
+		ReturnModelBlock(entity, blockRec->modelName);
+	else if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+		scene->Remove(entity);
 
 	GET_SINGLE(InstancingManager)->SetMeshDirty();
-
 	return true;
 }
 
@@ -503,14 +617,21 @@ void BlockPlacer::TickPlaceTweens(float dt)
 
 void BlockPlacer::ClearAllBlocks()
 {
-	Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
 	for (auto& [entity, rec] : _blockRecordMap)
 	{
 		if (_pInventory)
 			_pInventory->AddItem(static_cast<SlotType>(rec.type), 1);
-		if (scene) scene->Remove(entity);
+
+		GET_SINGLE(ChunkManager)->Unregister(entity);
+
+		const BlockRecord* blockRec = GET_SINGLE(BlockTable)->GetRecord(rec.type);
+		if (blockRec && blockRec->renderType == BlockRenderType::Mesh)
+			ReturnMeshBlock(entity);
+		else if (blockRec && blockRec->renderType == BlockRenderType::Model)
+			ReturnModelBlock(entity, blockRec->modelName);
+		else if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+			scene->Remove(entity);
 	}
-	GET_SINGLE(ChunkManager)->Clear();
 	_blockRecordMap.clear();
 	_placeTweens.clear();
 	_placedCacheDirty = true;

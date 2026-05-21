@@ -26,19 +26,22 @@ public:
     virtual void Add(std::unique_ptr<Entity> object);
     virtual void Remove(Entity* object);
 
-    void    SetMainCamera(Camera* mainCamera)                                   { _mainCamera = mainCamera; }
-    Camera* GetMainCamera()                                                     { return _mainCamera; }
+    std::unique_ptr<Entity> Detach(Entity* object);
+    void                    AddDirect(std::unique_ptr<Entity> object);
 
-    Light* GetLight()                                                           { return _mainLight; }
-    void SetMainLight(Light* light)                                             { _mainLight = light; }
+    void    SetMainCamera(Camera* mainCamera) { _mainCamera = mainCamera; }
+    Camera* GetMainCamera() { return _mainCamera; }
 
-    const std::vector<std::unique_ptr<Entity>>& GetEntities() const             { return _objects; }
-    std::vector<std::unique_ptr<Entity>>& GetEntities()                         { return _objects; }
+    Light* GetLight() { return _mainLight; }
+    void SetMainLight(Light* light) { _mainLight = light; }
 
-    const std::unordered_set<Entity*>& GetCollidableEntities() const            { return _collidableObjects; }
-    std::unordered_set<Entity*>& GetCollidableEntities()                        { return _collidableObjects; }
+    const std::vector<std::unique_ptr<Entity>>& GetEntities() const { return _objects; }
+    std::vector<std::unique_ptr<Entity>>& GetEntities() { return _objects; }
 
-    ShadowPass* GetShadowPass() const                                           { return _shadowPass.get(); }
+    const std::unordered_set<Entity*>& GetCollidableEntities() const { return _collidableObjects; }
+    std::unordered_set<Entity*>& GetCollidableEntities() { return _collidableObjects; }
+
+    ShadowPass* GetShadowPass() const { return _shadowPass.get(); }
 
     Entity* Pick(int32 screenX, int32 screenY);
 
@@ -55,7 +58,7 @@ private:
 
     std::wstring _name = L"Unnamed Scene";
 
-    std::vector<std::unique_ptr<Entity>> _objects;  // 연속 메모리, swap-and-pop 삭제
+    std::vector<std::unique_ptr<Entity>> _objects;
 
     Camera* _mainCamera = nullptr;
     Light* _mainLight = nullptr;

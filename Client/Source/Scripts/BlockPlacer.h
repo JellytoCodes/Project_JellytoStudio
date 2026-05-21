@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "Entity/Components/MonoBehaviour.h"
-#include "Entity/Components/Collider/CollisionChannel.h"  // BlockPickHit
+#include "Entity/Components/Collider/CollisionChannel.h"
 #include "Scene/BlockPlacerInterface.h"
 #include "UI/PaletteWidget.h"
 #include "Data/BlockTable.h"
@@ -39,8 +39,6 @@ public:
 	bool PlaceBlockAt(const Vec3& centerPos, PaletteWidget::SlotType type);
 
 private:
-	// BlockPickHit(CollisionChannel.h)과 동일 구조였던 Hit을 제거하고
-	// 엔진 타입을 직접 사용 — Scene::PickBlocks()에 바로 전달 가능
 	struct FramePickResult
 	{
 		BlockPickHit priming;
@@ -66,6 +64,16 @@ private:
 
 	void AttachCollider(Entity* entity, const BlockRecord& rec);
 
+	static constexpr int32 kMeshPoolWarmSize = 128;
+	static constexpr int32 kModelPoolWarmSize = 16;
+
+	void    WarmMeshPool();
+	void    WarmModelPool(const BlockRecord& rec);
+	Entity* AcquireMeshBlock(const BlockRecord& rec, const Vec3& pos, const Vec3& scale);
+	Entity* AcquireModelBlock(const BlockRecord& rec, const Vec3& pos, const Vec3& scale);
+	void    ReturnMeshBlock(Entity* entity);
+	void    ReturnModelBlock(Entity* entity, const std::wstring& modelName);
+
 	struct PlaceTween
 	{
 		Entity* entity = nullptr;
@@ -89,6 +97,9 @@ private:
 	std::shared_ptr<Mesh> _cubeMesh;
 
 	std::unordered_map<std::wstring, std::shared_ptr<Model>> _modelCache;
+
+	std::vector<std::unique_ptr<Entity>>                                      _meshPool;
+	std::unordered_map<std::wstring, std::vector<std::unique_ptr<Entity>>>    _modelPools;
 
 	POINT _lastPreviewMouse = { -1, -1 };
 
