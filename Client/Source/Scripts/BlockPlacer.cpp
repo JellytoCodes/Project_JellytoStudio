@@ -126,10 +126,10 @@ bool BlockPlacer::CalcPlacePos(SlotType type, Entity* hitEntity,
 	const PlaceFace hitFace = NormalToFace(hitNormal);
 	if (!FaceAllowed(hitFace, rec->faceMask)) return false;
 
-	const auto* hitAabb = hitEntity->GetComponent<AABBCollider>();
+	auto* hitAabb = hitEntity->GetComponent<AABBCollider>();
 	if (!hitAabb) return false;
 
-	const BoundingBox& hitBox = const_cast<AABBCollider*>(hitAabb)->GetBoundingBox();
+	const BoundingBox& hitBox = hitAabb->GetBoundingBox();
 	const Vec3 hitCenter = { hitBox.Center.x,  hitBox.Center.y,  hitBox.Center.z };
 	const Vec3 hitExt = { hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z };
 	const Vec3 newHalf = GetHalfExtents(rec->collider);
