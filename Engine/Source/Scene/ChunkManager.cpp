@@ -4,6 +4,8 @@
 
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Transform.h"
+#include "Entity/Components/MeshRenderer.h"
+#include "Graphics/Model/ModelRenderer.h"
 
 uint64 ChunkManager::CoordKey(int32 cx, int32 cz)
 {
@@ -21,6 +23,22 @@ void ChunkManager::WorldToChunkCoord(const Vec3& pos, int32& outCX, int32& outCZ
 {
     outCX = static_cast<int32>(std::floor(pos.x / kChunkSize));
     outCZ = static_cast<int32>(std::floor(pos.z / kChunkSize));
+}
+
+uint64 ChunkManager::PositionKey(const Vec3& pos)
+{
+    constexpr int32 kBias = 524288;
+    const int32 ix = static_cast<int32>(std::round(pos.x)) + kBias;
+    const int32 iy = static_cast<int32>(std::round(pos.y)) + kBias;
+    const int32 iz = static_cast<int32>(std::round(pos.z)) + kBias;
+    return (static_cast<uint64>(ix) << 40)
+         | (static_cast<uint64>(iy) << 20)
+         |  static_cast<uint64>(iz);
+}
+
+bool ChunkManager::HasSolidBlockAt(const Vec3& pos) const
+{
+    return _positionMap.count(PositionKey(pos)) > 0;
 }
 
 ChunkManager::Chunk& ChunkManager::GetOrCreateChunk(int32 cx, int32 cz)
@@ -69,8 +87,9 @@ void ChunkManager::Register(Entity* entity)
     auto* tr = entity->GetComponent<Transform>();
     if (!tr) return;
 
+    const Vec3 pos = tr->GetLocalPosition();
     int32 cx, cz;
-    WorldToChunkCoord(tr->GetLocalPosition(), cx, cz);
+    WorldToChunkCoord(pos, cx, cz);
     const uint64 key = CoordKey(cx, cz);
 
     Chunk& chunk = GetOrCreateChunk(cx, cz);
@@ -78,6 +97,9 @@ void ChunkManager::Register(Entity* entity)
     chunk.aabbDirty = true;
 
     _entityToKey[entity] = key;
+
+    if (entity->GetComponent<MeshRenderer>() && !entity->GetComponent<ModelRenderer>())
+        _positionMap[PositionKey(pos)] = entity;
 }
 
 void ChunkManager::Unregister(Entity* entity)
@@ -87,6 +109,12 @@ void ChunkManager::Unregister(Entity* entity)
 
     const uint64 key = it->second;
     _entityToKey.erase(it);
+
+    if (entity->GetComponent<MeshRenderer>() && !entity->GetComponent<ModelRenderer>())
+    {
+        if (auto* tr = entity->GetComponent<Transform>())
+            _positionMap.erase(PositionKey(tr->GetLocalPosition()));
+    }
 
     auto chunkIt = _chunks.find(key);
     if (chunkIt == _chunks.end()) return;
@@ -116,11 +144,19 @@ void ChunkManager::Clear()
 {
     _chunks.clear();
     _entityToKey.clear();
+    _positionMap.clear();
     _lastVisibleCount = 0;
 }
 
 void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::vector<Entity*>& outEntities)
 {
+    static constexpr Vec3 kNeighborOffsets[6] =
+    {
+        { 1.f, 0.f, 0.f }, {-1.f, 0.f, 0.f },
+        { 0.f, 1.f, 0.f }, { 0.f,-1.f, 0.f },
+        { 0.f, 0.f, 1.f }, { 0.f, 0.f,-1.f },
+    };
+
     _lastVisibleCount = 0;
 
     for (auto& [key, chunk] : _chunks)
@@ -139,7 +175,30 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
         ++_lastVisibleCount;
 
         for (Entity* e : chunk.entities)
-            outEntities.push_back(e);
+        {
+            auto* mr = e->GetComponent<MeshRenderer>();
+            auto* tr = e->GetComponent<Transform>();
+
+            if (!mr || !tr)
+            {
+                outEntities.push_back(e);
+                continue;
+            }
+
+            const Vec3 pos = tr->GetLocalPosition();
+            bool occluded = true;
+            for (const Vec3& off : kNeighborOffsets)
+            {
+                if (!HasSolidBlockAt(pos + off))
+                {
+                    occluded = false;
+                    break;
+                }
+            }
+
+            if (!occluded)
+                outEntities.push_back(e);
+        }
     }
 }
 

@@ -54,14 +54,16 @@ private:
     };
 
     static void KeyToCoord(uint64 key, int32& outCX, int32& outCZ);
-
     static uint64 CoordKey(int32 cx, int32 cz);
     static void   WorldToChunkCoord(const Vec3& pos, int32& outCX, int32& outCZ);
+    static uint64 PositionKey(const Vec3& pos);
 
+    bool   HasSolidBlockAt(const Vec3& pos) const;
     Chunk& GetOrCreateChunk(int32 cx, int32 cz);
 
     std::unordered_map<uint64, Chunk>   _chunks;
     std::unordered_map<Entity*, uint64> _entityToKey;
+    std::unordered_map<uint64, Entity*> _positionMap;
 
     int32 _lastVisibleCount = 0;
 };
