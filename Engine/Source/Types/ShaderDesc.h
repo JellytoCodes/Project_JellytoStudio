@@ -87,8 +87,9 @@ struct InstancedTweenDesc
 
 struct ShadowDesc
 {
-    Matrix lightVP   = Matrix::Identity;
-    float  bias      = 0.003f;
-    float  texelSize = 1.0f / 1024.0f;
-    float  pad[2]    = {};
+    Matrix lightVP[2]    = { Matrix::Identity, Matrix::Identity };
+    float  bias          = 0.003f;
+    float  texelSize     = 1.0f / 1024.0f;
+    float  cascadeSplit  = 25.0f;
+    float  pad           = 0.f;
 };

@@ -3,10 +3,11 @@
 
 cbuffer ShadowBuffer : register(b0)
 {
-    matrix LightVP;
+    matrix LightVP[2];
     float  ShadowBias;
     float  ShadowTexelSize;
-    float2 ShadowPad;
+    float  CascadeSplit;
+    float  ShadowPad;
 }
 
 cbuffer GlobalBuffer : register(b1)
@@ -22,7 +23,12 @@ cbuffer TransformBuffer : register(b2)
     matrix W;
 }
 
-Texture2D ShadowMap;
+Texture2DArray ShadowMap;
+
+float3 CameraPosition()
+{
+    return VInv._41_42_43;
+}
 
 SamplerComparisonState ShadowSampler
 {
@@ -35,7 +41,11 @@ SamplerComparisonState ShadowSampler
 
 float ComputeShadowFactor(float3 worldPos)
 {
-    float4 lsPos = mul(float4(worldPos, 1.0f), LightVP);
+    float3 camPos  = CameraPosition();
+    float  dist    = length(worldPos - camPos);
+    int    cascade = (dist < CascadeSplit) ? 0 : 1;
+
+    float4 lsPos = mul(float4(worldPos, 1.0f), LightVP[cascade]);
     float3 proj  = lsPos.xyz / lsPos.w;
 
     float2 uv = proj.xy * float2(0.5f, -0.5f) + 0.5f;
@@ -54,7 +64,7 @@ float ComputeShadowFactor(float3 worldPos)
         {
             shadow += ShadowMap.SampleCmpLevelZero(
                 ShadowSampler,
-                uv + float2(x, y) * ShadowTexelSize,
+                float3(uv + float2(x, y) * ShadowTexelSize, (float)cascade),
                 depth);
         }
     }
@@ -216,11 +226,6 @@ pass name                                               \
     SetBlendState(bs, float4(0, 0, 0, 0), 0xFF);       \
     SetVertexShader(CompileShader(vs_5_0, vs()));       \
     SetPixelShader(CompileShader(ps_5_0, ps()));        \
-}
-
-float3 CameraPosition()
-{
-    return VInv._41_42_43;
 }
 
 #endif

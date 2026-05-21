@@ -252,7 +252,7 @@ void ShadowPass::CreateShadowMapResources()
     td.Width            = kShadowMapSize;
     td.Height           = kShadowMapSize;
     td.MipLevels        = 1;
-    td.ArraySize        = 1;
+    td.ArraySize        = kCascadeCount;
     td.Format           = DXGI_FORMAT_R32_TYPELESS;
     td.SampleDesc.Count = 1;
     td.Usage            = D3D11_USAGE_DEFAULT;
@@ -260,14 +260,22 @@ void ShadowPass::CreateShadowMapResources()
     CHECK(device->CreateTexture2D(&td, nullptr, _shadowTexture.GetAddressOf()));
 
     D3D11_DEPTH_STENCIL_VIEW_DESC dsvd = {};
-    dsvd.Format        = DXGI_FORMAT_D32_FLOAT;
-    dsvd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    CHECK(device->CreateDepthStencilView(_shadowTexture.Get(), &dsvd, _shadowDSV.GetAddressOf()));
+    dsvd.Format                         = DXGI_FORMAT_D32_FLOAT;
+    dsvd.ViewDimension                  = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
+    dsvd.Texture2DArray.MipSlice        = 0;
+    dsvd.Texture2DArray.ArraySize       = 1;
+    for (uint32 i = 0; i < kCascadeCount; ++i)
+    {
+        dsvd.Texture2DArray.FirstArraySlice = i;
+        CHECK(device->CreateDepthStencilView(_shadowTexture.Get(), &dsvd, _shadowDSV[i].GetAddressOf()));
+    }
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
-    srvd.Format                    = DXGI_FORMAT_R32_FLOAT;
-    srvd.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvd.Texture2D.MipLevels       = 1;
+    srvd.Format                         = DXGI_FORMAT_R32_FLOAT;
+    srvd.ViewDimension                  = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+    srvd.Texture2DArray.MipLevels       = 1;
+    srvd.Texture2DArray.ArraySize       = kCascadeCount;
+    srvd.Texture2DArray.FirstArraySlice = 0;
     CHECK(device->CreateShaderResourceView(_shadowTexture.Get(), &srvd, _shadowSRV.GetAddressOf()));
 }
 
@@ -291,8 +299,27 @@ void ShadowPass::CreateStates()
     CHECK(device->CreateDepthStencilState(&dsd, _depthState.GetAddressOf()));
 }
 
-Matrix ShadowPass::ComputeLightVP(const std::vector<Entity*>& entities, const Vec3& lightDir)
+void ShadowPass::ComputeCascadeVPs(const std::vector<Entity*>& entities,
+                                    const Vec3& lightDir, const Vec3& camPos,
+                                    Matrix outVP[kCascadeCount])
 {
+    Vec3 up = Vec3(0.f, 1.f, 0.f);
+    if (fabsf(lightDir.Dot(up)) > 0.99f)
+        up = Vec3(0.f, 0.f, 1.f);
+
+    auto buildVP = [&](const Vec3& center, float radius) -> Matrix
+    {
+        const Vec3   lightPos  = center - lightDir * radius;
+        const Matrix lightView = XMMatrixLookAtLH(lightPos, center, up);
+        const Matrix lightProj = XMMatrixOrthographicLH(
+            radius * 2.f, radius * 2.f, 0.1f, radius * 4.f);
+        return lightView * lightProj;
+    };
+
+    // Cascade 0 (near): tight sphere around camera
+    outVP[0] = buildVP(camPos, kNearCascadeRadius * 1.2f);
+
+    // Cascade 1 (far): AABB of all static entities (existing behavior)
     BoundingBox sceneBounds;
     bool first = true;
     for (Entity* e : entities)
@@ -304,42 +331,47 @@ Matrix ShadowPass::ComputeLightVP(const std::vector<Entity*>& entities, const Ve
     }
     if (first)
     {
-        sceneBounds.Center  = { 0, 0, 0 };
-        sceneBounds.Extents = { 20, 20, 20 };
+        sceneBounds.Center  = { camPos.x, camPos.y, camPos.z };
+        sceneBounds.Extents = { 50, 50, 50 };
     }
 
     const Vec3  center  = { sceneBounds.Center.x,  sceneBounds.Center.y,  sceneBounds.Center.z  };
     const Vec3  extents = { sceneBounds.Extents.x, sceneBounds.Extents.y, sceneBounds.Extents.z };
-    const float radius  = extents.Length() * 1.2f;
-    const Vec3  lightPos = center - lightDir * radius;
-
-    Vec3 up = Vec3(0.f, 1.f, 0.f);
-    if (fabsf(lightDir.Dot(up)) > 0.99f)
-        up = Vec3(0.f, 0.f, 1.f);
-
-    const Matrix lightView = XMMatrixLookAtLH(lightPos, center, up);
-    const Matrix lightProj = XMMatrixOrthographicLH(
-        radius * 2.f, radius * 2.f, 0.1f, radius * 4.f);
-
-    return lightView * lightProj;
+    outVP[1] = buildVP(center, extents.Length() * 1.2f);
 }
 
-void ShadowPass::Render(const std::vector<Entity*>& entities, const Vec3& lightDir)
+void ShadowPass::RenderCascade(const ComPtr<ID3D11DeviceContext>& dc,
+                                uint32 cascadeIdx, const Matrix& lightVP)
+{
+    struct PerCascadeCB { Matrix lightVP; float bias; float pad[3]; };
+    PerCascadeCB cbData = { lightVP, _shadowDesc.bias, {} };
+
+    D3D11_MAPPED_SUBRESOURCE ms = {};
+    dc->Map(_shadowCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+    ::memcpy(ms.pData, &cbData, sizeof(cbData));
+    dc->Unmap(_shadowCB.Get(), 0);
+
+    ID3D11RenderTargetView* nullRTV = nullptr;
+    dc->OMSetRenderTargets(1, &nullRTV, _shadowDSV[cascadeIdx].Get());
+    dc->ClearDepthStencilView(_shadowDSV[cascadeIdx].Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    RenderStaticGroups(dc);
+    RenderSkinnedGroups(dc);
+}
+
+void ShadowPass::Render(const std::vector<Entity*>& entities,
+                         const Vec3& lightDir, const Vec3& camPos)
 {
     if (entities.empty()) return;
 
-    auto dc     = GET_SINGLE(Graphics)->GetDeviceContext();
-    auto device = GET_SINGLE(Graphics)->GetDevice();
+    auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
 
-    const Matrix lightVP = ComputeLightVP(entities, lightDir);
-    _shadowDesc.lightVP  = lightVP;
+    Matrix cascadeVPs[kCascadeCount];
+    ComputeCascadeVPs(entities, lightDir, camPos, cascadeVPs);
 
-    {
-        D3D11_MAPPED_SUBRESOURCE ms = {};
-        dc->Map(_shadowCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
-        ::memcpy(ms.pData, &_shadowDesc, sizeof(ShadowDesc));
-        dc->Unmap(_shadowCB.Get(), 0);
-    }
+    _shadowDesc.lightVP[0]   = cascadeVPs[0];
+    _shadowDesc.lightVP[1]   = cascadeVPs[1];
+    _shadowDesc.cascadeSplit = kNearCascadeRadius;
 
     ID3D11ShaderResourceView* nullSRV = nullptr;
     dc->PSSetShaderResources(3, 1, &nullSRV);
@@ -351,9 +383,6 @@ void ShadowPass::Render(const std::vector<Entity*>& entities, const Vec3& lightD
     dc->OMGetRenderTargets(1, savedRTV.GetAddressOf(), savedDSV.GetAddressOf());
     dc->RSGetViewports(&vpCount, &savedVP);
 
-    ID3D11RenderTargetView* nullRTV = nullptr;
-    dc->OMSetRenderTargets(1, &nullRTV, _shadowDSV.Get());
-    dc->ClearDepthStencilView(_shadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     dc->RSSetViewports(1, &_shadowVP);
     dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     dc->VSSetConstantBuffers(0, 1, _shadowCB.GetAddressOf());
@@ -392,8 +421,8 @@ void ShadowPass::Render(const std::vector<Entity*>& entities, const Vec3& lightD
         }
     }
 
-    RenderStaticGroups(dc);
-    RenderSkinnedGroups(dc);
+    for (uint32 i = 0; i < kCascadeCount; ++i)
+        RenderCascade(dc, i, cascadeVPs[i]);
 
     dc->OMSetRenderTargets(1, savedRTV.GetAddressOf(), savedDSV.Get());
     dc->RSSetViewports(1, &savedVP);

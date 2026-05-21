@@ -11,10 +11,13 @@ struct ShadowDesc;
 class ShadowPass
 {
 public:
-    static constexpr uint32 kShadowMapSize = 1024;
+    static constexpr uint32 kShadowMapSize     = 1024;
+    static constexpr uint32 kCascadeCount      = 2;
+    static constexpr float  kNearCascadeRadius = 25.0f;
 
     void                                Init();
-    void                                Render(const std::vector<Entity*>& entities, const Vec3& lightDir);
+    void                                Render(const std::vector<Entity*>& entities,
+                                               const Vec3& lightDir, const Vec3& camPos);
 
     ID3D11ShaderResourceView*           GetShadowSRV()   const { return _shadowSRV.Get(); }
     const ShadowDesc&                   GetShadowDesc()  const { return _shadowDesc; }
@@ -24,13 +27,17 @@ private:
     void                                CreateShadowMapResources();
     void                                CreateStates();
 
-    Matrix                              ComputeLightVP(const std::vector<Entity*>& entities, const Vec3& lightDir);
+    void                                ComputeCascadeVPs(const std::vector<Entity*>& entities,
+                                                          const Vec3& lightDir, const Vec3& camPos,
+                                                          Matrix outVP[kCascadeCount]);
 
+    void                                RenderCascade    (const ComPtr<ID3D11DeviceContext>& dc,
+                                                          uint32 cascadeIdx, const Matrix& lightVP);
     void                                RenderStaticGroups (const ComPtr<ID3D11DeviceContext>& dc);
     void                                RenderSkinnedGroups(const ComPtr<ID3D11DeviceContext>& dc);
 
     ComPtr<ID3D11Texture2D>             _shadowTexture;
-    ComPtr<ID3D11DepthStencilView>      _shadowDSV;
+    ComPtr<ID3D11DepthStencilView>      _shadowDSV[kCascadeCount];
     ComPtr<ID3D11ShaderResourceView>    _shadowSRV;
 
     ComPtr<ID3D11VertexShader>          _depthVS;
