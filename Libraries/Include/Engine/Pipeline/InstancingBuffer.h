@@ -38,7 +38,12 @@ public:
 
 	bool   IsUploaded() const { return _uploaded; }
 	void   ResetUpload() { _uploaded = false; }
-	uint32 GetCount()   const { return static_cast<uint32>(_data.size()); }
+	uint32 GetCount() const
+	{
+		if (_isDynamic && _pendingCount > 0)
+			return _pendingCount;
+		return static_cast<uint32>(_data.size());
+	}
 
 	bool   IsDynamic()  const { return _isDynamic; }
 
@@ -55,6 +60,10 @@ private:
 	uint32                      _poolElementOffset = 0;
 
 	std::vector<InstancingData> _data;
+
+	// SetData 경로(메시): 외부 버퍼 포인터 직접 보관 — _data 복사 없음
+	const InstancingData* _pendingPtr = nullptr;
+	uint32                      _pendingCount = 0;
 
 	bool _isDynamic = false;
 	bool _dirty = true;

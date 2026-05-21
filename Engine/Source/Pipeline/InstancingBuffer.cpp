@@ -60,6 +60,8 @@ void InstancingBuffer::PromoteToDynamic()
 void InstancingBuffer::ClearData()
 {
     _data.clear();
+    _pendingPtr = nullptr;
+    _pendingCount = 0;
     _dirty = true;
     _uploaded = false;
 }
@@ -72,6 +74,17 @@ void InstancingBuffer::AddData(const InstancingData& data)
 
 void InstancingBuffer::SetData(const InstancingData* data, uint32 count)
 {
+    if (_isDynamic)
+    {
+        // 외부 버퍼 포인터만 기록 — _data 복사 없음
+        // UploadData()가 호출될 때까지 data 포인터가 유효해야 함
+        _pendingPtr = data;
+        _pendingCount = count;
+        _dirty = true;
+        _uploaded = false;
+        return;
+    }
+
     _data.resize(count);
     if (count > 0)
         ::memcpy(_data.data(), data, sizeof(InstancingData) * count);
@@ -81,17 +94,31 @@ void InstancingBuffer::SetData(const InstancingData* data, uint32 count)
 
 void InstancingBuffer::UploadData()
 {
-    const uint32 count = GetCount();
-    if (count == 0 || !_dirty) return;
+    if (!_dirty) return;
 
     if (_isDynamic)
     {
-        _poolElementOffset =
-            GET_SINGLE(DynamicInstancePool)->Append(_data.data(), count);
+        if (_pendingPtr && _pendingCount > 0)
+        {
+            // SetData 경로: 외부 포인터 → Pool 직접 Append (memcpy 1회)
+            _poolElementOffset = GET_SINGLE(DynamicInstancePool)->Append(_pendingPtr, _pendingCount);
+            _pendingPtr = nullptr;
+        }
+        else
+        {
+            // AddData 경로(애님): _data 경유 (누적 구조 유지)
+            const uint32 count = static_cast<uint32>(_data.size());
+            if (count == 0) return;
+            _poolElementOffset = GET_SINGLE(DynamicInstancePool)->Append(_data.data(), count);
+            _pendingCount = count;
+        }
         _dirty = false;
         _uploaded = true;
         return;
     }
+
+    const uint32 count = static_cast<uint32>(_data.size());
+    if (count == 0) return;
 
     if (!_ringBuffers[0] || count > _maxCount)
         AllocStaticBuffer(NextTier(count));
