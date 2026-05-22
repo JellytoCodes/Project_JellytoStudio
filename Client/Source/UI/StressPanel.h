@@ -22,10 +22,14 @@ private:
     void BuildUI();
 
     void SpawnBlocks(int count);
+    void SpawnGridPreset(int count);
+    void SpawnRandomPreset(int count);
     void DeleteRandom10Pct();
     void DumpToLog();
+    void ExportCsv();
 
     void RefreshStats();
+    std::vector<int32> CollectValidTypes() const;
 
     void RegisterWindowClass(HINSTANCE hInstance);
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -43,8 +47,13 @@ private:
     HWND _hValTotalChunks = nullptr;
     HWND _hValVisChunks   = nullptr;
     HWND _hValFrameMs     = nullptr;
+    HWND _hValScenario    = nullptr;
+
+    std::wstring _lastScenario = L"Idle";
 
     static constexpr float kSpawnRange = 48.f;
+    static constexpr float kGridSpacing = 1.15f;
+    static constexpr uint32 kRandomSeed = 20260522u;
 
     static constexpr int ID_BTN_SPAWN100  = 701;
     static constexpr int ID_BTN_SPAWN1K   = 702;
@@ -52,6 +61,9 @@ private:
     static constexpr int ID_BTN_CLEAR     = 704;
     static constexpr int ID_BTN_DEL10     = 705;
     static constexpr int ID_BTN_DUMP      = 706;
+    static constexpr int ID_BTN_GRID10K   = 707;
+    static constexpr int ID_BTN_RANDOM10K = 708;
+    static constexpr int ID_BTN_EXPORT    = 709;
 
     static constexpr wchar_t CLASS_NAME[] = L"JellytoStressPanel";
 };
