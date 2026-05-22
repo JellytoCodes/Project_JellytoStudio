@@ -3,6 +3,7 @@
 
 #include "Actors.h"
 #include "Core/Managers/InputManager.h"
+#include "Core/Managers/TimeManager.h"
 #include "Data/BlockTable.h"
 #include "Entity/Actor.h"
 #include "Entity/Entity.h"
@@ -21,9 +22,11 @@
 #include "Scripts/OneBlockScript.h"
 #include "UI/PaletteWidget.h"
 #include "UI/InventoryWidget.h"
+#include "UI/PickDebugPanel.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Pipeline/Shader.h"
+#include "App/Managers/WindowManager.h"
 
 MainApp::MainApp()  {}
 MainApp::~MainApp() {}
@@ -46,6 +49,7 @@ void MainApp::Init()
     CreateCamera();
     CreatePlacementSystem();
     CreateInventorySystem();
+    CreateDebugTools();
 
     Camera* mainCam = _scene->GetMainCamera();
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
@@ -183,6 +187,13 @@ void MainApp::CreateInventorySystem()
     _scene->Add(std::move(invWidget));
 }
 
+void MainApp::CreateDebugTools()
+{
+    _pickDebugPanel = GET_SINGLE(WindowManager)->RegisterWindow<PickDebugPanel>(L"PickDebugPanel");
+    if (_pickDebugPanel)
+        _pickDebugPanel->SetPlacer(_blockPlacer);
+}
+
 void MainApp::Update()
 {
     CollisionManager::CheckCollision();
@@ -190,6 +201,19 @@ void MainApp::Update()
 
     if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F1))
         GET_SINGLE(InstancingManager)->DumpInstancingStats();
+
+    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F2) && _pickDebugPanel)
+        _pickDebugPanel->Toggle();
+
+    if (_pickDebugPanel && _pickDebugPanel->IsVisible())
+    {
+        _pickDebugRefreshTimer += GET_SINGLE(TimeManager)->GetDeltaTime();
+        if (_pickDebugRefreshTimer >= PickDebugPanel::kRefreshInterval)
+        {
+            _pickDebugRefreshTimer = 0.f;
+            _pickDebugPanel->Refresh();
+        }
+    }
 }
 
 void MainApp::Render()

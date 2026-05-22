@@ -38,6 +38,34 @@ public:
 
 	bool PlaceBlockAt(const Vec3& centerPos, PaletteWidget::SlotType type);
 
+	struct PickDebugInfo
+	{
+		struct HitInfo
+		{
+			bool         valid = false;
+			std::wstring entityName;
+			Vec3         normal = Vec3(0.f, 1.f, 0.f);
+			float        dist = 0.f;
+			std::wstring face;
+		};
+
+		bool         placingMode = false;
+		bool         canPlace = false;
+		bool         eraseMode = false;
+		bool         hasStock = true;
+		POINT        mousePos = { -1, -1 };
+		std::wstring selectedSlot;
+		std::wstring result;
+		std::wstring rejectReason;
+		std::wstring selectedChannel;
+		Vec3         resolvedPos = Vec3::Zero;
+		HitInfo      priming;
+		HitInfo      floor;
+		HitInfo      mushroom;
+	};
+
+	const PickDebugInfo& GetPickDebugInfo() const { return _pickDebug; }
+
 private:
 	struct FramePickResult
 	{
@@ -57,6 +85,7 @@ private:
 	bool CalcPlacePos(PaletteWidget::SlotType type, Entity* hitEntity, const Vec3& hitNormal, Vec3& outCenterPos) const;
 	bool ResolvePlaceTarget(const FramePickResult& pick, PaletteWidget::SlotType type, Vec3& outCenterPos) const;
 	bool IsOverlappingCharacter(const Vec3& colCenter, const Vec3& halfExt) const;
+	void UpdatePickDebug(const FramePickResult& pick, PaletteWidget::SlotType type);
 
 	Entity* SpawnBlockEntity(const Vec3& centerPos, PaletteWidget::SlotType type, const Vec3& initialScale, const Vec3& finalScale);
 	Entity* SpawnMeshBlock(const BlockRecord& rec, const Vec3& centerPos, const Vec3& initialScale, const Vec3& finalScale);
@@ -108,4 +137,5 @@ private:
 	mutable bool                                   _placedCacheDirty = true;
 
 	std::vector<PlaceTween> _placeTweens;
+	PickDebugInfo          _pickDebug;
 };

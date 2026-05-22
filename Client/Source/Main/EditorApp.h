@@ -6,6 +6,7 @@
 #include "App/ChunkDebugWindow.h"
 #include "UI/BlockTestPanel.h"
 #include "UI/StressPanel.h"
+#include "UI/PickDebugPanel.h"
 
 class Scene;
 class Entity;
@@ -16,6 +17,7 @@ class DetailWindow;
 class ChunkDebugWindow;
 class BlockTestPanel;
 class StressPanel;
+class PickDebugPanel;
 class IsometricCameraController;
 class UIText;
 
@@ -47,6 +49,7 @@ private:
     ChunkDebugWindow*                   _chunkDebugWindow = nullptr;
     BlockTestPanel*                     _blockTestPanel   = nullptr;
     StressPanel*                        _stressPanel      = nullptr;
+    PickDebugPanel*                     _pickDebugPanel   = nullptr;
 
     std::vector<std::unique_ptr<Actor>> _defaultActors;
 
@@ -62,6 +65,8 @@ private:
 
     float _chunkRefreshTimer  = 0.f;
     float _stressRefreshTimer = 0.f;
+    float _pickDebugRefreshTimer = 0.f;
     static constexpr float kChunkRefreshInterval  = ChunkDebugWindow::kRefreshInterval;
     static constexpr float kStressRefreshInterval = StressPanel::kRefreshInterval;
+    static constexpr float kPickDebugRefreshInterval = PickDebugPanel::kRefreshInterval;
 };

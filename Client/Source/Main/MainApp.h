@@ -12,6 +12,7 @@ class BlockPlacer;
 class OneBlockScript;
 class PaletteWidget;
 class InventoryWidget;
+class PickDebugPanel;
 
 class MainApp : public IExecute
 {
@@ -28,6 +29,7 @@ private:
     void CreateCamera();
     void CreatePlacementSystem();
     void CreateInventorySystem();
+    void CreateDebugTools();
 
     std::unique_ptr<Scene>              _scene;
     std::vector<std::unique_ptr<Actor>> _actors;
@@ -41,6 +43,9 @@ private:
 
     InventoryData              _inventoryData;             
     InventoryWidget*           _inventoryWidget = nullptr;
+    PickDebugPanel*            _pickDebugPanel  = nullptr;
 
     DebugHUD                   _debugHUD;
+
+    float _pickDebugRefreshTimer = 0.f;
 };

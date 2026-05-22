@@ -77,7 +77,16 @@ void BlockPlacer::Update()
 	if ((::GetKeyState(VK_CONTROL) & 0x8000) && input->GetButtonDown(KEY_TYPE::L))
 		SceneSerializer::Load(GET_SINGLE(SceneManager)->GetCurrentScene(), _savePath, this);
 
-	if (!_placingMode) { HidePreview(); return; }
+	const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
+
+	if (!_placingMode)
+	{
+		FramePickResult idlePick;
+		idlePick.mousePos = input->GetMousePos();
+		UpdatePickDebug(idlePick, st);
+		HidePreview();
+		return;
+	}
 
 	FramePickResult pick;
 	pick.mousePos = input->GetMousePos();
@@ -91,6 +100,7 @@ void BlockPlacer::Update()
 		scene->PickBlocks(mx, my, kQueryMask, pick.priming, pick.floor, pick.mushroom);
 	}
 
+	UpdatePickDebug(pick, st);
 	HandleInput(pick);
 	UpdatePreview(pick);
 }
@@ -187,6 +197,143 @@ bool BlockPlacer::IsOverlappingCharacter(const Vec3& colCenter, const Vec3& half
 	box.Center = colCenter;
 	box.Extents = halfExt;
 	return box.Intersects(charCol->GetBoundingBox());
+}
+
+void BlockPlacer::UpdatePickDebug(const FramePickResult& pick, SlotType type)
+{
+	auto FaceToString = [](PlaceFace face) -> std::wstring
+		{
+			switch (face)
+			{
+			case PlaceFace::Top:    return L"Top";
+			case PlaceFace::Side:   return L"Side";
+			case PlaceFace::Bottom: return L"Bottom";
+			default:                return L"None";
+			}
+		};
+
+	auto SlotToString = [](SlotType slot) -> std::wstring
+		{
+			const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(slot));
+			if (rec && !rec->key.empty()) return rec->key;
+			return L"Unknown";
+		};
+
+	auto CopyHit = [&](const BlockPickHit& src) -> PickDebugInfo::HitInfo
+		{
+			PickDebugInfo::HitInfo dst;
+			dst.valid = src.valid;
+			if (!src.valid) return dst;
+			dst.entityName = src.entity ? src.entity->GetEntityName() : L"<null>";
+			dst.normal = src.normal;
+			dst.dist = src.dist;
+			dst.face = FaceToString(NormalToFace(src.normal));
+			return dst;
+		};
+
+	_pickDebug = PickDebugInfo{};
+	_pickDebug.placingMode = _placingMode;
+	_pickDebug.mousePos = pick.mousePos;
+	_pickDebug.eraseMode = (type == SlotType::Eraser);
+	_pickDebug.selectedSlot = SlotToString(type);
+	_pickDebug.priming = CopyHit(pick.priming);
+	_pickDebug.floor = CopyHit(pick.floor);
+	_pickDebug.mushroom = CopyHit(pick.mushroom);
+
+	if (!_placingMode)
+	{
+		_pickDebug.result = L"Idle";
+		_pickDebug.rejectReason = L"PlacingMode Off";
+		return;
+	}
+
+	if (_pickDebug.eraseMode)
+	{
+		const bool canErase = pick.priming.valid || pick.mushroom.valid;
+		_pickDebug.canPlace = canErase;
+		_pickDebug.result = canErase ? L"Can Erase" : L"Blocked";
+		_pickDebug.rejectReason = canErase ? L"OK" : L"No removable hit";
+		_pickDebug.selectedChannel = pick.priming.valid ? L"Priming" : (pick.mushroom.valid ? L"Mushroom" : L"None");
+		return;
+	}
+
+	const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
+	if (!rec)
+	{
+		_pickDebug.result = L"Blocked";
+		_pickDebug.rejectReason = L"Missing BlockRecord";
+		return;
+	}
+
+	_pickDebug.hasStock = (_pInventory == nullptr || _pInventory->GetCount(type) > 0);
+	if (!_pickDebug.hasStock)
+	{
+		_pickDebug.result = L"Blocked";
+		_pickDebug.rejectReason = L"No inventory stock";
+		return;
+	}
+
+	bool sawHit = false;
+	bool sawMaskReject = false;
+	bool sawFaceReject = false;
+	bool sawCharacterOverlap = false;
+	float bestDist = FLT_MAX;
+
+	auto tryHit = [&](CollisionChannel channel, const wchar_t* channelName, const BlockPickHit& hit)
+		{
+			if (!hit.valid) return;
+			sawHit = true;
+			if ((rec->pickableMask & static_cast<uint8>(channel)) == 0)
+			{
+				sawMaskReject = true;
+				return;
+			}
+
+			const PlaceFace face = NormalToFace(hit.normal);
+			if (!FaceAllowed(face, rec->faceMask))
+			{
+				sawFaceReject = true;
+				return;
+			}
+
+			if (!hit.entity || !hit.entity->GetComponent<AABBCollider>())
+				return;
+
+			const BoundingBox& hitBox = hit.entity->GetComponent<AABBCollider>()->GetBoundingBox();
+			const Vec3 hitCenter = { hitBox.Center.x, hitBox.Center.y, hitBox.Center.z };
+			const Vec3 hitExt = { hitBox.Extents.x, hitBox.Extents.y, hitBox.Extents.z };
+			const Vec3 newHalf = GetHalfExtents(rec->collider);
+			const Vec3 newCenter = Vec3(
+				hitCenter.x + hit.normal.x * (hitExt.x + newHalf.x),
+				hitCenter.y + hit.normal.y * (hitExt.y + newHalf.y),
+				hitCenter.z + hit.normal.z * (hitExt.z + newHalf.z));
+
+			if (IsOverlappingCharacter(newCenter, newHalf))
+			{
+				sawCharacterOverlap = true;
+				return;
+			}
+
+			if (hit.dist < bestDist)
+			{
+				bestDist = hit.dist;
+				_pickDebug.canPlace = true;
+				_pickDebug.resolvedPos = newCenter;
+				_pickDebug.selectedChannel = channelName;
+			}
+		};
+
+	tryHit(CH::Priming, L"Priming", pick.priming);
+	tryHit(CH::Floor, L"Floor", pick.floor);
+	tryHit(CH::Mushroom, L"Mushroom", pick.mushroom);
+
+	_pickDebug.result = _pickDebug.canPlace ? L"Can Place" : L"Blocked";
+	if (_pickDebug.canPlace) _pickDebug.rejectReason = L"OK";
+	else if (!sawHit) _pickDebug.rejectReason = L"No hit";
+	else if (sawCharacterOverlap) _pickDebug.rejectReason = L"Character overlap";
+	else if (sawFaceReject) _pickDebug.rejectReason = L"Face mask reject";
+	else if (sawMaskReject) _pickDebug.rejectReason = L"Pickable mask reject";
+	else _pickDebug.rejectReason = L"No valid target";
 }
 
 void BlockPlacer::UpdatePreview(const FramePickResult& pick)
@@ -466,7 +613,7 @@ Entity* BlockPlacer::SpawnModelBlock(const BlockRecord& rec, const Vec3& centerP
 		model->ReadMaterial(rec.modelName);
 		if (!model || model->GetMeshCount() == 0)
 		{
-			assert(false && "FBX 모델 로드 실패 — BlockMaster.json 의 modelName 확인");
+			assert(false && "FBX model load failed - check modelName in BlockMaster.json");
 			return nullptr;
 		}
 		_modelCache[rec.modelName] = model;
@@ -484,7 +631,7 @@ Entity* BlockPlacer::SpawnBlockEntity(const Vec3& centerPos, SlotType type,
 	const BlockRecord* rec = GET_SINGLE(BlockTable)->GetRecord(static_cast<int32>(type));
 	if (!rec)
 	{
-		assert(false && "BlockRecord 없음 — BlockMaster.json id 확인");
+		assert(false && "Missing BlockRecord - check id in BlockMaster.json");
 		return nullptr;
 	}
 

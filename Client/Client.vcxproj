@@ -146,6 +146,7 @@
     <ClCompile Include="Source\UI\InventoryData.cpp" />
     <ClCompile Include="Source\UI\InventoryWidget.cpp" />
     <ClCompile Include="Source\UI\PaletteWidget.cpp" />
+    <ClCompile Include="Source\UI\PickDebugPanel.cpp" />
     <ClCompile Include="Source\Scripts\BlockPlacer.cpp" />
     <ClCompile Include="Source\Scripts\IsometricCameraController.cpp" />
     <ClCompile Include="Source\Main\Main.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="Source\UI\InventoryData.h" />
     <ClInclude Include="Source\UI\InventoryWidget.h" />
     <ClInclude Include="Source\UI\PaletteWidget.h" />
+    <ClInclude Include="Source\UI\PickDebugPanel.h" />
     <ClInclude Include="Source\Scripts\BlockPlacer.h" />
     <ClInclude Include="Source\Scripts\IsometricCameraController.h" />
     <ClInclude Include="Source\Scripts\PointClickController.h" />

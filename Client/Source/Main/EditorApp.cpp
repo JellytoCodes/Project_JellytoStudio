@@ -48,6 +48,7 @@ void EditorApp::Init()
     _chunkDebugWindow = GET_SINGLE(WindowManager)->RegisterWindow<ChunkDebugWindow>(L"ChunkDebugWindow");
     _blockTestPanel   = GET_SINGLE(WindowManager)->RegisterWindow<BlockTestPanel>  (L"BlockTestPanel");
     _stressPanel      = GET_SINGLE(WindowManager)->RegisterWindow<StressPanel>     (L"StressPanel");
+    _pickDebugPanel   = GET_SINGLE(WindowManager)->RegisterWindow<PickDebugPanel>  (L"PickDebugPanel");
 
     SceneSerializer::RegisterActor(L"SkySphereActor", [] { return std::make_unique<SkySphereActor>(); });
     SceneSerializer::RegisterActor(L"FloorActor",     [] { return std::make_unique<FloorActor>();     });
@@ -68,6 +69,7 @@ void EditorApp::Init()
 
     if (_blockTestPanel) _blockTestPanel->Load();
     if (_stressPanel && _stressPlacer) _stressPanel->SetPlacer(_stressPlacer);
+    if (_pickDebugPanel && _stressPlacer) _pickDebugPanel->SetPlacer(_stressPlacer);
 
     RegisterActors();
 }
@@ -145,7 +147,7 @@ void EditorApp::CreateHUD()
     hintText->SetRect(0.f, 70.f, 500.f, 18.f);
     hintText->SetFontSize(12);
     hintText->SetTextGetter([]() {
-        return std::wstring(L"F2:Chunk  F3:Block  F4:Stress  |  Ctrl+S:저장  Ctrl+L:로드  Del:삭제");
+        return std::wstring(L"F2:Chunk  F3:Block  F4:Stress  F5:Pick  |  Ctrl+S:저장  Ctrl+L:로드  Del:삭제");
     });
     hud->AddUIComponent(std::move(hintText));
 
@@ -225,6 +227,12 @@ void EditorApp::Update()
         _stressPanel->Toggle();
     prevF4 = curF4;
 
+    static bool prevF5 = false;
+    const  bool curF5  = (::GetAsyncKeyState(VK_F5) & 0x8000) != 0;
+    if (curF5 && !prevF5 && _pickDebugPanel)
+        _pickDebugPanel->Toggle();
+    prevF5 = curF5;
+
     if (_chunkDebugWindow && _chunkDebugWindow->IsVisible())
     {
         _chunkRefreshTimer += dt;
@@ -243,6 +251,16 @@ void EditorApp::Update()
         {
             _stressRefreshTimer = 0.f;
             _stressPanel->Refresh();
+        }
+    }
+
+    if (_pickDebugPanel && _pickDebugPanel->IsVisible())
+    {
+        _pickDebugRefreshTimer += dt;
+        if (_pickDebugRefreshTimer >= kPickDebugRefreshInterval)
+        {
+            _pickDebugRefreshTimer = 0.f;
+            _pickDebugPanel->Refresh();
         }
     }
 
