@@ -48,6 +48,12 @@ void BlockPlacer::Awake()
 
 	GET_SINGLE(BlockMaterialProvider)->Init();
 	WarmMeshPool();
+
+	for (const BlockRecord& rec : table->GetAllRecords())
+	{
+		if (rec.renderType == BlockRenderType::Model && !rec.modelName.empty())
+			WarmModelPool(rec);
+	}
 }
 
 void BlockPlacer::Start() {}
@@ -753,7 +759,11 @@ void BlockPlacer::TickPlaceTweens(float dt)
 				GET_SINGLE(ChunkManager)->MarkDirty(tw.entity);
 
 				if (tw.entity->GetComponent<MeshRenderer>())
-					instMgr->SetMeshDirty();
+				{
+					const InstanceID id = instMgr->GetMeshInstanceID(tw.entity);
+					instMgr->MarkMeshDirty(id);
+					instMgr->SetMeshGroupDirty();
+				}
 				else if (tw.entity->GetComponent<ModelRenderer>())
 					instMgr->SetDirty();
 

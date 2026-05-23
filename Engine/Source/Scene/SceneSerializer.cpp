@@ -12,10 +12,16 @@
 using json = nlohmann::json;
 
 std::unordered_map<std::wstring, SceneSerializer::ActorFactory> SceneSerializer::_factories;
+std::unordered_map<std::wstring, std::wstring>                  SceneSerializer::_entityNameMap;
 
 void SceneSerializer::RegisterActor(const std::wstring& actorType, ActorFactory factory)
 {
     _factories[actorType] = std::move(factory);
+}
+
+void SceneSerializer::RegisterActorName(const std::wstring& entityName, const std::wstring& actorType)
+{
+    _entityNameMap[entityName] = actorType;
 }
 
 // ── Save ──────────────────────────────────────────────────────────────────────
@@ -131,16 +137,8 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
 // ── 유틸 ──────────────────────────────────────────────────────────────────────
 std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
 {
-    static const std::unordered_map<std::wstring, std::wstring> kNameToType = {
-        { L"SkySphere",        L"SkySphereActor" },
-        { L"Floor",            L"FloorActor"     },
-        { L"Cube",             L"CubeActor"      },
-        { L"Sphere",           L"SphereActor"    },
-        { L"Character",        L"CharacterActor" },
-        { L"DirectionalLight", L"LightActor"     },
-    };
-    const auto it = kNameToType.find(entityName);
-    return it != kNameToType.end() ? it->second : L"";
+    const auto it = _entityNameMap.find(entityName);
+    return it != _entityNameMap.end() ? it->second : L"";
 }
 
 std::string SceneSerializer::WstrToStr(const std::wstring& wStr)

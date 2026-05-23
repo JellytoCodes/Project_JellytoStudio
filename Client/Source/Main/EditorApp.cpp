@@ -57,6 +57,13 @@ void EditorApp::Init()
     SceneSerializer::RegisterActor(L"CharacterActor", [] { return std::make_unique<CharacterActor>(); });
     SceneSerializer::RegisterActor(L"LightActor",     [] { return std::make_unique<LightActor>();     });
 
+    SceneSerializer::RegisterActorName(L"SkySphere",        L"SkySphereActor");
+    SceneSerializer::RegisterActorName(L"Floor",            L"FloorActor");
+    SceneSerializer::RegisterActorName(L"Cube",             L"CubeActor");
+    SceneSerializer::RegisterActorName(L"Sphere",           L"SphereActor");
+    SceneSerializer::RegisterActorName(L"Character",        L"CharacterActor");
+    SceneSerializer::RegisterActorName(L"DirectionalLight", L"LightActor");
+
     SpawnDefaultActors();
     CreateCamera();
     CreateHUD();
