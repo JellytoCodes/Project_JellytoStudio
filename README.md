@@ -11,14 +11,6 @@
 ![Instancing + CSM 섀도우](Docs/screenshots/shadow_instancing.gif)
 -->
 
-> **TODO:** 엔진 구동 스크린샷과 RenderStats 비교 이미지를 상단에 첨부하면
-> Frustum Culling, Face Occlusion Culling, 2-Cascade Shadow Map의 효과를
-> 수치(DrawCall / 인스턴스 수)와 함께 시각적으로 증명할 수 있습니다.
-> `DebugHUD`의 `meshGroupsRebuilt`, `meshGroupsSkipped`, `totalDrawCalls`
-> 수치를 Before / After 스크린샷으로 첨부하는 것을 권장합니다.
-
----
-
 ## 목차
 
 - [프로젝트 소개](#프로젝트-소개)
