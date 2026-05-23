@@ -177,7 +177,14 @@ void Shader::PushGlobalData(const Matrix& view, const Matrix& projection)
 		_globalEffectBuffer = GetConstantBuffer("GlobalBuffer");
 
 	GET_SINGLE(SharedCBufferManager)->SetGlobal(view, projection);
-	_globalEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetGlobalBuffer());
+
+	// SharedCBufferManager의 버퍼 포인터는 생성 후 변하지 않으므로
+	// Effect에 바인딩하는 SetConstantBuffer는 셰이더 인스턴스당 최초 1회만 호출
+	if (!_globalBound && _globalEffectBuffer)
+	{
+		_globalEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetGlobalBuffer());
+		_globalBound = true;
+	}
 }
 
 void Shader::PushTransformData(const TransformDesc& desc)
@@ -199,7 +206,12 @@ void Shader::PushLightData(const LightDesc& desc)
 		_lightEffectBuffer = GetConstantBuffer("LightBuffer");
 
 	GET_SINGLE(SharedCBufferManager)->SetLight(desc);
-	_lightEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetLightBuffer());
+
+	if (!_lightBound && _lightEffectBuffer)
+	{
+		_lightEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetLightBuffer());
+		_lightBound = true;
+	}
 }
 
 void Shader::PushMaterialData(const MaterialDesc& desc)

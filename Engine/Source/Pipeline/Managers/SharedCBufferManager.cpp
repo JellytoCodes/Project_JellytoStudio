@@ -21,11 +21,15 @@ void SharedCBufferManager::SetGlobal(const Matrix& view, const Matrix& projectio
 {
     EnsureInit();
 
-    _globalDesc.V = view;
-    _globalDesc.P = projection;
-    _globalDesc.VP = view * projection;
-    _globalDesc.VInv = view.Invert();
+    GlobalDesc next;
+    next.V    = view;
+    next.P    = projection;
+    next.VP   = view * projection;
+    next.VInv = view.Invert();
 
+    if (::memcmp(&_globalDesc, &next, sizeof(GlobalDesc)) == 0) return;
+
+    _globalDesc = next;
     _globalBuffer->CopyData(GET_SINGLE(Graphics)->GetDeviceContext(), _globalDesc);
 }
 

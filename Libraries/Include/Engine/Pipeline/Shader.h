@@ -70,12 +70,14 @@ private:
 
 
 	ComPtr<ID3DX11EffectConstantBuffer>						_globalEffectBuffer;
+	bool													_globalBound = false;
 
 	TransformDesc											_transformDesc;
 	std::unique_ptr<ConstantBuffer<TransformDesc>>			_transformBuffer;
 	ComPtr<ID3DX11EffectConstantBuffer>						_transformEffectBuffer;
 
 	ComPtr<ID3DX11EffectConstantBuffer>						_lightEffectBuffer;
+	bool													_lightBound = false;
 
 	MaterialDesc											_materialDesc;
 	std::unique_ptr<ConstantBuffer<MaterialDesc>>			_materialBuffer;
