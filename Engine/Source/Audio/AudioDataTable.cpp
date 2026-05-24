@@ -52,7 +52,7 @@ void AudioDataTable::Load(const std::wstring& jsonPath)
     }
     catch (const json::parse_error& e)
     {
-        assert(false && "AudioData.json 파싱 실패 — JSON 문법 오류");
+        assert(false && "AudioData.json parse failed - invalid JSON syntax");
         ::OutputDebugStringA(e.what());
         return;
     }

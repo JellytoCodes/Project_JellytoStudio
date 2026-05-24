@@ -5,7 +5,12 @@
 void TimeManager::Init()
 {
 	::QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&_frequency));
-	::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_prevCount)); // CPU Å¬·°
+	::QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&_prevCount));
+	_deltaTime = 0.f;
+	_frameCount = 0;
+	_frameTime = 0.f;
+	_fps = 0;
+	_totalTime = 0.f;
 }
 
 void TimeManager::Update()

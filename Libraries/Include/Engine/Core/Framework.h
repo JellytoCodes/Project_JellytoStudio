@@ -3,13 +3,8 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
-///////////////////////////////////////////////////
-/// STL
-///////////////////////////////////////////////////
-
 #include <memory>
 #include <iostream>
-
 #include <array>
 #include <vector>
 #include <list>
@@ -17,41 +12,23 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
-
 #include <algorithm>
-
 #include <functional>
-
 #include <string>
-
 #include <sstream>
-
-///////////////////////////////////////////////////
-/// Windows
-///////////////////////////////////////////////////
-
-#include <windows.h>
 #include <assert.h>
 #include <optional>
 #include <filesystem>
 #include <fstream>
 
-///////////////////////////////////////////////////
-/// DirectX11
-///////////////////////////////////////////////////
-
-
+#include <windows.h>
 #include <d3d11.h>
 #include <d3d11shader.h>
-#include <d3d11.h>
 #include <d3dcompiler.h>
-
 #include <DirectXMath.h>
 #include <DirectXTex/DirectXTex.h>
 #include <DirectXTex/DirectXTex.inl>
-
 #include <wrl.h>
-
 #include <FX11/d3dx11effect.h>
 
 #include "Utils/SimpleMath.h"
@@ -59,35 +36,18 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-///////////////////////////////////////////////////
-/// Assimp
-///////////////////////////////////////////////////
-
 #include <Assimp/Importer.hpp>
 #include <Assimp/scene.h>
 #include <Assimp/postprocess.h>
-
-///////////////////////////////////////////////////
-/// Types
-///////////////////////////////////////////////////
 
 #include "Types/GlobalTypes.h"
 #include "Types/VertexData.h"
 #include "Types/AsTypes.h"
 #include "Types/ShaderDesc.h"
 
-///////////////////////////////////////////////////
-/// Utils
-///////////////////////////////////////////////////
-
 #include "Utils/Geometry/Geometry.h"
 #include "Utils/Geometry/GeometryHelper.h"
-
 #include "Utils/json.hpp"
-
-///////////////////////////////////////////////////
-/// Libraries
-///////////////////////////////////////////////////
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -103,10 +63,6 @@ using namespace DirectX;
 #pragma comment(lib, "Assimp/assimp-vc143-mt.lib")
 #pragma comment(lib, "FMOD/fmod-vc.lib")
 #endif
-
-///////////////////////////////////////////////////
-/// Define
-///////////////////////////////////////////////////
 
 #define DECLARE_SINGLE(classname)			\
 private:									\

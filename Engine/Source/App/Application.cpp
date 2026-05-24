@@ -109,7 +109,7 @@ void Application::OnResize(UINT width, UINT height)
 
 void Application::UpdateWindowTitle()
 {
-    float   fps  = GET_SINGLE(TimeManager)->GetFps();
+    const float fps = static_cast<float>(GET_SINGLE(TimeManager)->GetFps());
     wchar_t text[100];
     swprintf_s(text, L"%s (FPS: %.2f)", _desc.appName.c_str(), fps);
     ::SetWindowTextW(_desc.hWnd, text);

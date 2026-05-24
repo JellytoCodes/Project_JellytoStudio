@@ -20,6 +20,23 @@
 
 static FMOD_VECTOR ToFmodVec(const Vec3& v) { return { v.x, v.y, v.z }; }
 
+namespace
+{
+    std::string WideToUtf8(const std::wstring& w)
+    {
+        if (w.empty()) return {};
+
+        const int size = ::WideCharToMultiByte(
+            CP_UTF8, 0, w.c_str(), -1, nullptr, 0, nullptr, nullptr);
+        if (size <= 0) return {};
+
+        std::string result(static_cast<size_t>(size - 1), '\0');
+        ::WideCharToMultiByte(
+            CP_UTF8, 0, w.c_str(), -1, result.data(), size, nullptr, nullptr);
+        return result;
+    }
+}
+
 bool AudioManager::Init(const std::wstring& audioRootPath)
 {
     AudioDataTable* table = GET_SINGLE(AudioDataTable);
@@ -67,7 +84,22 @@ AudioManager::AudioClipEntry* AudioManager::FindClip(const std::unordered_map<st
 bool AudioManager::LoadClip(const std::wstring& key, const std::wstring& fullPath,
     bool is3D, bool isLoop, float minDist, float maxDist)
 {
-    std::string pathA(fullPath.begin(), fullPath.end());
+    if (_clips.find(key) != _clips.end())
+    {
+        wchar_t buf[256];
+        ::swprintf_s(buf, L"[AudioManager] Duplicate clip key skipped: '%s'\n", key.c_str());
+        ::OutputDebugStringW(buf);
+        return false;
+    }
+
+    const std::string pathA = WideToUtf8(fullPath);
+    if (pathA.empty())
+    {
+        wchar_t buf[512];
+        ::swprintf_s(buf, L"[AudioManager] Invalid audio path: '%s'\n", fullPath.c_str());
+        ::OutputDebugStringW(buf);
+        return false;
+    }
 
     FMOD_MODE mode = FMOD_DEFAULT;
     mode |= is3D ? FMOD_3D : FMOD_2D;
@@ -194,8 +226,8 @@ void AudioManager::PlayBGM(const std::wstring& key)
     if (!entry) return;
 
     bool isPlaying = false;
-    if (_pBGMChannel)
-        _pBGMChannel->isPlaying(&isPlaying);
+    if (_pBGMChannel && _pBGMChannel->isPlaying(&isPlaying) != FMOD_OK)
+        _pBGMChannel = nullptr;
     if (isPlaying) return;
 
     _pSystem->playSound(entry->clip.sound, nullptr, false, &_pBGMChannel);
@@ -208,8 +240,11 @@ void AudioManager::StopBGM(bool immediate)
     if (!_pBGMChannel) return;
 
     bool isPlaying = false;
-    _pBGMChannel->isPlaying(&isPlaying);
-    if (!isPlaying) return;
+    if (_pBGMChannel->isPlaying(&isPlaying) != FMOD_OK || !isPlaying)
+    {
+        _pBGMChannel = nullptr;
+        return;
+    }
 
     if (!immediate)
         _pBGMChannel->setVolume(0.f);

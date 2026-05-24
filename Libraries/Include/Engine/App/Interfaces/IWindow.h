@@ -3,6 +3,8 @@
 class IWindow
 {
 public:
+	virtual ~IWindow() = default;
+
 	virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) = 0;
 	virtual void Show() = 0;
 	virtual void Hide() = 0;

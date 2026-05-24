@@ -6,6 +6,8 @@ class Entity;
 class ChunkDebugWindow : public IWindow
 {
 public:
+    virtual ~ChunkDebugWindow() override;
+
     virtual bool Create(HINSTANCE hInstance, HWND hMainWnd) override;
     virtual void Show()   override;
     virtual void Hide()   override;
@@ -51,6 +53,7 @@ private:
     HWND _hSelAABBExt    = nullptr;
 
     HWND _hChunkList     = nullptr;
+    HFONT _hMonoFont     = nullptr;
 
     static constexpr wchar_t CLASS_NAME[] = L"JellytoChunkDebugPanel";
 };

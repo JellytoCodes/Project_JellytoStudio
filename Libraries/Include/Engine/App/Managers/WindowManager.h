@@ -37,10 +37,15 @@ private:
 template<typename T>
 T* WindowManager::RegisterWindow(const std::wstring& name)
 {
+	if (auto* registered = GetWindow<T>(name))
+		return registered;
+
 	auto window = std::make_unique<T>();
+	if (!window->Create(_hInstance, _hMainWnd))
+		return nullptr;
+
 	T* raw = window.get();
-	if (window->Create(_hInstance, _hMainWnd))
-		_windows[name] = std::move(window);
+	_windows[name] = std::move(window);
 	return raw;
 }
 

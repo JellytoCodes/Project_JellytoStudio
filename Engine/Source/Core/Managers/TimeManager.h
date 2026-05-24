@@ -21,5 +21,5 @@ private:
 	float	_frameTime = 0.f;
 	uint32	_fps = 0;
 
-	float _totalTime;
+	float _totalTime = 0.f;
 };

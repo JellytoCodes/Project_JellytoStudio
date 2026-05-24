@@ -28,6 +28,15 @@ namespace
 
 }
 
+ChunkDebugWindow::~ChunkDebugWindow()
+{
+    if (_hMonoFont)
+    {
+        ::DeleteObject(_hMonoFont);
+        _hMonoFont = nullptr;
+    }
+}
+
 bool ChunkDebugWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
     if (_created) return true;
@@ -137,11 +146,11 @@ void ChunkDebugWindow::BuildUI()
         LBS_NOINTEGRALHEIGHT | LBS_NOSEL,
         LX, y, W, 180, _hWnd, nullptr, _hInstance, nullptr);
 
-    HFONT hMono = ::CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+    _hMonoFont = ::CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
         DEFAULT_QUALITY, FIXED_PITCH | FF_DONTCARE, L"Consolas");
-    if (hMono)
-        ::SendMessage(_hChunkList, WM_SETFONT, (WPARAM)hMono, TRUE);
+    if (_hMonoFont)
+        ::SendMessage(_hChunkList, WM_SETFONT, (WPARAM)_hMonoFont, TRUE);
 }
 
 void ChunkDebugWindow::Refresh(Entity* selectedEntity)
