@@ -68,6 +68,8 @@ void Entity::OnCollision(Entity* other)
 
 void Entity::AddComponent(std::unique_ptr<Component> component)
 {
+    if (component == nullptr) return;
+
     component->SetEntity(this);
     const int8 index = static_cast<int8>(component->GetType());
 

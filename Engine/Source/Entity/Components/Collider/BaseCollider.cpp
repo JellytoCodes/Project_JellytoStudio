@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "BaseCollider.h"
 #include "Entity/Components/Camera.h"
 #include "Entity/Components/Transform.h"
@@ -21,6 +21,7 @@ BaseCollider::~BaseCollider()
 void BaseCollider::Update()
 {
 	if (_isStatic && _boundsReady) return;
+	if (GetTransform() == nullptr) return;
 
 	Matrix matScale = Matrix::CreateScale(_offsetScale);
 	Matrix matRotation = Matrix::CreateRotationX(_offsetRotation.x)

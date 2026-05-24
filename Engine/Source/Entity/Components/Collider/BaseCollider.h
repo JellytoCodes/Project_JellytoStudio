@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Entity/Components/Component.h"
 #include "Entity/Components/Collider/CollisionChannel.h"
 
@@ -77,8 +77,8 @@ protected:
 
 	Matrix _colliderWorld = Matrix::Identity;
 
-	bool   _isStatic    = false; // 정적 콜라이더 플래그
-	bool   _boundsReady = false; // 최초 계산 완료 여부
+	bool   _isStatic    = false;
+	bool   _boundsReady = false;
 
 private:
 	void InitDebugShader();

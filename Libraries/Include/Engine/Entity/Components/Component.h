@@ -15,9 +15,7 @@ enum class ComponentType : int8
     TileMap,
     UIComponent,
 
-    ///////////////
-    Script,       // Scripts (MonoBehaviour) are stored separately in _scripts
-    ///////////////
+    Script,
 
     End
 };
@@ -77,6 +75,6 @@ public:
 protected:
     ComponentType   _type;
 
-    Entity*         _entity;
-    Transform*      _transform;
+    Entity*         _entity = nullptr;
+    Transform*      _transform = nullptr;
 };

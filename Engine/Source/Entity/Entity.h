@@ -26,7 +26,7 @@ public:
     void SetLayerIndex(const uint8 layer)   { _layerIndex = layer; }
     uint8 GetLayerIndex() const             { return _layerIndex;  }
 
-    std::wstring GetEntityName() const      { return _entityName; }
+    const std::wstring& GetEntityName() const { return _entityName; }
 
 protected:
     std::array<std::unique_ptr<Component>, FIXED_COMPONENT_COUNT>   _components;

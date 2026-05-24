@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "BaseCollider.h"
 
 class SphereCollider : public BaseCollider
@@ -20,7 +20,6 @@ public:
 protected:
 	virtual void UpdateBounds() override;
 
-	// 디버그 시각화
 	virtual std::wstring GetDebugMeshKey() const override	{ return L"Sphere"; }
 	virtual Vec4         GetDebugColor()   const override	{ return Vec4(1.f, 1.f, 0.f, 1.f); }
 	virtual Matrix       GetDebugWorldMatrix() override;

@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "CollisionManager.h"
 #include "Entity/Entity.h"
 #include "Entity/Components/Collider/AABBCollider.h"
@@ -8,10 +8,24 @@
 std::vector<BaseCollider*> CollisionManager::s_DynamicColliders;
 std::vector<BaseCollider*> CollisionManager::s_StaticColliders;
 
+namespace
+{
+    void NotifyCollision(BaseCollider* a, BaseCollider* b)
+    {
+        Entity* entityA = a ? a->GetEntity() : nullptr;
+        Entity* entityB = b ? b->GetEntity() : nullptr;
+        if (entityA == nullptr || entityB == nullptr) return;
+
+        entityA->OnCollision(entityB);
+        entityB->OnCollision(entityA);
+    }
+}
+
 void CollisionManager::RegisterCollider(BaseCollider* collider, bool isStatic)
 {
     if (collider == nullptr) return;
     auto& list = isStatic ? s_StaticColliders : s_DynamicColliders;
+    if (std::find(list.begin(), list.end(), collider) != list.end()) return;
     list.push_back(collider);
 }
 
@@ -43,12 +57,7 @@ void CollisionManager::CheckCollision()
         {
             BaseCollider* b = s_DynamicColliders[j];
             if (Intersects(a, b))
-            {
-                Entity* entityA = a->GetEntity();
-                Entity* entityB = b->GetEntity();
-                entityA->OnCollision(entityB);
-                entityB->OnCollision(entityA);
-            }
+                NotifyCollision(a, b);
         }
     }
 
@@ -71,12 +80,7 @@ void CollisionManager::CheckCollision()
         for (BaseCollider* b : chunkCandidates)
         {
             if (Intersects(a, b))
-            {
-                Entity* entityA = a->GetEntity();
-                Entity* entityB = b->GetEntity();
-                entityA->OnCollision(entityB);
-                entityB->OnCollision(entityA);
-            }
+                NotifyCollision(a, b);
         }
 
         const int32 statCount = static_cast<int32>(s_StaticColliders.size());
@@ -86,12 +90,7 @@ void CollisionManager::CheckCollision()
             if (usedChunkBroadphase && chunkMgr->IsManaged(b->GetEntity())) continue;
 
             if (Intersects(a, b))
-            {
-                Entity* entityA = a->GetEntity();
-                Entity* entityB = b->GetEntity();
-                entityA->OnCollision(entityB);
-                entityB->OnCollision(entityA);
-            }
+                NotifyCollision(a, b);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "BaseCollider.h"
 
 class AABBCollider : public BaseCollider
@@ -12,7 +12,6 @@ public:
 	virtual bool Intersects(Ray& ray, float& distance) override;
 	virtual bool Intersects(BaseCollider* other) override;
 
-	// 히트 노말 반환 버전 — PickBlock에서 배치 면 판별에 사용
 	bool IntersectsWithNormal(Ray& ray, float& distance, Vec3& outHitNormal);
 
 	BoundingBox& GetBoundingBox()					{ Update(); return _boundingBox; }

@@ -19,7 +19,6 @@ public:
 	void UpdateTransform();
 	static Vec3 ToEulerAngles(Quaternion q);
 
-	// Local
 	Vec3 GetLocalScale()    const							{ return _localScale; }
 	void SetLocalScale(const Vec3& v)						{ _localScale = v;    UpdateTransform(); }
 
@@ -29,7 +28,6 @@ public:
 	Vec3 GetLocalPosition() const							{ return _localPosition; }
 	void SetLocalPosition(const Vec3& v)					{ _localPosition = v; UpdateTransform(); }
 
-	// World
 	Vec3 GetScale()    const								{ return _scale; }
 	void SetScale(const Vec3& scale);
 
@@ -61,9 +59,9 @@ private:
 	Matrix						_matLocal = Matrix::Identity;
 	Matrix						_matWorld = Matrix::Identity;
 
-	Vec3						_scale;
-	Vec3						_rotation;
-	Vec3						_position;
+	Vec3						_scale    = { 1.f, 1.f, 1.f };
+	Vec3						_rotation = { 0.f, 0.f, 0.f };
+	Vec3						_position = { 0.f, 0.f, 0.f };
 
 	Transform*					_parent   = nullptr;
 	std::vector<Transform*>		_children;          

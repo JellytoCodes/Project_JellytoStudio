@@ -53,6 +53,7 @@ Entity* Component::GetEntity()
 void Component::SetEntity(Entity* entity)
 {
 	_entity = entity;
+	_transform = nullptr;
 
 	if (_entity)
 		_transform = entity->GetComponent<Transform>();

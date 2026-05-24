@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "BaseCollider.h"
 
 class FrustumCollider : public BaseCollider
@@ -24,7 +24,7 @@ protected:
 	virtual void UpdateBounds() override;
 
 	virtual std::wstring GetDebugMeshKey() const override { return L"Cube"; }
-	virtual Vec4         GetDebugColor()   const override { return Vec4(1.f, 0.5f, 0.f, 1.f); } // 주황
+	virtual Vec4         GetDebugColor()   const override { return Vec4(1.f, 0.5f, 0.f, 1.f); }
 	virtual Matrix       GetDebugWorldMatrix() override;
 
 private:

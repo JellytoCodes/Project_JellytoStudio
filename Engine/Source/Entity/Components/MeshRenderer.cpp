@@ -48,12 +48,14 @@ void MeshRenderer::RenderInstancing(InstancingBuffer* buffer)
 
     shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
-    if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
-        shader->PushLightData(lightObj->GetLightDesc());
-
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Light* lightObj = scene->GetLight())
+            shader->PushLightData(lightObj->GetLightDesc());
+
         if (auto* sp = scene->GetShadowPass())
             shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
+    }
 
     _material->Update();
 

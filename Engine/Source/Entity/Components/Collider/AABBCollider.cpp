@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "AABBCollider.h"
 #include "FrustumCollider.h"
 #include "OBBCollider.h"
@@ -33,7 +33,6 @@ Matrix AABBCollider::GetDebugWorldMatrix()
 	Quaternion quat;
 	_colliderWorld.Decompose(scale, quat, position);
 
-	// AABB는 회전 없음 → Identity Quat
 	Vec3 debugScale(
 		_boxExtents.x * scale.x * 2.f,
 		_boxExtents.y * scale.y * 2.f,
@@ -71,10 +70,8 @@ bool AABBCollider::IntersectsWithNormal(Ray& ray, float& distance, Vec3& outHitN
 	if (!_boundingBox.Intersects(ray.position, ray.direction, distance))
 		return false;
 
-	// 히트 포인트
 	Vec3 hitPoint = ray.position + ray.direction * distance;
 
-	// 박스 중심 기준 상대 좌표를 extents로 나눔 → 가장 큰 성분 = 히트 면
 	Vec3 c = _boundingBox.Center;
 	Vec3 e = _boundingBox.Extents;
 	Vec3 d(

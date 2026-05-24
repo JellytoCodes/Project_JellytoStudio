@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "TileMap.h"
 
 #include "MeshRenderer.h"
@@ -45,14 +45,10 @@ void TileMap::Create(int32 cols, int32 rows, float tileSize, std::shared_ptr<Mat
 	col->SetShowDebug(false);
 }
 
-// ── 유효성 ────────────────────────────────────────────────────────────────
-
 bool TileMap::IsValid(int32 col, int32 row) const
 {
     return col >= 0 && col < _cols && row >= 0 && row < _rows;
 }
-
-// ── 타일 접근 ─────────────────────────────────────────────────────────────
 
 TileData& TileMap::GetTile(int32 col, int32 row)
 {
@@ -78,8 +74,6 @@ bool TileMap::IsWalkable(int32 col, int32 row) const
     return _tiles[row * _cols + col].walkable;
 }
 
-// ── 경계 ──────────────────────────────────────────────────────────────────
-
 Vec3 TileMap::GetBoundsMin() const
 {
     auto entity = _entity;
@@ -97,8 +91,6 @@ Vec3 TileMap::GetBoundsMax() const
         origin.z + _rows * _tileSize
     );
 }
-
-// ── 월드 좌표 기반 조회 ───────────────────────────────────────────────────
 
 bool TileMap::IsInsideBounds(const Vec3& worldPos) const
 {
@@ -120,11 +112,9 @@ bool TileMap::SnapToGrid(const Vec3& worldPos, Vec3& outSnapped) const
     int32 col, row;
     if (!WorldToGrid(worldPos, col, row)) return false;
     outSnapped = GridToWorld(col, row);
-    outSnapped.y = worldPos.y; // Y는 원본 유지
+    outSnapped.y = worldPos.y;
     return true;
 }
-
-// ── 좌표 변환 ─────────────────────────────────────────────────────────────
 
 Vec3 TileMap::GridToWorld(int32 col, int32 row) const
 {
@@ -146,7 +136,6 @@ bool TileMap::WorldToGrid(const Vec3& worldPos, int32& outCol, int32& outRow) co
     float localX = worldPos.x - origin.x;
     float localZ = worldPos.z - origin.z;
 
-    // 음수 좌표도 올바르게 처리 (floor)
     outCol = (int32)floorf(localX / _tileSize);
     outRow = (int32)floorf(localZ / _tileSize);
 

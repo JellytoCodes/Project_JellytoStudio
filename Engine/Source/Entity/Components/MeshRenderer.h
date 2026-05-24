@@ -3,7 +3,6 @@
 #include "Pipeline/InstancingBuffer.h"
 #include "Graphics/RenderPacket.h"
 
-class Shader;
 class Material;
 class Mesh;
 
@@ -39,7 +38,6 @@ public:
 
 private:
     std::shared_ptr<Mesh>               _mesh;
-    std::shared_ptr<Shader>             _shader;
     std::shared_ptr<Material>           _material;
     uint8                               _pass          = 0;
 
