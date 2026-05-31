@@ -39,6 +39,8 @@ void Graphics::ResizeBuffers(UINT width, UINT height)
 
 void Graphics::RenderBegin()
 {
+    if (_deviceContext == nullptr) return;
+
     InvalidateStateCache();
     _deviceContext->OMSetRenderTargets(1, _renderTargetView.GetAddressOf(), _depthStencilView.Get());
     _deviceContext->ClearRenderTargetView(_renderTargetView.Get(), _clearColor);
@@ -48,6 +50,8 @@ void Graphics::RenderBegin()
 
 void Graphics::RenderEnd()
 {
+    if (_swapChain == nullptr) return;
+
     HRESULT hr = _swapChain->Present(1, 0);
     CHECK(hr);
 }
@@ -151,6 +155,10 @@ void Graphics::SetDepthStencilState(ID3D11DepthStencilState* state, UINT stencil
 
 void Graphics::SetBlendState(ID3D11BlendState* state, const FLOAT* blendFactor, UINT sampleMask)
 {
+    const FLOAT defaultBlendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
+    if (blendFactor == nullptr)
+        blendFactor = defaultBlendFactor;
+
     const bool factorSame = (::memcmp(
         _stateCache.blendFactor,
         blendFactor,

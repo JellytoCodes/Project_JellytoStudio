@@ -28,9 +28,10 @@ void ModelRenderer::Start()
 
 void ModelRenderer::SetModel(std::shared_ptr<Model> model)
 {
-	_model = model;
+    _model = model;
+    if (_model == nullptr) return;
 
-	const auto& materials = _model->GetMaterials();
+    const auto& materials = _model->GetMaterials();
 
 	for (auto& material : materials)
 		material->SetShader(_shader);
@@ -38,15 +39,16 @@ void ModelRenderer::SetModel(std::shared_ptr<Model> model)
 
 void ModelRenderer::RenderInstancing(InstancingBuffer* buffer)
 {
-	if (_model == nullptr) return;
+    if (_model == nullptr) return;
+    if (_shader == nullptr || buffer == nullptr || buffer->GetCount() == 0) return;
 
-	_shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
+    _shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
-	if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
-		_shader->PushLightData(lightObj->GetLightDesc());
-
-	if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
+        if (Light* lightObj = scene->GetLight())
+            _shader->PushLightData(lightObj->GetLightDesc());
+
         if (auto* sp = scene->GetShadowPass())
             _shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
     }
@@ -103,5 +105,7 @@ void ModelRenderer::RenderRawInstanced(const ComPtr<ID3D11DeviceContext>& dc,
 
 InstanceID ModelRenderer::GetInstanceID()
 {
+    if (_model == nullptr || _shader == nullptr) return {};
+
 	return { reinterpret_cast<uint64>(_model.get()), reinterpret_cast<uint64>(_shader.get()) };
 }

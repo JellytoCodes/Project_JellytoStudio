@@ -34,7 +34,6 @@ void Viewport::Set(float width, float height, float x, float y, float minDepth, 
 
 Vec3 Viewport::Project(const Vec3& pos, const Matrix& W, const Matrix& V, const Matrix& P)
 {
-	// World * View * Projection
 	Matrix wvp = W * V * P;
 
 	Vec3 p = Vec3::Transform(pos, wvp);

@@ -49,11 +49,6 @@ InstancingBuffer& InstancingManager::GetOrCreateMeshBuffer(const InstanceID& id)
 
 void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
 {
-    // ── 영구 멤버 재사용 ─────────────────────────────────────────────
-    // 로컬 변수 EntityCache newMeshCache를 매 프레임 생성/소멸하던 방식 대신
-    // _tmpMeshCache를 clear()로 초기화.
-    // clear()는 내부 버킷 배열을 그대로 유지해 다음 insert 시 heap 재할당 없음.
-    // ────────────────────────────────────────────────────────────────
     _tmpMeshCache.clear();
 
     for (Entity* entity : entities)
@@ -118,21 +113,16 @@ void InstancingManager::SmartRebuildMeshGroups(std::vector<Entity*>& entities)
         _meshWorldCache.erase(id);
     }
 
-    // ── swap + clear : move보다 유리한 이유 ──────────────────────────
-    // move: _tmpMeshCache의 버킷 배열이 _meshCache로 넘어가고,
-    //       _tmpMeshCache는 최소 상태(버킷 1개)로 초기화 → 다음 프레임 재성장 필요.
-    // swap: 두 맵의 버킷 배열 소유권을 교환.
-    //       _tmpMeshCache가 이전 _meshCache의 버킷 배열을 이어받아
-    //       clear() 후에도 용량 보존 → 다음 프레임 insert 시 heap 재할당 Zero.
-    // ────────────────────────────────────────────────────────────────
     std::swap(_meshCache, _tmpMeshCache);
-    _tmpMeshCache.clear();    // 이전 _meshCache 데이터 제거, 버킷 배열은 보존
+    _tmpMeshCache.clear();
 
     _partialDirtyMesh.clear();
 }
 
 void InstancingManager::Render(std::vector<Entity*>& entities)
 {
+    _stats = RenderStats{};
+
     if (entities.empty()) return;
 
     GET_SINGLE(DynamicInstancePool)->BeginFrame();
@@ -201,8 +191,6 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             }
         }
     }
-
-    _stats = RenderStats{};
 
     if (fullMeshRebuild)
     {
@@ -298,24 +286,16 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
         _partialDirtyModel.clear();
     }
 
-    // ── Upload Phase 마무리: Anim 데이터를 Pool에 Append ──────────────
-    // RenderMesh/Model 의 UploadData() 는 이미 위에서 완료됨.
-    // Anim 은 매 프레임 World 행렬이 바뀌므로 여기서 빌드 후 Append.
     BuildAnimData();
 
-    // ── Pool 단 1회 Unmap ────────────────────────────────────────────
-    // 이 줄 이후부터 IASetVertexBuffers + Draw가 D3D11 스펙상 안전함.
     GET_SINGLE(DynamicInstancePool)->EndFrame();
 
-    // ── Draw Phase ───────────────────────────────────────────────────
     RenderMeshRenderer();
     RenderModelRenderer();
-    DrawAnimRenderer();   // UploadData()는 no-op(_dirty=false), BindBuffer+Draw만 수행
+    DrawAnimRenderer();
 
     _stats.totalDrawCalls = _stats.modelDrawCalls + _stats.meshDrawCalls;
 
-    // 엔티티 변화가 있는 프레임(SetDirty 호출)에만 실행.
-    // 정적 프레임에서 _modelCache / _meshCache 전체 순회를 완전히 생략.
     if (_hasPendingPrune)
     {
         PruneEmptyGroups();
@@ -391,9 +371,6 @@ void InstancingManager::RenderModelRenderer()
     }
 }
 
-// ── Upload Phase: Anim 데이터 구성 + Pool.Append ────────────────────
-// EndFrame(Unmap) 이전에 호출. memcpy만 수행, Map/Unmap 없음.
-// PushTweenData는 상수 버퍼 업데이트(별도 리소스)이므로 이 시점에 안전.
 void InstancingManager::BuildAnimData()
 {
     for (auto& [id, entityVec] : _animCache)
@@ -410,30 +387,27 @@ void InstancingManager::BuildAnimData()
             Entity* entity = entityVec[i];
             auto* anim = entity->GetComponent<ModelAnimator>();
             auto* tr = entity->GetComponent<Transform>();
+            if (anim == nullptr || tr == nullptr) continue;
 
             InstancingData data{};
             data.world = tr->GetWorldMatrix();
             data.materialIndex = 0u;
 
-            AddData(id, data, true);    // _data 벡터에 추가 (아직 업로드 아님)
+            AddData(id, data, true);
 
             anim->UpdateTweenData();
             tweenDesc.tweens[i] = anim->GetTweenDesc();
         }
 
-        // Pool.Append (memcpy) — Map/Unmap 없이 _mappedPtr에 직접 기록
         auto& bufPtr = _buffers[id];
-        if (bufPtr) bufPtr->UploadData();   // 이후 _dirty=false, _uploaded=true
+        if (bufPtr) bufPtr->UploadData();
 
-        // 상수 버퍼 업로드 — vertex buffer와 별개 리소스, 맵핑 중 안전
         auto* anim = entityVec[0]->GetComponent<ModelAnimator>();
-        anim->GetShader()->PushTweenData(tweenDesc);
+        if (anim && anim->GetShader())
+            anim->GetShader()->PushTweenData(tweenDesc);
     }
 }
 
-// ── Draw Phase: BindBuffer + DrawIndexedInstanced ────────────────────
-// EndFrame(Unmap) 이후에 호출. PushData() → UploadData()는 _dirty=false
-// 이므로 no-op, BindBuffer(IASetVertexBuffers)만 수행.
 void InstancingManager::DrawAnimRenderer()
 {
     for (auto& [id, entityVec] : _animCache)
@@ -444,7 +418,9 @@ void InstancingManager::DrawAnimRenderer()
         if (it == _buffers.end() || !it->second->IsUploaded()) continue;
 
         auto* anim = entityVec[0]->GetComponent<ModelAnimator>();
-        anim->RenderInstancing(it->second.get());   // PushData → UploadData no-op + Bind + Draw
+        if (anim == nullptr) continue;
+
+        anim->RenderInstancing(it->second.get());
     }
 }
 

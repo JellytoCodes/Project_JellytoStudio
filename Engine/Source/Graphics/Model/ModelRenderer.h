@@ -40,5 +40,5 @@ private:
 	uint8												_pass    = 0;
 	
 	Vec3												_modelScale = Vec3(1.f, 1.f, 1.f);
-	bool												_bIsSkinned;
+	bool												_bIsSkinned = true;
 };

@@ -113,7 +113,6 @@ void Model::ReadModel(const std::wstring& filename)
 			mesh->boneIndex   = file.Read<int32>();
 			mesh->materialName = Utils::ToWString(file.Read<std::string>());
 
-			// VertexData
 			{
 				const uint32 vCount = file.Read<uint32>();
 				std::vector<VertexTextureNormalTangentBlendData> vertices(vCount);
@@ -122,7 +121,6 @@ void Model::ReadModel(const std::wstring& filename)
 				mesh->geometry->AddVertices(vertices);
 			}
 
-			// IndexData
 			{
 				const uint32 iCount = file.Read<uint32>();
 				std::vector<uint32> indices(iCount);

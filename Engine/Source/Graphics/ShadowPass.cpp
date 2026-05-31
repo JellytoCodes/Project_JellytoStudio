@@ -316,10 +316,8 @@ void ShadowPass::ComputeCascadeVPs(const std::vector<Entity*>& entities,
         return lightView * lightProj;
     };
 
-    // Cascade 0 (near): tight sphere around camera
     outVP[0] = buildVP(camPos, kNearCascadeRadius * 1.2f);
 
-    // Cascade 1 (far): AABB of all static entities (existing behavior)
     BoundingBox sceneBounds;
     bool first = true;
     for (Entity* e : entities)

@@ -28,6 +28,7 @@ ModelAnimator::~ModelAnimator()
 void ModelAnimator::SetModel(std::shared_ptr<Model> model)
 {
     _model = model;
+    if (_model == nullptr) return;
 
     const auto& materials = _model->GetMaterials();
     for (auto& material : materials)
@@ -40,6 +41,8 @@ void ModelAnimator::Update()
 
 void ModelAnimator::UpdateTweenData()
 {
+    if (_model == nullptr) return;
+
     TweenDesc& desc = _tweenDesc;
 
     desc.curr.sumTime += GET_SINGLE(TimeManager)->GetDeltaTime();
@@ -72,6 +75,8 @@ void ModelAnimator::UpdateTweenData()
         else
         {
             ModelAnimation* nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
+            if (nextAnim == nullptr) return;
+
             desc.next.sumTime += GET_SINGLE(TimeManager)->GetDeltaTime();
 
             const float timePerFrame = 1.f / (nextAnim->frameRate * desc.next.speed);
@@ -89,16 +94,19 @@ void ModelAnimator::UpdateTweenData()
 void ModelAnimator::RenderInstancing(InstancingBuffer* buffer)
 {
     if (_model == nullptr) return;
+    if (_shader == nullptr || buffer == nullptr || buffer->GetCount() == 0) return;
     if (_texture == nullptr) CreateTexture();
 
     _shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
-    if (Light* lightObj = GET_SINGLE(SceneManager)->GetCurrentScene()->GetLight())
-        _shader->PushLightData(lightObj->GetLightDesc());
-
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Light* lightObj = scene->GetLight())
+            _shader->PushLightData(lightObj->GetLightDesc());
+
         if (auto* sp = scene->GetShadowPass())
             _shader->PushShadowData(sp->GetShadowDesc(), sp->GetShadowSRV());
+    }
 
     _shader->GetSRV("TransformMap")->SetResource(_srv.Get());
 
@@ -131,6 +139,7 @@ void ModelAnimator::RenderInstancing(InstancingBuffer* buffer)
 void ModelAnimator::RenderRawSkinnedInstanced(const ComPtr<ID3D11DeviceContext>& dc, InstancingBuffer* buffer)
 {
     if (_model == nullptr) return;
+    if (buffer == nullptr) return;
     if (_texture == nullptr) CreateTexture();
     if (buffer->GetCount() == 0) return;
  
@@ -148,6 +157,8 @@ void ModelAnimator::RenderRawSkinnedInstanced(const ComPtr<ID3D11DeviceContext>&
 
 InstanceID ModelAnimator::GetInstanceID()
 {
+    if (_model == nullptr || _shader == nullptr) return {};
+
     return {
         reinterpret_cast<uint64>(_model.get()),
         reinterpret_cast<uint64>(_shader.get())
@@ -184,6 +195,7 @@ void ModelAnimator::PressedKeyForCheckFrame()
 
 void ModelAnimator::CreateTexture()
 {
+    if (_model == nullptr) return;
     if (_model->GetAnimationCount() == 0) return;
 
     _animTransforms.resize(_model->GetAnimationCount());
