@@ -6,6 +6,8 @@
 
 void ShaderPass::Draw(UINT vertexCount, UINT startVertexLocation)
 {
+	if (pass == nullptr || vertexCount == 0) return;
+
 	BeginDraw();
 
 	GET_SINGLE(Graphics)->GetDeviceContext()->Draw(vertexCount, startVertexLocation);
@@ -15,6 +17,8 @@ void ShaderPass::Draw(UINT vertexCount, UINT startVertexLocation)
 
 void ShaderPass::DrawIndexed(UINT indexCount, UINT startIndexLocation, INT baseVertexLocation)
 {
+	if (pass == nullptr || indexCount == 0) return;
+
 	BeginDraw();
 
 	GET_SINGLE(Graphics)->GetDeviceContext()->DrawIndexed(indexCount, startIndexLocation, baseVertexLocation);
@@ -24,6 +28,8 @@ void ShaderPass::DrawIndexed(UINT indexCount, UINT startIndexLocation, INT baseV
 
 void ShaderPass::DrawInstanced(UINT vertexCountPerInstance, UINT instanceCount, UINT startVertexLocation, UINT startInstanceLocation)
 {
+	if (pass == nullptr || vertexCountPerInstance == 0 || instanceCount == 0) return;
+
 	BeginDraw();
 
 	GET_SINGLE(Graphics)->GetDeviceContext()->DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
@@ -34,6 +40,8 @@ void ShaderPass::DrawInstanced(UINT vertexCountPerInstance, UINT instanceCount, 
 void ShaderPass::DrawIndexedInstanced(UINT indexCountPerInstance, UINT instanceCount, UINT startIndexLocation,
 	INT baseVertexLocation, UINT startInstanceLocation)
 {
+	if (pass == nullptr || indexCountPerInstance == 0 || instanceCount == 0) return;
+
 	BeginDraw();
 
 	GET_SINGLE(Graphics)->GetDeviceContext()->DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
@@ -43,6 +51,8 @@ void ShaderPass::DrawIndexedInstanced(UINT indexCountPerInstance, UINT instanceC
 
 void ShaderPass::BeginDraw()
 {
+	if (pass == nullptr) return;
+
 	pass->ComputeStateBlockMask(&stateBlockMask);
 
 	GET_SINGLE(Graphics)->GetDeviceContext()->IASetInputLayout(inputLayout.Get());
@@ -51,6 +61,8 @@ void ShaderPass::BeginDraw()
 
 void ShaderPass::EndDraw()
 {
+	if (stateBlock == nullptr) return;
+
 	if (stateBlockMask.RSRasterizerState == 1)
 		GET_SINGLE(Graphics)->SetRasterizerState(stateBlock->RSRasterizerState.Get());
 
@@ -67,6 +79,8 @@ void ShaderPass::EndDraw()
 
 void ShaderPass::Dispatch(UINT x, UINT y, UINT z)
 {
+	if (pass == nullptr || x == 0 || y == 0 || z == 0) return;
+
 	pass->Apply(0, GET_SINGLE(Graphics)->GetDeviceContext().Get());
 	GET_SINGLE(Graphics)->GetDeviceContext()->Dispatch(x, y, z);
 

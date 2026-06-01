@@ -19,6 +19,7 @@ public:
 
 	void PushData(const ComPtr<ID3D11DeviceContext>& deviceContext)
 	{
+		if (_vertexBuffer == nullptr) return;
 		GET_SINGLE(Graphics)->SetVertexBuffer(_slot, _vertexBuffer.Get(), _stride, _offset);
 	}
 
@@ -41,10 +42,11 @@ void VertexBuffer::Create(const ComPtr<ID3D11Device>& device, const std::vector<
 	_slot = slot;
 	_cpuWrite = cpuWrite;
 	_gpuWrite = gpuWrite;
+	if (device == nullptr || _count == 0) return;
 
 	D3D11_BUFFER_DESC desc = {};
 	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	desc.ByteWidth = (uint32)(_stride * _count);
+	desc.ByteWidth = _stride * _count;
 
 	if (cpuWrite == false && gpuWrite == false)
 	{

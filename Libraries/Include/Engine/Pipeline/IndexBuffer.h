@@ -16,6 +16,7 @@ public:
 
 	void PushData(const ComPtr<ID3D11DeviceContext>& deviceContext)
 	{
+		if (_indexBuffer == nullptr) return;
 		GET_SINGLE(Graphics)->SetIndexBuffer(_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 	}
 

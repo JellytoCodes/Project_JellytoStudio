@@ -21,6 +21,7 @@ Shader::~Shader() {}
 void Shader::CreateEffect()
 {
 	_shaderDesc = ShaderManager::GetEffect(_file);
+	if (_shaderDesc.effect == nullptr) return;
 
 	_shaderDesc.effect->GetDesc(&_effectDesc);
 	for (UINT t = 0; t < _effectDesc.Techniques; t++)
@@ -55,19 +56,6 @@ void Shader::CreateEffect()
 		_techniques.push_back(technique);
 	}
 
-	for (UINT i = 0; i < _effectDesc.ConstantBuffers; i++)
-	{
-		ID3DX11EffectConstantBuffer* iBuffer = _shaderDesc.effect->GetConstantBufferByIndex(i);
-		D3DX11_EFFECT_VARIABLE_DESC vDesc;
-		iBuffer->GetDesc(&vDesc);
-	}
-
-	for (UINT i = 0; i < _effectDesc.GlobalVariables; i++)
-	{
-		ID3DX11EffectVariable* effectVariable = _shaderDesc.effect->GetVariableByIndex(i);
-		D3DX11_EFFECT_VARIABLE_DESC vDesc;
-		effectVariable->GetDesc(&vDesc);
-	}
 }
 
 ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
@@ -126,34 +114,41 @@ ComPtr<ID3D11InputLayout> Shader::CreateInputLayout(
 	return nullptr;
 }
 
-// ── Draw 위임 ─────────────────────────────────────────────────────────────
-
 void Shader::Draw(UINT technique, UINT pass, UINT vertexCount, UINT startVertexLocation)
 {
+	if (technique >= _techniques.size()) return;
+	if (pass >= _techniques[technique].passes.size()) return;
 	_techniques[technique].passes[pass].Draw(vertexCount, startVertexLocation);
 }
 
 void Shader::DrawIndexed(UINT technique, UINT pass, UINT indexCount, UINT startIndexLocation, INT baseVertexLocation)
 {
+	if (technique >= _techniques.size()) return;
+	if (pass >= _techniques[technique].passes.size()) return;
 	_techniques[technique].passes[pass].DrawIndexed(indexCount, startIndexLocation, baseVertexLocation);
 }
 
 void Shader::DrawInstanced(UINT technique, UINT pass, UINT vertexCountPerInstance, UINT instanceCount, UINT startVertexLocation, UINT startInstanceLocation)
 {
+	if (technique >= _techniques.size()) return;
+	if (pass >= _techniques[technique].passes.size()) return;
 	_techniques[technique].passes[pass].DrawInstanced(vertexCountPerInstance, instanceCount, startVertexLocation, startInstanceLocation);
 }
 
 void Shader::DrawIndexedInstanced(UINT technique, UINT pass, UINT indexCountPerInstance, UINT instanceCount, UINT startIndexLocation, INT baseVertexLocation, UINT startInstanceLocation)
 {
+	if (technique >= _techniques.size()) return;
+	if (pass >= _techniques[technique].passes.size()) return;
 	_techniques[technique].passes[pass].DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
 }
 
 void Shader::Dispatch(UINT technique, UINT pass, UINT x, UINT y, UINT z)
 {
+	if (technique >= _techniques.size()) return;
+	if (pass >= _techniques[technique].passes.size()) return;
 	_techniques[technique].passes[pass].Dispatch(x, y, z);
 }
 
-// ── GetVariable 계열 (변경 없음) ──────────────────────────────────────────
 ComPtr<ID3DX11EffectVariable>                    Shader::GetVariable(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str()); }
 ComPtr<ID3DX11EffectScalarVariable>              Shader::GetScalar(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsScalar(); }
 ComPtr<ID3DX11EffectVectorVariable>              Shader::GetVector(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsVector(); }
@@ -170,7 +165,6 @@ ComPtr<ID3DX11EffectRasterizerVariable>          Shader::GetRasterizer(const std
 ComPtr<ID3DX11EffectSamplerVariable>             Shader::GetSampler(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsSampler(); }
 ComPtr<ID3DX11EffectUnorderedAccessViewVariable> Shader::GetUAV(const std::string& n) { return _shaderDesc.effect->GetVariableByName(n.c_str())->AsUnorderedAccessView(); }
 
-// ── Push 상수버퍼 계열 (shared_ptr → unique_ptr) ──────────────────────────
 void Shader::PushGlobalData(const Matrix& view, const Matrix& projection)
 {
 	if (_globalEffectBuffer == nullptr)
@@ -178,8 +172,6 @@ void Shader::PushGlobalData(const Matrix& view, const Matrix& projection)
 
 	GET_SINGLE(SharedCBufferManager)->SetGlobal(view, projection);
 
-	// SharedCBufferManager의 버퍼 포인터는 생성 후 변하지 않으므로
-	// Effect에 바인딩하는 SetConstantBuffer는 셰이더 인스턴스당 최초 1회만 호출
 	if (!_globalBound && _globalEffectBuffer)
 	{
 		_globalEffectBuffer->SetConstantBuffer(GET_SINGLE(SharedCBufferManager)->GetGlobalBuffer());
@@ -269,7 +261,6 @@ void Shader::PushTweenData(const InstancedTweenDesc& desc)
 	_tweenEffectBuffer->SetConstantBuffer(_tweenBuffer->GetComPtr().Get());
 }
 
-// ── ShaderManager ─────────────────────────────────────────────────────────
 std::unordered_map<std::wstring, ShaderDesc> ShaderManager::shaders;
 
 ShaderDesc ShaderManager::GetEffect(const std::wstring& fileName)
@@ -286,17 +277,21 @@ ShaderDesc ShaderManager::GetEffect(const std::wstring& fileName)
 			if (error != nullptr)
 				MessageBoxA(nullptr, (const char*)error->GetBufferPointer(), "Shader Error", MB_OK);
 			assert(false);
+			return {};
 		}
 
 		ComPtr<ID3DX11Effect> effect;
 		hr = ::D3DX11CreateEffectFromMemory(blob->GetBufferPointer(), blob->GetBufferSize(),
 			0, GET_SINGLE(Graphics)->GetDevice().Get(), effect.GetAddressOf());
 		CHECK(hr);
+		if (FAILED(hr)) return {};
 
 		shaders[fileName] = ShaderDesc{ blob, effect };
 	}
 
 	ShaderDesc desc = shaders.at(fileName);
+	if (desc.effect == nullptr) return {};
+
 	ComPtr<ID3DX11Effect> effect;
 	desc.effect->CloneEffect(D3DX11_EFFECT_CLONE_FORCE_NONSINGLE, effect.GetAddressOf());
 	return ShaderDesc{ desc.blob, effect };

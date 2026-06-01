@@ -20,7 +20,9 @@ template <typename T>
 void ConstantBuffer<T>::Create(const ComPtr<ID3D11Device>& device)
 {
 	D3D11_BUFFER_DESC desc = {};
-	desc.Usage = D3D11_USAGE_DYNAMIC; // CPU_Write + GPU_Read
+	if (device == nullptr) return;
+
+	desc.Usage = D3D11_USAGE_DYNAMIC;
 	desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	desc.ByteWidth = sizeof(T);
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -34,7 +36,11 @@ void ConstantBuffer<T>::CopyData(const ComPtr<ID3D11DeviceContext>& deviceContex
 {
 	D3D11_MAPPED_SUBRESOURCE subResource = {};
 
-	deviceContext->Map(_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &subResource);
+	if (deviceContext == nullptr || _constantBuffer == nullptr) return;
+
+	const HRESULT hr = deviceContext->Map(_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &subResource);
+	if (FAILED(hr)) return;
+
 	::memcpy(subResource.pData, &data, sizeof(data));
 	deviceContext->Unmap(_constantBuffer.Get(), 0);
 }

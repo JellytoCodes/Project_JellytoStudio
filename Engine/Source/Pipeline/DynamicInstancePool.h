@@ -15,7 +15,7 @@ public:
     uint32 Append(const InstancingData* data, uint32 count);
     void   EndFrame();
 
-    void BindSlice(uint32 byteOffset) const;
+    void BindSlice(uint32 elementOffset) const;
 
     bool IsReady() const { return _ready; }
 

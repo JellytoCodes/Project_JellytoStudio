@@ -61,7 +61,6 @@ private:
 
 	std::vector<InstancingData> _data;
 
-	// SetData 경로(메시): 외부 버퍼 포인터 직접 보관 — _data 복사 없음
 	const InstancingData* _pendingPtr = nullptr;
 	uint32                      _pendingCount = 0;
 
