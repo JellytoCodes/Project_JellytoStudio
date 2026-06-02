@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Resource.h"
 
 class Texture;
@@ -13,12 +13,13 @@ public:
     Material();
     virtual ~Material();
 
-    std::shared_ptr<Shader>         GetShader()                                         { return _shader; }
+    std::shared_ptr<Shader>         GetShader() const                                   { return _shader; }
     MaterialDesc&                   GetMaterialDesc()                                   { return _desc;   }
+    const MaterialDesc&             GetMaterialDesc() const                             { return _desc;   }
 
-    std::shared_ptr<Texture>        GetDiffuseMap()                                     { return _diffuseMap;  }
-    std::shared_ptr<Texture>        GetNormalMap()                                      { return _normalMap;   }
-    std::shared_ptr<Texture>        GetSpecularMap()                                    { return _specularMap; }
+    std::shared_ptr<Texture>        GetDiffuseMap() const                               { return _diffuseMap;  }
+    std::shared_ptr<Texture>        GetNormalMap() const                                { return _normalMap;   }
+    std::shared_ptr<Texture>        GetSpecularMap() const                              { return _specularMap; }
 
     void                            SetDiffuseMap (std::shared_ptr<Texture> t)          { _diffuseMap  = t; }
     void                            SetNormalMap  (std::shared_ptr<Texture> t)          { _normalMap   = t; }

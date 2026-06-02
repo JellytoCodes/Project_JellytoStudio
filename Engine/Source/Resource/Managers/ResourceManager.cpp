@@ -29,6 +29,8 @@ std::shared_ptr<TextureArray> ResourceManager::CreateTextureArray(const std::wst
 	if (auto cached = Get<TextureArray>(key)) return cached;
 
     auto ta = TextureArray::Create(paths, count);
+    if (ta == nullptr) return nullptr;
+
     ta->SetName(key);
     Add(key, ta);
     return ta;
@@ -37,6 +39,8 @@ std::shared_ptr<TextureArray> ResourceManager::CreateTextureArray(const std::wst
 void ResourceManager::CreateDefaultMesh()
 {
 	auto device = GET_SINGLE(Graphics)->GetDevice();
+	if (device == nullptr) return;
+
 	{
 		auto mesh = std::make_shared<Mesh>();
 		mesh->CreateQuad(device);

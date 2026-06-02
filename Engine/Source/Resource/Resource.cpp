@@ -1,6 +1,3 @@
 #include "Framework.h"
 #include "Resource.h"
 
-/////////////////////////
-/// No implementation ///
-/////////////////////////

@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "TextureArray.h"
 
 #include "Graphics/Graphics.h"
@@ -6,10 +6,11 @@
 std::shared_ptr<TextureArray> TextureArray::Create(
     const std::wstring* paths, uint32 count)
 {
-    assert(paths && count > 0);
+    if (paths == nullptr || count == 0) return nullptr;
 
     auto* device = GET_SINGLE(Graphics)->GetDevice().Get();
     auto* ctx    = GET_SINGLE(Graphics)->GetDeviceContext().Get();
+    if (device == nullptr || ctx == nullptr) return nullptr;
 
     std::vector<ComPtr<ID3D11Texture2D>> slices(count);
     D3D11_TEXTURE2D_DESC slice0Desc = {};
@@ -32,7 +33,8 @@ std::shared_ptr<TextureArray> TextureArray::Create(
 
         if (FAILED(hr))
         {
-            assert(i > 0 && "첫 슬라이스 로드 실패");
+            assert(i > 0 && "First texture array slice failed to load.");
+            if (i == 0) return nullptr;
             slices[i] = slices[i - 1];
             continue;
         }
@@ -51,6 +53,7 @@ std::shared_ptr<TextureArray> TextureArray::Create(
     HRESULT hr = device->CreateTexture2D(&arrDesc, nullptr,
         ta->_tex.GetAddressOf());
     assert(SUCCEEDED(hr));
+    if (FAILED(hr)) return nullptr;
 
     for (uint32 i = 0; i < count; ++i)
         for (uint32 mip = 0; mip < slice0Desc.MipLevels; ++mip)
@@ -73,6 +76,7 @@ std::shared_ptr<TextureArray> TextureArray::Create(
     hr = device->CreateShaderResourceView(
         ta->_tex.Get(), &srvDesc, ta->_srv.GetAddressOf());
     assert(SUCCEEDED(hr));
+    if (FAILED(hr)) return nullptr;
 
     return ta;
 }

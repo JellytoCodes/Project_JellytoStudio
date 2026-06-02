@@ -14,14 +14,17 @@ Material::~Material() {}
 void Material::SetShader(std::shared_ptr<Shader> shader)
 {
     _shader = shader;
-    if (!shader) return;
+    _diffuseEffectBuffer.Reset();
+    _normalEffectBuffer.Reset();
+    _specularEffectBuffer.Reset();
+    _textureArrayEffectBuffer.Reset();
 
-    _diffuseEffectBuffer = shader->GetSRV("DiffuseMap");
-    _normalEffectBuffer = shader->GetSRV("NormalMap");
-    _specularEffectBuffer = shader->GetSRV("SpecularMap");
+    if (_shader == nullptr) return;
 
-    
-    _textureArrayEffectBuffer = shader->HasVariable("g_BlockAtlas") ? shader->GetSRV("g_BlockAtlas") : nullptr;
+    _diffuseEffectBuffer = _shader->GetSRV("DiffuseMap");
+    _normalEffectBuffer = _shader->GetSRV("NormalMap");
+    _specularEffectBuffer = _shader->GetSRV("SpecularMap");
+    _textureArrayEffectBuffer = _shader->HasVariable("g_BlockAtlas") ? _shader->GetSRV("g_BlockAtlas") : nullptr;
 }
 
 void Material::Update()
@@ -50,6 +53,9 @@ void Material::Update()
 std::unique_ptr<Material> Material::Clone() const
 {
     auto material = std::make_unique<Material>();
+    material->_name                      = _name;
+    material->_path                      = _path;
+    material->_id                        = _id;
     material->_desc                      = _desc;
     material->_shader                    = _shader;
     material->_diffuseMap                = _diffuseMap;
