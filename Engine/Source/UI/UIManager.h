@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "UI/UITypes.h"
 
 class UIManager
@@ -37,7 +37,7 @@ private:
 
     void CreateDeviceObjects();
     void CreateBuffers();
-    void UpdateBuffers();
+    bool UpdateBuffers();
 
     std::vector<VertexUI>  _vertices;
     std::vector<uint32>    _indices;

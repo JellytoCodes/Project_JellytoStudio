@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "UIComponent.h"
 
 class UIButton : public UIComponent
@@ -21,7 +21,6 @@ public:
     void SetTextColor   (Color c) { _textColor    = c; }
     void SetFontSize    (int   s) { _fontSize     = s; }
 
-    // Widget이 마우스 상태 전달
     void SetHovered(bool h) { _hovered = h; }
     void SetPressed(bool p) { _pressed = p; }
     void OnClick()          { if (_onClick) _onClick(); }

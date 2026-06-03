@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "Widget.h"
 
 #include "UI/Components/UIButton.h"
@@ -10,6 +10,7 @@ Widget::Widget(const std::wstring& name) : Super(name) {}
 
 void Widget::AddUIComponent(std::unique_ptr<UIComponent> comp)
 {
+	if (!comp) return;
 	_uiComponents.push_back(std::move(comp));
 }
 
@@ -23,6 +24,7 @@ void Widget::Update()
 
 	for (auto& comp : _uiComponents)
 	{
+		if (!comp) continue;
 		comp->Update();
 
 		if (UIButton* btn = dynamic_cast<UIButton*>(comp.get()))
@@ -39,5 +41,8 @@ void Widget::Update()
 void Widget::DrawUI()
 {
 	for (auto& comp : _uiComponents)
+	{
+		if (!comp) continue;
 		comp->DrawUI(_sx, _sy);
+	}
 }

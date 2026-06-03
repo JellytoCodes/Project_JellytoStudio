@@ -1,7 +1,6 @@
-﻿#pragma once
+#pragma once
 #include "UIComponent.h"
 
-// UIButton과 동일하게 UIManager::AddText() 경유
 class UIText : public UIComponent
 {
     using Super = UIComponent;

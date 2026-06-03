@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "UIText.h"
 #include "UI/UIManager.h"
 
@@ -22,5 +22,5 @@ void UIText::DrawUI(float ox, float oy)
         GET_SINGLE(UIManager)->AddRect(ax, ay, _w, _h, _bgColor);
 
     if (!_text.empty())
-        GET_SINGLE(UIManager)->AddText(_text, ax, ay, _w, _h, _textColor, _fontSize);
+        GET_SINGLE(UIManager)->AddText(_text, ax, ay, _w, _h, _textColor, _fontSize, _fontName);
 }

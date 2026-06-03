@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "UIManager.h"
 #include "Graphics/Graphics.h"
 
@@ -36,13 +36,17 @@ float4 main(PS_IN i) : SV_TARGET { return tex.Sample(smp, i.uv) * i.color; }
 
 void UIManager::Init(float screenW, float screenH)
 {
-    _screenW = screenW;
-    _screenH = screenH;
+    _screenW = std::max(1.f, screenW);
+    _screenH = std::max(1.f, screenH);
     CreateDeviceObjects();
     CreateBuffers();
 }
 
-void UIManager::SetScreenSize(float w, float h) { _screenW = w; _screenH = h; }
+void UIManager::SetScreenSize(float w, float h)
+{
+    _screenW = std::max(1.f, w);
+    _screenH = std::max(1.f, h);
+}
 
 TextureHandle UIManager::RegisterTexture(ComPtr<ID3D11ShaderResourceView> srv)
 {
@@ -61,11 +65,13 @@ void UIManager::UnregisterTexture(TextureHandle handle)
 void UIManager::CreateDeviceObjects()
 {
     auto device = GET_SINGLE(Graphics)->GetDevice();
+    if (!device) return;
 
     ComPtr<ID3DBlob> vsBlob, psColorBlob, psTexBlob, errBlob;
 
     auto compile = [&](const char* src, const char* target, ComPtr<ID3DBlob>& out)
     {
+        errBlob.Reset();
         HRESULT hr = D3DCompile(src, strlen(src), nullptr, nullptr, nullptr,
             "main", target, 0, 0, out.GetAddressOf(), errBlob.GetAddressOf());
         if (FAILED(hr))
@@ -79,6 +85,7 @@ void UIManager::CreateDeviceObjects()
     compile(g_VS_HLSL,       "vs_5_0", vsBlob);
     compile(g_PS_COLOR_HLSL, "ps_5_0", psColorBlob);
     compile(g_PS_TEX_HLSL,   "ps_5_0", psTexBlob);
+    if (!vsBlob || !psColorBlob || !psTexBlob) return;
 
     CHECK(device->CreateVertexShader(
         vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
@@ -145,6 +152,7 @@ void UIManager::CreateBuffers()
     _vbCap = 4096;
     _ibCap = 8192;
     auto device = GET_SINGLE(Graphics)->GetDevice();
+    if (!device) return;
 
     D3D11_BUFFER_DESC vbd = {};
     vbd.BindFlags      = D3D11_BIND_VERTEX_BUFFER;
@@ -161,8 +169,10 @@ void UIManager::CreateBuffers()
     CHECK(device->CreateBuffer(&ibd, nullptr, _ib.GetAddressOf()));
 }
 
-void UIManager::UpdateBuffers()
+bool UIManager::UpdateBuffers()
 {
+    if (_vertices.empty() || _indices.empty()) return false;
+
     if (_vertices.size() > _vbCap || _indices.size() > _ibCap)
     {
         _vbCap = static_cast<uint32>(_vertices.size() * 2);
@@ -172,35 +182,51 @@ void UIManager::UpdateBuffers()
     }
 
     auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
+    if (!dc || !_vb || !_ib) return false;
     {
         D3D11_MAPPED_SUBRESOURCE ms = {};
-        dc->Map(_vb.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+        if (FAILED(dc->Map(_vb.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms))) return false;
         memcpy(ms.pData, _vertices.data(), _vertices.size() * sizeof(VertexUI));
         dc->Unmap(_vb.Get(), 0);
     }
     {
         D3D11_MAPPED_SUBRESOURCE ms = {};
-        dc->Map(_ib.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+        if (FAILED(dc->Map(_ib.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms))) return false;
         memcpy(ms.pData, _indices.data(), _indices.size() * sizeof(uint32));
         dc->Unmap(_ib.Get(), 0);
     }
+
+    return true;
 }
 
 void UIManager::Render()
 {
-    if (!_vs || _cmds.empty())
+    if (!_vs || !_psColor || !_psTex || !_inputLayout || !_cbuffer || !_vb || !_ib || _cmds.empty())
     {
         _vertices.clear(); _indices.clear(); _cmds.clear();
         return;
     }
 
-    UpdateBuffers();
+    if (!UpdateBuffers())
+    {
+        _vertices.clear(); _indices.clear(); _cmds.clear();
+        return;
+    }
 
     auto dc = GET_SINGLE(Graphics)->GetDeviceContext();
+    if (!dc)
+    {
+        _vertices.clear(); _indices.clear(); _cmds.clear();
+        return;
+    }
 
     {
         D3D11_MAPPED_SUBRESOURCE ms = {};
-        dc->Map(_cbuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+        if (FAILED(dc->Map(_cbuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms)))
+        {
+            _vertices.clear(); _indices.clear(); _cmds.clear();
+            return;
+        }
         float data[4] = { _screenW, _screenH, 0.f, 0.f };
         memcpy(ms.pData, data, sizeof(data));
         dc->Unmap(_cbuffer.Get(), 0);
@@ -271,11 +297,15 @@ void UIManager::PushQuad(float x, float y, float w, float h,
 
 void UIManager::AddRect(float x, float y, float w, float h, Color color)
 {
+    if (w <= 0.f || h <= 0.f) return;
     PushQuad(x, y, w, h, color, Vec2(0,0), Vec2(1,1), 0, nullptr);
 }
 
 void UIManager::AddRectBorder(float x, float y, float w, float h, Color color, float t)
 {
+    if (w <= 0.f || h <= 0.f || t <= 0.f) return;
+    t = std::min(t, std::min(w, h) * 0.5f);
+
     AddRect(x,         y,         w, t, color);
     AddRect(x,         y + h - t, w, t, color);
     AddRect(x,         y,         t, h, color);
@@ -296,6 +326,7 @@ void UIManager::AddText(const std::wstring& text,
                          Color color, int fontSize, const std::wstring& fontName)
 {
     if (text.empty()) return;
+    if (w <= 0.f || h <= 0.f || fontSize <= 0) return;
     uint32 tw = static_cast<uint32>(w);
     uint32 th = static_cast<uint32>(h);
     if (!tw || !th) return;
@@ -309,6 +340,9 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     const std::wstring& text, uint32 tw, uint32 th,
     Color color, int fontSize, const std::wstring& fontName)
 {
+    auto device = GET_SINGLE(Graphics)->GetDevice();
+    if (!device || tw == 0 || th == 0) return nullptr;
+
     BITMAPINFO bmi = {};
     bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth       = static_cast<LONG>(tw);
@@ -319,6 +353,7 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
 
     void*   pBits = nullptr;
     HDC     hdc   = ::CreateCompatibleDC(nullptr);
+    if (!hdc) return nullptr;
     HBITMAP hBmp  = ::CreateDIBSection(hdc, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
     if (!hBmp) { ::DeleteDC(hdc); return nullptr; }
     ::SelectObject(hdc, hBmp);
@@ -336,6 +371,12 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
         FALSE, FALSE, FALSE, DEFAULT_CHARSET,
         OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
         DEFAULT_PITCH | FF_SWISS, fontName.c_str());
+    if (!hFont)
+    {
+        ::DeleteObject(hBmp);
+        ::DeleteDC(hdc);
+        return nullptr;
+    }
     HFONT hOld = (HFONT)::SelectObject(hdc, hFont);
     ::SetBkMode(hdc, TRANSPARENT);
     ::SetTextColor(hdc, cr);
@@ -373,7 +414,7 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     sd.SysMemPitch = tw * 4;
 
     ComPtr<ID3D11Texture2D> tex;
-    if (FAILED(GET_SINGLE(Graphics)->GetDevice()->CreateTexture2D(&td, &sd, tex.GetAddressOf())))
+    if (FAILED(device->CreateTexture2D(&td, &sd, tex.GetAddressOf())))
         return nullptr;
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
@@ -382,7 +423,7 @@ ComPtr<ID3D11ShaderResourceView> UIManager::BuildTextSRV(
     srvd.Texture2D.MipLevels = 1;
 
     ComPtr<ID3D11ShaderResourceView> srv;
-    if (FAILED(GET_SINGLE(Graphics)->GetDevice()->CreateShaderResourceView(
+    if (FAILED(device->CreateShaderResourceView(
         tex.Get(), &srvd, srv.GetAddressOf())))
         return nullptr;
 
