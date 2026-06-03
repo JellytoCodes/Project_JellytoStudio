@@ -16,8 +16,6 @@ public:
 
 	template<typename T>
 	void Write(const T& data);
-
-	// 템플릿 특수화
 	template <>
 	void Write<std::string>(const std::string& data)
 	{

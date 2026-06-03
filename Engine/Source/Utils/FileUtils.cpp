@@ -1,11 +1,7 @@
-
 #include "Framework.h"
 #include "FileUtils.h"
 
-FileUtils::FileUtils()
-{
-
-}
+FileUtils::FileUtils() = default;
 
 FileUtils::~FileUtils()
 {
@@ -77,9 +73,8 @@ void FileUtils::Read(OUT std::string& data)
 	if (size == 0)
 		return;
 
-	char* temp = new char[size + 1];
-	temp[size] = 0;
-	Read((void**)&temp, size);
-	data = temp;
-	delete[] temp;
+	std::vector<char> buffer(static_cast<size_t>(size) + 1, 0);
+	void* ptr = buffer.data();
+	Read(&ptr, size);
+	data.assign(buffer.data(), size);
 }

@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "Converter.h"
 #include <filesystem>
 #include "Graphics/Graphics.h"
@@ -115,7 +115,7 @@ void Converter::ExportAnimationData(std::wstring savePath, uint32 index /*= 0*/)
             result.compare(result.size() - suffix.size(), suffix.size(), suffix) == 0)
         {
             result.erase(result.size() - suffix.size());
-            break;  // suffix는 하나만 붙음
+            break;
         }
     }
 
@@ -239,8 +239,6 @@ void Converter::ReadMeshData(aiNode* node, int32 bone)
 
     _meshes.push_back(mesh);
 }
-
-// ---------------------------------------------------------------------------
 void Converter::ReadSkinData()
 {
     for (uint32 i = 0; i < _scene->mNumMeshes; i++)
@@ -301,10 +299,10 @@ void Converter::WriteModelFile(std::wstring finalPath)
         file->Write<std::string>(mesh->materialName);
 
         file->Write<uint32>(static_cast<uint32>(mesh->vertices.size()));
-        file->Write(mesh->vertices.data(), sizeof(VertexType) * mesh->vertices.size());
+        file->Write(mesh->vertices.data(), static_cast<uint32>(sizeof(VertexType) * mesh->vertices.size()));
 
         file->Write<uint32>(static_cast<uint32>(mesh->indices.size()));
-        file->Write(mesh->indices.data(), sizeof(uint32) * mesh->indices.size());
+        file->Write(mesh->indices.data(), static_cast<uint32>(sizeof(uint32) * mesh->indices.size()));
     }
 }
 
@@ -379,7 +377,7 @@ void Converter::WriteMaterialData(std::wstring finalPath)
     doc["materials"] = std::move(matsArray);
  
     std::ofstream ofs(finalPath);
-    assert(ofs.is_open() && "머티리얼 JSON 저장 실패 — 경로 확인 필요");
+    assert(ofs.is_open() && "Material JSON save failed.");
     if (ofs.is_open())
         ofs << doc.dump(4);
 }
@@ -562,8 +560,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
     {
         asKeyframeData frameData;
         frameData.time = static_cast<float>(f) / animation->frameRate;
-
-        // --- Position ---
         if (srcNode->mNumPositionKeys > 0)
         {
             const uint32 k = findKey(posMap, f);
@@ -613,8 +609,6 @@ std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(std::shared_ptr<a
         {
             frameData.rotation = { 0.f, 0.f, 0.f, 1.f };
         }
-
-        // --- Scale ---
         if (srcNode->mNumScalingKeys > 0)
         {
             const uint32 k = findKey(scaleMap, f);
@@ -718,7 +712,7 @@ void Converter::WriteAnimationData(
         if (!keyframe->transforms.empty())
         {
             file->Write(keyframe->transforms.data(),
-                sizeof(asKeyframeData) * keyframe->transforms.size());
+                static_cast<uint32>(sizeof(asKeyframeData) * keyframe->transforms.size()));
         }
     }
 }

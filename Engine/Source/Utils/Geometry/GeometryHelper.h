@@ -4,7 +4,7 @@
 
 class GeometryHelper
 {
-public :
+public:
 	static void CreateQuad(Geometry<VertexColorData>* geometry, Color color);
 	static void CreateCube(Geometry<VertexColorData>* geometry);
 

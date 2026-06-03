@@ -1,56 +1,54 @@
 #include "Framework.h"
 #include "Utils.h"
 
-bool Utils::StartsWith(std::string str, std::string comp)
+bool Utils::StartsWith(const std::string& str, const std::string& comp)
 {
-	std::wstring::size_type index = str.find(comp);
-	if (index != std::wstring::npos && index == 0)
-		return true;
-
-	return false;
+	return str.rfind(comp, 0) == 0;
 }
 
-bool Utils::StartsWith(std::wstring str, std::wstring comp)
+bool Utils::StartsWith(const std::wstring& str, const std::wstring& comp)
 {
-	std::wstring::size_type index = str.find(comp);
-	if (index != std::wstring::npos && index == 0)
-		return true;
-
-	return false;
+	return str.rfind(comp, 0) == 0;
 }
 
-void Utils::Replace(OUT std::string& str, std::string comp, std::string rep)
+void Utils::Replace(OUT std::string& str, const std::string& comp, const std::string& rep)
 {
-	std::string temp = str;
+	if (comp.empty()) return;
 
-	size_t start_pos = 0;
-	while ((start_pos = temp.find(comp, start_pos)) != std::wstring::npos)
+	size_t startPos = 0;
+	while ((startPos = str.find(comp, startPos)) != std::string::npos)
 	{
-		temp.replace(start_pos, comp.length(), rep);
-		start_pos += rep.length();
+		str.replace(startPos, comp.length(), rep);
+		startPos += rep.length();
 	}
-	str = temp;
 }
 
-void Utils::Replace(OUT std::wstring& str, std::wstring comp, std::wstring rep)
+void Utils::Replace(OUT std::wstring& str, const std::wstring& comp, const std::wstring& rep)
 {
-	std::wstring temp = str;
+	if (comp.empty()) return;
 
-	size_t start_pos = 0;
-	while ((start_pos = temp.find(comp, start_pos)) != std::wstring::npos)
+	size_t startPos = 0;
+	while ((startPos = str.find(comp, startPos)) != std::wstring::npos)
 	{
-		temp.replace(start_pos, comp.length(), rep);
-		start_pos += rep.length();
+		str.replace(startPos, comp.length(), rep);
+		startPos += rep.length();
 	}
-	str = temp;
 }
 
-std::wstring Utils::ToWString(std::string value)
+std::wstring Utils::ToWString(const std::string& value)
 {
-	return std::wstring(value.begin(), value.end());
+	std::wstring result;
+	result.reserve(value.size());
+	for (char ch : value)
+		result.push_back(static_cast<unsigned char>(ch));
+	return result;
 }
 
-std::string Utils::ToString(std::wstring value)
+std::string Utils::ToString(const std::wstring& value)
 {
-	return std::string(value.begin(), value.end());
+	std::string result;
+	result.reserve(value.size());
+	for (wchar_t ch : value)
+		result.push_back(static_cast<char>(ch & 0xFF));
+	return result;
 }
