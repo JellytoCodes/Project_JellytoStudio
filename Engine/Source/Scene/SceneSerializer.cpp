@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "SceneSerializer.h"
 
 #include "Scene/Scene.h"
@@ -8,7 +8,6 @@
 #include "UI/Widget.h"
 #include "Scene/BlockPlacerInterface.h"
 
-// nlohmann/json — Framework.h 를 통해 포함됨
 using json = nlohmann::json;
 
 std::unordered_map<std::wstring, SceneSerializer::ActorFactory> SceneSerializer::_factories;
@@ -24,21 +23,17 @@ void SceneSerializer::RegisterActorName(const std::wstring& entityName, const st
     _entityNameMap[entityName] = actorType;
 }
 
-// ── Save ──────────────────────────────────────────────────────────────────────
 bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer* placer)
 {
     if (!scene) return false;
 
-    // 출력 디렉터리 생성
     std::filesystem::path fsPath = WstrToStr(path);
     if (auto dir = fsPath.parent_path(); !dir.empty())
         std::filesystem::create_directories(dir);
 
-    // ── JSON 빌드 ─────────────────────────────────────────────────────────────
     json doc;
     doc["name"] = WstrToStr(scene->GetName());
 
-    // 엔티티 직렬화 (Widget, Camera 는 제외)
     json entities = json::array();
     for (const auto& entityPtr : scene->GetEntities())
     {
@@ -69,7 +64,6 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
     }
     doc["entities"] = std::move(entities);
 
-    // 블록 직렬화
     if (placer && !placer->GetPlacedBlocks().empty())
     {
         json blocks = json::array();
@@ -85,14 +79,12 @@ bool SceneSerializer::Save(Scene* scene, const std::wstring& path, IBlockPlacer*
         doc["blocks"] = std::move(blocks);
     }
 
-    // ── 파일 쓰기 (들여쓰기 4칸) ─────────────────────────────────────────────
     std::ofstream ofs(WstrToStr(path));
     if (!ofs.is_open()) return false;
     ofs << doc.dump(4);
     return ofs.good();
 }
 
-// ── Load ──────────────────────────────────────────────────────────────────────
 bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer* placer)
 {
     if (!scene) return false;
@@ -100,7 +92,7 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
     std::ifstream ifs(WstrToStr(path));
     if (!ifs.is_open())
     {
-        ::OutputDebugStringW((L"[SceneSerializer] 파일 없음: " + path + L"\n").c_str());
+        ::OutputDebugStringW((L"[SceneSerializer] file not found: " + path + L"\n").c_str());
         return false;
     }
 
@@ -118,7 +110,6 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
     if (placer)
         placer->ClearAllBlocks();
 
-    // 블록 복원
     if (doc.contains("blocks") && doc["blocks"].is_array())
     {
         for (const auto& b : doc["blocks"])
@@ -134,7 +125,6 @@ bool SceneSerializer::Load(Scene* scene, const std::wstring& path, IBlockPlacer*
     return true;
 }
 
-// ── 유틸 ──────────────────────────────────────────────────────────────────────
 std::wstring SceneSerializer::FindActorType(const std::wstring& entityName)
 {
     const auto it = _entityNameMap.find(entityName);

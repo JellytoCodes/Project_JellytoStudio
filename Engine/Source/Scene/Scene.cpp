@@ -1,4 +1,4 @@
-﻿#include "Framework.h"
+#include "Framework.h"
 #include "Graphics/Graphics.h"
 #include "Scene.h"
 #include "Entity/Entity.h"
@@ -87,8 +87,10 @@ void Scene::Render()
         const Vec3 lightDir = _mainLight->GetLightDesc().direction;
         if (lightDir.LengthSquared() > 1e-6f)
         {
-            const Vec3 camPos = _mainCamera->GetEntity()->GetComponent<Transform>()->GetPosition();
-            _shadowPass->Render(_mainCamera->GetVisibleEntities(), lightDir, camPos);
+            Entity* camEntity = _mainCamera->GetEntity();
+            Transform* camTransform = camEntity ? camEntity->GetComponent<Transform>() : nullptr;
+            if (camTransform && _shadowPass)
+                _shadowPass->Render(_mainCamera->GetVisibleEntities(), lightDir, camTransform->GetPosition());
         }
     }
 
@@ -215,9 +217,23 @@ std::unique_ptr<Entity> Scene::Detach(Entity* object)
     if (it == _objects.end()) return nullptr;
 
     std::unique_ptr<Entity> owned = std::move(*it);
+
+    if (auto collider = object->GetComponent<BaseCollider>())
+        CollisionManager::UnregisterCollider(collider);
+
+    _collidableObjects.erase(object);
+    _widgetObjects.erase(
+        std::remove_if(_widgetObjects.begin(), _widgetObjects.end(),
+            [object](Widget* w) { return static_cast<Entity*>(w) == object; }),
+        _widgetObjects.end());
+
     if (it != std::prev(_objects.end()))
         *it = std::move(_objects.back());
     _objects.pop_back();
+
+    GET_SINGLE(InstancingManager)->SetDirty();
+    if (_mainCamera) _mainCamera->SetSortDirty();
+
     return owned;
 }
 
@@ -233,9 +249,11 @@ bool Scene::BuildPickRay(int32 screenX, int32 screenY, Vec3& outOrigin, Vec3& ou
 
     const float width  = GET_SINGLE(Graphics)->GetViewport().GetWidth();
     const float height = GET_SINGLE(Graphics)->GetViewport().GetHeight();
+    if (width <= 0.f || height <= 0.f) return false;
 
     const Matrix& proj    = _mainCamera->GetProjectionMatrix();
     const Matrix  viewInv = _mainCamera->GetViewMatrix().Invert();
+    if (fabsf(proj(0, 0)) < 1e-6f || fabsf(proj(1, 1)) < 1e-6f) return false;
 
     const float viewX = (+2.f * screenX / width  - 1.f) / proj(0, 0);
     const float viewY = (-2.f * screenY / height + 1.f) / proj(1, 1);

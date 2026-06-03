@@ -26,7 +26,6 @@ public:
 private:
 	void CreateBuffers(const ComPtr<ID3D11Device>& device);
 
-	// Mesh가 유일한 소유자 → unique_ptr
 	std::unique_ptr<Geometry<VertexTextureNormalTangentData>> _geometry;
 	std::unique_ptr<VertexBuffer>                             _vertexBuffer;
 	std::unique_ptr<IndexBuffer>                              _indexBuffer;

@@ -6,7 +6,7 @@ class Texture : public Resource
 {
 	using Super = Resource;
 
-public :
+public:
 	Texture();
 	virtual ~Texture();
 
@@ -15,11 +15,11 @@ public :
 	virtual void						Load(const std::wstring& path) override;
 	
 	ComPtr<ID3D11Texture2D>				GetTexture2D();
-	void								SetSRV(ComPtr<ID3D11ShaderResourceView> srv) { _shaderResourceView = srv; }
+	void								SetSRV(ComPtr<ID3D11ShaderResourceView> srv);
 
 	Vec2								GetSize() const { return _size; }
 
-	const DirectX::ScratchImage& GetInfo() { return _img; }
+	const DirectX::ScratchImage& GetInfo() const { return _img; }
 
 	TextureHandle	GetUIHandle();
 	void			InvalidateUIHandle();

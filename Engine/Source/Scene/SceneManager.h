@@ -13,6 +13,8 @@ public:
 	template<typename T>
 	void ChangeScene(std::unique_ptr<T> scene)
 	{
+		if (!scene) return;
+
 		_currentScene = std::move(scene);
 
 		_currentScene->Awake();

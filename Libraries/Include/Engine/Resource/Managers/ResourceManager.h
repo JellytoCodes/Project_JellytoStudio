@@ -44,6 +44,7 @@ template<typename T>
 std::shared_ptr<T> ResourceManager::Load(const std::wstring& key, const std::wstring& path)
 {
 	auto objectType = GetResourceType<T>();
+	if (objectType == ResourceType::None) return nullptr;
 	KeyObjMap& keyObjMap = _resources[static_cast<uint8>(objectType)];
 
 	auto findIt = keyObjMap.find(key);
@@ -51,6 +52,7 @@ std::shared_ptr<T> ResourceManager::Load(const std::wstring& key, const std::wst
 		return std::static_pointer_cast<T>(findIt->second);
 
 	auto object = std::make_shared<T>();
+	object->SetName(key);
 	object->Load(path);
 	keyObjMap[key] = object;
 
@@ -61,6 +63,7 @@ template<typename T>
 bool ResourceManager::Add(const std::wstring& key, std::shared_ptr<T> object)
 {
 	ResourceType resourceType = GetResourceType<T>();
+	if (resourceType == ResourceType::None || object == nullptr) return false;
 	KeyObjMap& keyObjMap = _resources[static_cast<uint8>(resourceType)];
 
 	auto findIt = keyObjMap.find(key);
@@ -75,6 +78,7 @@ template<typename T>
 std::shared_ptr<T> ResourceManager::Get(const std::wstring& key)
 {
 	ResourceType resourceType = GetResourceType<T>();
+	if (resourceType == ResourceType::None) return nullptr;
 	KeyObjMap& keyObjMap = _resources[static_cast<uint8>(resourceType)];
 
 	auto findIt = keyObjMap.find(key);

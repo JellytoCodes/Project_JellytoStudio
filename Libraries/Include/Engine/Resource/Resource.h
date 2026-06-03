@@ -15,17 +15,16 @@ enum class ResourceType : int8
 
 enum { RESOURCE_TYPE_COUNT = static_cast<uint8>(ResourceType::End) };
 
-// ── 이전: enable_shared_from_this<Resource> 상속 ─────────────────────────
 class Resource
 {
 public:
 	Resource(ResourceType type) : _type(type) {}
 	virtual ~Resource() = default;
 
-	ResourceType         GetType()  { return _type; }
+	ResourceType         GetType() const { return _type; }
 	void                 SetName(const std::wstring& name) { _name = name; }
-	const std::wstring&  GetName()  { return _name; }
-	uint32               GetID()    { return _id; }
+	const std::wstring&  GetName() const { return _name; }
+	uint32               GetID() const { return _id; }
 
 protected:
 	virtual void Load(const std::wstring& path) {}
