@@ -11,7 +11,7 @@ struct KeyframeDesc
     uint  currFrame;
     uint  nextFrame;
     float ratio;
-    float sumTIme;
+    float sumTime;
     float speed;
     float2 padding;
 };
