@@ -38,7 +38,6 @@ struct asMaterial
 	std::string					normalFile;
 };
 
-// Animation
 struct asBlendWeight
 {
 	void Set(uint32 index, uint32 boneIndex, float weight)
@@ -67,7 +66,6 @@ struct asBlendWeight
 	Vec4		weights = Vec4(0.f, 0.f, 0.f, 0.f);
 };
 
-// 정점마다 -> (관절 번호, 가중치)
 struct asBoneWeights
 {
 	void AddWeights(uint32 boneIndex, float weight)
@@ -133,7 +131,6 @@ struct asAnimation
 	std::vector<std::shared_ptr<asKeyframe>>		keyframes;
 };
 
-// Cache
 struct asAnimationNode
 {
 	aiString name;

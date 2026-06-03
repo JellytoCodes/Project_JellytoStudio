@@ -1,6 +1,2 @@
 #include "Framework.h"
 #include "AsTypes.h"
-
-/////////////////////////
-/// No implementation ///
-/////////////////////////

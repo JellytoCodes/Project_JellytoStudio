@@ -1,21 +1,12 @@
-﻿#pragma once
-
-// ============================================================
-//  KeyEnums.h
-//  위치: Engine/Source/Core/Managers/
-//  InputManager.h에서 #include "KeyEnums.h" 로 사용
-//  Windows VK 코드 기반 전체 키 등록
-// ============================================================
+#pragma once
 
 enum class KEY_TYPE
 {
-    // ── 마우스 ───────────────────────────────────────────────
-    LBUTTON  = VK_LBUTTON,   // 마우스 좌클릭
-    RBUTTON  = VK_RBUTTON,   // 마우스 우클릭
-    MBUTTON  = VK_MBUTTON,   // 마우스 휠 클릭
+    LBUTTON  = VK_LBUTTON,
+    RBUTTON  = VK_RBUTTON,
+    MBUTTON  = VK_MBUTTON,
 
-    // ── 기능키 ───────────────────────────────────────────────
-    BACK     = VK_BACK,      // Backspace
+    BACK     = VK_BACK,
     TAB      = VK_TAB,
     ENTER    = VK_RETURN,
     SHIFT    = VK_SHIFT,
@@ -24,13 +15,11 @@ enum class KEY_TYPE
     ESCAPE   = VK_ESCAPE,
     SPACE    = VK_SPACE,
 
-    // ── 방향키 ───────────────────────────────────────────────
     LEFT     = VK_LEFT,
     RIGHT    = VK_RIGHT,
     UP       = VK_UP,
     DOWN     = VK_DOWN,
 
-    // ── 편집키 ───────────────────────────────────────────────
     INS      = VK_INSERT,
     DEL      = VK_DELETE,
     HOME     = VK_HOME,
@@ -38,7 +27,6 @@ enum class KEY_TYPE
     PAGEUP   = VK_PRIOR,
     PAGEDOWN = VK_NEXT,
 
-    // ── F 키 ─────────────────────────────────────────────────
     F1  = VK_F1,
     F2  = VK_F2,
     F3  = VK_F3,
@@ -52,7 +40,6 @@ enum class KEY_TYPE
     F11 = VK_F11,
     F12 = VK_F12,
 
-    // ── 숫자 (상단) ──────────────────────────────────────────
     KEY_0 = '0',
     KEY_1 = '1',
     KEY_2 = '2',
@@ -64,7 +51,6 @@ enum class KEY_TYPE
     KEY_8 = '8',
     KEY_9 = '9',
 
-    // ── 알파벳 ───────────────────────────────────────────────
     A = 'A',
     B = 'B',
     C = 'C',
@@ -92,7 +78,6 @@ enum class KEY_TYPE
     Y = 'Y',
     Z = 'Z',
 
-    // ── 숫자패드 ─────────────────────────────────────────────
     NUM0 = VK_NUMPAD0,
     NUM1 = VK_NUMPAD1,
     NUM2 = VK_NUMPAD2,
@@ -107,15 +92,15 @@ enum class KEY_TYPE
 
 enum class KEY_STATE
 {
-	NONE,
-	PRESS,
-	DOWN,
-	UP,
-	END
+    NONE,
+    PRESS,
+    DOWN,
+    UP,
+    END
 };
 
 enum
 {
-	KEY_TYPE_COUNT = static_cast<int32>(UINT8_MAX + 1),
-	KEY_STATE_COUNT = static_cast<int32>(KEY_STATE::END),
+    KEY_TYPE_COUNT  = static_cast<int32>(UINT8_MAX + 1),
+    KEY_STATE_COUNT = static_cast<int32>(KEY_STATE::END),
 };
