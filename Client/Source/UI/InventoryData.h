@@ -4,7 +4,7 @@
 
 struct InventorySlotData
 {
-    PaletteWidget::SlotType type  = PaletteWidget::SlotType::Count; // Count = 비어있음
+    PaletteWidget::SlotType type  = PaletteWidget::SlotType::Count;
     int32                   count = 0;
 };
 

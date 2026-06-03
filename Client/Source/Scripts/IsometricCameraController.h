@@ -13,7 +13,6 @@ public:
 	virtual void LateUpdate() override;
 	virtual void OnDestroy()  override;
 
-	// ── 추적 타깃 ───────────────────────────────────────────────────────
 	void SetTarget(Entity* target)			{ _target = target; }
 	void ClearTarget()						{ _target = nullptr; }
 
@@ -51,6 +50,6 @@ private:
 	float		_minDist		= 5.f;
 	float		_maxDist		= 40.f;
 
-	static constexpr float kPivotEase    = 10.f;   // 타깃 추적 / 패닝
-	static constexpr float kZoomEase     = 8.f;    // 줌
+	static constexpr float kPivotEase    = 10.f;
+	static constexpr float kZoomEase     = 8.f;
 };

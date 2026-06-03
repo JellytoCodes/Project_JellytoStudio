@@ -20,26 +20,21 @@ public:
     void SetCharacterEntity(Entity* ch) { _character = ch; }
     void SetInventoryData(InventoryData* inv) { _pInventory = inv; }
 
-    // ── 상태 조회 ─────────────────────────────────────────────────────────────
     int32 GetTotalBreaks()  const { return _totalBreaks; }
     int32 GetCurrentPhase() const { return _currentPhase; }
     bool  IsBroken()        const { return _isBroken; }
 
 private:
-
-    // ── 채굴 로직 ─────────────────────────────────────────────────────────────
     void TryMine();
     void Mine();
     void Respawn();
     void UpdatePhase();
     void ApplyPhaseModel(const std::wstring& modelName);
 
-    // ── 헬퍼: 현재 페이즈의 드랍 SlotType 반환 ──────────────────────────────
     PaletteWidget::SlotType GetCurrentDropSlotType() const;
 
     bool IsCharacterNearby();
 
-    // ── 멤버 변수 ─────────────────────────────────────────────────────────────
     Entity* _character = nullptr;
     InventoryData* _pInventory = nullptr;
 
@@ -50,10 +45,9 @@ private:
 
     static constexpr float                  kRespawnDelay = 2.5f;
     static constexpr float                  kMineRange = 3.0f;
-    static constexpr float                  kBreakDuration = 0.12f;   // squash 시간
-    static constexpr float                  kRespawnDuration = 0.22f;  // bounce 시간
+    static constexpr float                  kBreakDuration = 0.12f;
+    static constexpr float                  kRespawnDuration = 0.22f;
 
-    // ── 채굴 이펙트 트윈 ─────────────────────────────────────────────────
     enum class TweenState { None, Breaking, Respawning };
     void        TickTween(float dt);
     TweenState  _tweenState = TweenState::None;

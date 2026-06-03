@@ -1,18 +1,13 @@
 ﻿#include "pch.h"
 #include "BlockTable.h"
 
-// nlohmann/json — Framework.h(→pch.h) 를 통해 포함됨
 using json    = nlohmann::json;
 using SlotType = PaletteWidget::SlotType;
 using CH       = CollisionChannel;
 using PF       = PlaceFace;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 내부 파싱 헬퍼 — 헤더에 노출하지 않음
-// ─────────────────────────────────────────────────────────────────────────────
 namespace
 {
-    // UTF-8 std::string → wstring
     std::wstring Utf8ToWide(const std::string& utf8)
     {
         if (utf8.empty()) return {};
@@ -26,7 +21,6 @@ namespace
         return result;
     }
 
-    // wstring → UTF-8 std::string (파일 경로 전달용)
     std::string WideToUtf8(const std::wstring& w)
     {
         if (w.empty()) return {};
@@ -36,8 +30,6 @@ namespace
         ::WideCharToMultiByte(CP_UTF8, 0, w.c_str(), -1, s.data(), n, nullptr, nullptr);
         return s;
     }
-
-    // ── 문자열 열거형 변환 ────────────────────────────────────────────────────
 
     ColliderSize ParseCollider(const std::string& s)
     {
@@ -60,13 +52,6 @@ namespace
     {
         return (s == "Model") ? BlockRenderType::Model : BlockRenderType::Mesh;
     }
-
-    // ── JSON 배열 → 비트마스크 (pickable / faces) ────────────────────────────
-    //
-    // XML 시절: ParsePickable("Priming|Floor|Character") — 수동 find() 루프
-    // JSON 이후: ParsePickable(["Priming","Floor","Character"]) — 배열 순회
-    //
-    // 파이프 파싱 코드 완전 제거, 가독성 및 유지보수성 향상.
 
     uint8 ParsePickable(const json& arr)
     {
@@ -101,7 +86,6 @@ namespace
         return mask ? mask : 0xFF;
     }
 
-    // ── JSON color 배열([R,G,B,A]) → Color ───────────────────────────────────
     Color ParseColor(const json& j, float defAlpha = 1.f)
     {
         if (!j.is_array() || j.size() < 3) return Color(0, 0, 0, defAlpha);
@@ -129,7 +113,7 @@ void BlockTable::Load(const std::wstring& jsonPath)
     catch (const json::parse_error& e)
     {
         ::OutputDebugStringA(e.what());
-        assert(false && "BlockMaster.json 파싱 실패 — JSON 문법 오류");
+        assert(false && "BlockMaster.json parse failed - invalid JSON syntax");
         return;
     }
 

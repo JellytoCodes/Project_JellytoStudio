@@ -64,7 +64,7 @@ void PointClickController::MoveTo(const Vec3& worldPos)
 
 void PointClickController::MoveToDestination(float dt)
 {
-    Transform* transform = GetTransform();   // MonoBehaviour → Component::GetTransform()
+    Transform* transform = GetTransform();
     if (!transform) return;
 
     Vec3  pos = transform->GetLocalPosition();
@@ -111,15 +111,11 @@ void PointClickController::MoveToDestination(float dt)
         col->InvalidateBounds();
 }
 
-// ── 블록 측면 충돌 체크 ───────────────────────────────────────────────────
-
 bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
 {
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
     if (!scene) return false;
 
-    // Component::_entity 는 Entity* (raw pointer) — .lock() 없음
-    // 이전 코드의 _entity.lock() 는 컴파일 오류
     Entity* selfEntity = _entity;
     if (!selfEntity) return false;
 
@@ -129,7 +125,6 @@ bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
     const BoundingBox& curBox = charAabb->GetBoundingBox();
     const Vec3         charExtents = curBox.Extents;
 
-    // Entity에는 GetTransform()이 없음 → GetComponent<Transform>() 사용
     Transform* tf = selfEntity->GetComponent<Transform>();
     if (!tf) return false;
     const float curEntityY = tf->GetLocalPosition().y;
@@ -157,7 +152,6 @@ bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
 
         const BoundingBox& blockBox = blockAabb->GetBoundingBox();
 
-        // XZ 사전 컬링
         {
             const float dx = blockBox.Center.x - nextEntityPos.x;
             const float dz = blockBox.Center.z - nextEntityPos.z;
@@ -174,11 +168,8 @@ bool PointClickController::IsMovementBlocked(const Vec3& nextEntityPos) const
     return false;
 }
 
-// ── 애니메이션 ────────────────────────────────────────────────────────────
-
 void PointClickController::UpdateAnimState(bool moving)
 {
-    // Component::_entity 는 Entity* (raw pointer) — .lock() 없음
     Entity* entity = _entity;
     if (!entity) return;
 

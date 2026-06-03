@@ -1,16 +1,13 @@
-﻿
 #include "pch.h"
 #include "InventoryData.h"
 
 using SlotType = PaletteWidget::SlotType;
 
-// ── 생성자 ────────────────────────────────────────────────────
 InventoryData::InventoryData()
 {
     _typeCounts.fill(0);
 }
 
-// ── 추가 ─────────────────────────────────────────────────────
 void InventoryData::AddItem(SlotType type, int32 amount)
 {
     const int32 idx = static_cast<int32>(type);
@@ -20,7 +17,6 @@ void InventoryData::AddItem(SlotType type, int32 amount)
     _typeCounts[idx] = std::max(0, _typeCounts[idx] + amount);
 }
 
-// ── 소비 ─────────────────────────────────────────────────────
 bool InventoryData::ConsumeItem(SlotType type, int32 amount)
 {
     const int32 idx = static_cast<int32>(type);
@@ -32,7 +28,6 @@ bool InventoryData::ConsumeItem(SlotType type, int32 amount)
     return true;
 }
 
-// ── 지급 ─────────────────────────────────────────────────────
 void InventoryData::GiveItem(SlotType type, int32 amount)
 {
     AddItem(type, amount);
@@ -48,7 +43,6 @@ void InventoryData::GiveAll(int32 amount)
     }
 }
 
-// ── 조회 ─────────────────────────────────────────────────────
 int32 InventoryData::GetCount(SlotType type) const
 {
     const int32 idx = static_cast<int32>(type);

@@ -26,7 +26,6 @@
 #include "App/Managers/WindowManager.h"
 #include "UI/Widget.h"
 #include "UI/Components/UIText.h"
-#include "UI/Components/UIButton.h"
 #include "Scene/SceneSerializer.h"
 #include "Core/DisplayContext.h"
 #include "Data/BlockTable.h"
@@ -158,15 +157,6 @@ void EditorApp::CreateHUD()
     });
     hud->AddUIComponent(std::move(hintText));
 
-    auto resetButton = std::make_unique<UIButton>();
-    resetButton->SetRect(50.f, 94.f, 160.f, 28.f);
-    resetButton->SetText(L"Reset Timer");
-    resetButton->SetFontSize(15);
-    resetButton->SetOnClick([]() {
-        ::OutputDebugStringW(L"[UI] Reset Timer clicked!\n");
-    });
-    hud->AddUIComponent(std::move(resetButton));
-
     scene->Add(std::move(hud));
 }
 
@@ -275,14 +265,14 @@ void EditorApp::Update()
         GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::S))
     {
         const bool ok = SceneSerializer::Save(scene, L"../Saved/scene.json");
-        SetSaveStatus(ok ? L"✔ 저장 완료 — scene.json" : L"✘ 저장 실패");
+        SetSaveStatus(ok ? L"저장 완료 - scene.json" : L"저장 실패");
     }
 
     if ((::GetKeyState(VK_CONTROL) & 0x8000) &&
         GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::L))
     {
         const bool ok = SceneSerializer::Load(scene, L"../Saved/scene.json");
-        SetSaveStatus(ok ? L"✔ 로드 완료 — scene.json" : L"✘ 로드 실패 — 파일 없음");
+        SetSaveStatus(ok ? L"로드 완료 - scene.json" : L"로드 실패 - 파일 없음");
         if (_detailWindow) _detailWindow->MarkDirty();
     }
 
@@ -387,7 +377,7 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
             switch (t)
             {
             case ColliderType::AABB:    return L"AABB (Box)";
-            case ColliderType::OBB:     return L"OBB (Box·회전)";
+            case ColliderType::OBB:     return L"OBB (Box 회전)";
             case ColliderType::Sphere:  return L"Sphere";
             case ColliderType::Frustum: return L"Frustum";
             default:                    return L"알 수 없음";

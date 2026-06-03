@@ -75,7 +75,6 @@ void MainApp::InitScene()
     if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
         scene->SetMainLight(lightComp);
 
-    // ── StartBlock (원블록) ─────────────────────────────────────────────────
     const BlockRecord* startRec = GET_SINGLE(BlockTable)->GetRecordByKey(L"Priming1");
     assert(startRec && "BlockMaster.json 에 key='Priming1' 항목이 없습니다.");
 
@@ -108,12 +107,10 @@ void MainApp::InitScene()
     _startBlock = startBlock.get();
     scene->Add(std::move(startBlock));
 
-    // ── 캐릭터 ─────────────────────────────────────────────────────────────
     Actor* charActor = spawn(std::make_unique<CharacterActor>());
     _characterEntity = charActor->GetEntity();
     _characterEntity->GetComponent<Transform>()->SetLocalPosition(Vec3(0.f, 1.0f, 0.f));
 
-    // ── OneBlockScript ──────────────────────────────────────────────────────
     if (_startBlock)
     {
         auto oneBlock = std::make_unique<OneBlockScript>();

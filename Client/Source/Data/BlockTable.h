@@ -14,22 +14,22 @@ struct BlockUVRect
     float vScale  = 0.f;
 };
 static_assert(sizeof(BlockUVRect) == 16,
-    "HLSL float4 와 크기가 달라 셰이더 상수 버퍼 오정렬 발생");
+    "BlockUVRect must match HLSL float4 layout");
 
 struct BlockRecord
 {
     int32            typeId        = 0;
-    std::wstring     key;          
-    std::wstring     label;        
+    std::wstring     key;
+    std::wstring     label;
     std::wstring     paletteLabel;
 
     Color            color;
     bool             isEraser      = false;
 
     BlockRenderType  renderType    = BlockRenderType::Mesh;
-    std::wstring     modelName;   
+    std::wstring     modelName;
     float            modelScale    = 0.01f;
-    BlockUVRect      paletteRect; 
+    BlockUVRect      paletteRect;
 
     ColliderSize     collider      = ColliderSize::Unit;
     CollisionChannel ownChannel    = CollisionChannel::Default;

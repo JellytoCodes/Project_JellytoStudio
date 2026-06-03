@@ -425,20 +425,6 @@ void BlockPlacer::HidePreview()
 	_previewValid = false;
 }
 
-void BlockPlacer::AttachCollider(Entity* entity, const BlockRecord& rec)
-{
-	const Vec3 half = GetHalfExtents(rec.collider);
-	auto col = std::make_unique<AABBCollider>();
-	col->SetShowDebug(false);
-	col->SetBoxExtents(half);
-	const float yOffset = (rec.renderType == BlockRenderType::Model) ? half.y : 0.f;
-	col->SetOffsetPosition(Vec3(0.f, yOffset, 0.f));
-	col->SetOwnChannel(rec.ownChannel);
-	col->SetPickableMask(rec.pickableMask);
-	col->SetStatic(true);
-	entity->AddComponent(std::move(col));
-}
-
 void BlockPlacer::WarmMeshPool()
 {
 	if (!_cubeMesh) return;
