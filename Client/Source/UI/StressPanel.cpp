@@ -26,7 +26,7 @@ bool StressPanel::Create(HINSTANCE hInstance, HWND hMainWnd)
     const int x = hMainWnd ? mainRect.right + 8   : CW_USEDEFAULT;
     const int y = hMainWnd ? mainRect.top  + 700  : CW_USEDEFAULT;
 
-    RECT wr = { 0, 0, 400, 620 };
+    RECT wr = { 0, 0, 420, 700 };
     ::AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
     _hWnd = ::CreateWindowW(CLASS_NAME, L"Jellyto Studio — Stress Test",
@@ -60,13 +60,13 @@ void StressPanel::Toggle() { _visible ? Hide() : Show(); }
 
 void StressPanel::BuildUI()
 {
-    constexpr int W  = 360;
-    constexpr int BW = 108;
+    constexpr int W  = 380;
+    constexpr int BW = 118;
     constexpr int BH = 28;
     constexpr int LX = 10;
-    constexpr int VX = 180;
+    constexpr int VX = 190;
     constexpr int LW = 165;
-    constexpr int VW = 180;
+    constexpr int VW = 185;
     constexpr int RH = 17;
     constexpr int RS = 21;
 
@@ -101,20 +101,22 @@ void StressPanel::BuildUI()
             VX, yy, VW, RH, _hWnd, nullptr, _hInstance, nullptr);
     };
 
-    MkSep(L"▶  추가 생성  (현재 씬에 누적)", y); y += RH + 6;
-    MkBtn(L"+100",    LX,           y, BW, ID_BTN_SPAWN100);
-    MkBtn(L"+1,000",  LX + BW + 4,  y, BW, ID_BTN_SPAWN1K);
-    MkBtn(L"+10,000", LX + (BW+4)*2, y, BW, ID_BTN_SPAWN10K);
-    y += BH + 10;
-
-    MkSep(L"▶  재현 프리셋  (Clear 후 생성)", y); y += RH + 6;
-    MkBtn(L"Grid 10K",        LX,           y, BW, ID_BTN_GRID10K);
-    MkBtn(L"Seed Random 10K", LX + BW + 4,  y, BW + 20, ID_BTN_RANDOM10K);
-    y += BH + 10;
-
-    MkSep(L">  벤치마크 프리셋", y); y += RH + 6;
-    MkBtn(L"Flat 1K",    LX,          y, BW, ID_BTN_FLAT1K);
-    MkBtn(L"Dense 16^3", LX + BW + 4, y, BW + 20, ID_BTN_DENSE16);
+    MkSep(L">  상황별 프리셋  (하 / 중 / 상)", y); y += RH + 6;
+    _hPresetFrustumLow  = MkBtn(L"", LX,             y, BW, ID_BTN_FRUSTUM_LOW);
+    _hPresetFrustumMid  = MkBtn(L"", LX + BW + 4,    y, BW, ID_BTN_FRUSTUM_MID);
+    _hPresetFrustumHigh = MkBtn(L"", LX + (BW+4)*2,  y, BW, ID_BTN_FRUSTUM_HIGH);
+    y += BH + 4;
+    _hPresetFaceLow     = MkBtn(L"", LX,             y, BW, ID_BTN_FACE_LOW);
+    _hPresetFaceMid     = MkBtn(L"", LX + BW + 4,    y, BW, ID_BTN_FACE_MID);
+    _hPresetFaceHigh    = MkBtn(L"", LX + (BW+4)*2,  y, BW, ID_BTN_FACE_HIGH);
+    y += BH + 4;
+    _hPresetSmartLow    = MkBtn(L"", LX,             y, BW, ID_BTN_SMART_LOW);
+    _hPresetSmartMid    = MkBtn(L"", LX + BW + 4,    y, BW, ID_BTN_SMART_MID);
+    _hPresetSmartHigh   = MkBtn(L"", LX + (BW+4)*2,  y, BW, ID_BTN_SMART_HIGH);
+    y += BH + 4;
+    _hPresetRandomLow   = MkBtn(L"", LX,             y, BW, ID_BTN_RANDOM_LOW);
+    _hPresetRandomMid   = MkBtn(L"", LX + BW + 4,    y, BW, ID_BTN_RANDOM_MID);
+    _hPresetRandomHigh  = MkBtn(L"", LX + (BW+4)*2,  y, BW, ID_BTN_RANDOM_HIGH);
     y += BH + 10;
 
     MkSep(L">  최적화 옵션", y); y += RH + 6;
@@ -141,7 +143,9 @@ void StressPanel::BuildUI()
     MkL(L"Ring Buffer 슬롯",  y); MkV(_hValRingSlot,    L"—", y); y += RS;
     MkL(L"총 청크 수",        y); MkV(_hValTotalChunks, L"—", y); y += RS;
     MkL(L"가시 청크 수",      y); MkV(_hValVisChunks,   L"—", y); y += RS;
+    MkL(L"Face Culled",       y); MkV(_hValFaceCulled,  L"—", y); y += RS;
     MkL(L"Mesh Rebuild/Skip", y); MkV(_hValMeshGroups,  L"—", y); y += RS;
+    MkL(L"Last Nonzero R/S",  y); MkV(_hValLastMeshGroups, L"—", y); y += RS;
     MkL(L"Frame Time (CPU)",  y); MkV(_hValFrameMs,     L"—", y); y += RS + 10;
     MkL(L"마지막 시나리오",    y); MkV(_hValScenario,    L"Idle", y); y += RS + 10;
 
@@ -150,6 +154,7 @@ void StressPanel::BuildUI()
     MkBtn(L"CSV 기록",  LX + BW + 24, y, BW + 20, ID_BTN_EXPORT);
 
     RefreshOptionButtons();
+    RefreshPresetButtons();
 }
 
 std::vector<int32> StressPanel::CollectValidTypes() const
@@ -166,7 +171,7 @@ std::vector<int32> StressPanel::CollectValidTypes() const
     return validTypes;
 }
 
-std::vector<int32> StressPanel::CollectValidMeshTypes() const
+std::vector<int32> StressPanel::CollectBenchmarkBlockTypes() const
 {
     std::vector<int32> validTypes;
     if (!GET_SINGLE(BlockTable)->IsLoaded()) return validTypes;
@@ -175,7 +180,7 @@ std::vector<int32> StressPanel::CollectValidMeshTypes() const
     validTypes.reserve(records.size());
     for (const BlockRecord& rec : records)
     {
-        if (!rec.key.empty() && !rec.isEraser && rec.renderType == BlockRenderType::Mesh)
+        if (!rec.key.empty() && !rec.isEraser && rec.collider == ColliderSize::Unit)
             validTypes.push_back(rec.typeId);
     }
 
@@ -201,13 +206,14 @@ void StressPanel::SpawnBlocks(int count)
     }
 
     _lastScenario = L"Append Random +" + std::to_wstring(count);
+    MarkBenchmarkDirty();
     RefreshStats();
 }
 
 void StressPanel::SpawnFlatPreset(int count)
 {
     if (!_placer) return;
-    const auto validTypes = CollectValidMeshTypes();
+    const auto validTypes = CollectBenchmarkBlockTypes();
     if (validTypes.empty()) return;
 
     _placer->ClearAllBlocks();
@@ -226,13 +232,14 @@ void StressPanel::SpawnFlatPreset(int count)
     }
 
     _lastScenario = L"Flat " + std::to_wstring(count);
+    MarkBenchmarkDirty();
     RefreshStats();
 }
 
 void StressPanel::SpawnDenseCubePreset(int side)
 {
     if (!_placer) return;
-    const auto validTypes = CollectValidMeshTypes();
+    const auto validTypes = CollectBenchmarkBlockTypes();
     if (validTypes.empty()) return;
 
     _placer->ClearAllBlocks();
@@ -257,6 +264,38 @@ void StressPanel::SpawnDenseCubePreset(int side)
     }
 
     _lastScenario = L"Dense " + std::to_wstring(side) + L"^3";
+    MarkBenchmarkDirty();
+    RefreshStats();
+}
+
+void StressPanel::SpawnPyramidPreset(int side)
+{
+    if (!_placer) return;
+    const auto validTypes = CollectBenchmarkBlockTypes();
+    if (validTypes.empty()) return;
+
+    _placer->ClearAllBlocks();
+
+    int index = 0;
+    for (int y = 0; y < side; ++y)
+    {
+        const int radius = side - y - 1;
+        for (int z = -radius; z <= radius; ++z)
+        {
+            for (int x = -radius; x <= radius; ++x)
+            {
+                const int32 type = validTypes[static_cast<size_t>(index) % validTypes.size()];
+                _placer->PlaceBlock(static_cast<float>(x),
+                                    static_cast<float>(y),
+                                    static_cast<float>(z),
+                                    type);
+                ++index;
+            }
+        }
+    }
+
+    _lastScenario = L"Solid Pyramid " + std::to_wstring(side);
+    MarkBenchmarkDirty();
     RefreshStats();
 }
 
@@ -282,6 +321,7 @@ void StressPanel::SpawnGridPreset(int count)
     }
 
     _lastScenario = L"Grid " + std::to_wstring(count);
+    MarkBenchmarkDirty();
     RefreshStats();
 }
 
@@ -306,6 +346,7 @@ void StressPanel::SpawnRandomPreset(int count)
     }
 
     _lastScenario = L"Seed Random " + std::to_wstring(count);
+    MarkBenchmarkDirty();
     RefreshStats();
 }
 
@@ -327,6 +368,7 @@ void StressPanel::DeleteRandom10Pct()
         _placer->PlaceBlock(rec.x, rec.y, rec.z, rec.type);
 
     _lastScenario = L"Delete Random 10%";
+    MarkBenchmarkDirty();
     RefreshStats();
 }
 
@@ -412,6 +454,7 @@ void StressPanel::DumpToLog()
         L"  Ring Buffer 슬롯 : %u / %u\n"
         L"  총 청크 수       : %d\n"
         L"  가시 청크 수     : %d  (Cull %.1f%%)\n"
+        L"  Face Culled      : %d\n"
         L"  Frame Time (CPU) : %.2f ms\n",
         _lastScenario.c_str(),
         static_cast<int>(placed.size()),
@@ -425,6 +468,7 @@ void StressPanel::DumpToLog()
         pool->GetUsedInstances(), DynamicInstancePool::kMaxInstances,
         pool->GetCurrentSlot(),   DynamicInstancePool::kRingCount,
         total, visible, cullPct,
+        cm->GetFaceOccludedCount(),
         GET_SINGLE(TimeManager)->GetDeltaTime() * 1000.f);
 
     ::OutputDebugStringW(buf);
@@ -458,7 +502,7 @@ void StressPanel::ExportCsv()
         out << "scenario,blocks,draw_calls,mesh_draw_calls,model_draw_calls,"
             << "render_instances,total_entities,visible_entities,culled_entities,"
             << "mesh_groups_rebuilt,mesh_groups_skipped,pool_instances,pool_max,"
-            << "ring_slot,total_chunks,visible_chunks,cull_pct,cpu_frame_ms\n";
+            << "ring_slot,total_chunks,visible_chunks,face_culled,cull_pct,cpu_frame_ms\n";
     }
 
     Camera::CullStats cs = {};
@@ -488,6 +532,7 @@ void StressPanel::ExportCsv()
         << pool->GetCurrentSlot() << ','
         << totalChunks << ','
         << visibleChunks << ','
+        << cm->GetFaceOccludedCount() << ','
         << cullPct << ','
         << GET_SINGLE(TimeManager)->GetDeltaTime() * 1000.f
         << '\n';
@@ -524,6 +569,12 @@ void StressPanel::RefreshStats()
 
     SetW(_hValBlockCount, FmtInt(blockCount) + L" 개");
     const RenderStats& rs = GET_SINGLE(InstancingManager)->GetStats();
+    if (rs.meshGroupsRebuilt != 0 || rs.meshGroupsSkipped != 0)
+    {
+        _lastNonZeroMeshRebuilt = rs.meshGroupsRebuilt;
+        _lastNonZeroMeshSkipped = rs.meshGroupsSkipped;
+    }
+
     Camera::CullStats cs = {};
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
@@ -568,12 +619,16 @@ void StressPanel::RefreshStats()
     wchar_t visBuf[48];
     swprintf_s(visBuf, L"%s  (Cull %.1f%%)", FmtInt(visible).c_str(), cullPct);
     SetW(_hValVisChunks, visBuf);
+    SetW(_hValFaceCulled, FmtInt(cm->GetFaceOccludedCount()));
 
     wchar_t msBuf[24];
     swprintf_s(msBuf, L"%.2f ms", GET_SINGLE(TimeManager)->GetDeltaTime() * 1000.f);
     SetW(_hValFrameMs, msBuf);
 
     SetW(_hValScenario, _lastScenario);
+    SetW(_hValLastMeshGroups,
+        FmtInt(static_cast<int32>(_lastNonZeroMeshRebuilt))
+        + L" / " + FmtInt(static_cast<int32>(_lastNonZeroMeshSkipped)));
     RefreshOptionButtons();
 }
 
@@ -634,11 +689,13 @@ LRESULT CALLBACK StressPanel::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
             case ID_BTN_RANDOM10K: self->SpawnRandomPreset(10000); return 0;
             case ID_BTN_FLAT1K:    self->SpawnFlatPreset(1000); return 0;
             case ID_BTN_DENSE16:   self->SpawnDenseCubePreset(16); return 0;
+            case ID_BTN_PYRAMID:   self->SpawnPyramidPreset(15); return 0;
             case ID_BTN_CLEAR:
                 if (self->_placer)
                 {
                     self->_placer->ClearAllBlocks();
                     self->_lastScenario = L"Clear All";
+                    self->MarkBenchmarkDirty();
                     self->RefreshStats();
                 }
                 return 0;

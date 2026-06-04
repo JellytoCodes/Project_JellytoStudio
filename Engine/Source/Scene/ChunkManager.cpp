@@ -99,7 +99,7 @@ void ChunkManager::Register(Entity* entity)
 
     _entityToKey[entity] = key;
 
-    if (entity->GetComponent<MeshRenderer>() && !entity->GetComponent<ModelRenderer>())
+    if (entity->GetComponent<MeshRenderer>() || entity->GetComponent<ModelRenderer>())
         _positionMap[PositionKey(pos)] = entity;
 }
 
@@ -111,7 +111,7 @@ void ChunkManager::Unregister(Entity* entity)
     const uint64 key = it->second;
     _entityToKey.erase(it);
 
-    if (entity->GetComponent<MeshRenderer>() && !entity->GetComponent<ModelRenderer>())
+    if (entity->GetComponent<MeshRenderer>() || entity->GetComponent<ModelRenderer>())
     {
         if (auto* tr = entity->GetComponent<Transform>())
             _positionMap.erase(PositionKey(tr->GetLocalPosition()));
@@ -147,6 +147,7 @@ void ChunkManager::Clear()
     _entityToKey.clear();
     _positionMap.clear();
     _lastVisibleCount = 0;
+    _lastFaceOccludedCount = 0;
 }
 
 void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::vector<Entity*>& outEntities)
@@ -159,6 +160,7 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
     };
 
     _lastVisibleCount = 0;
+    _lastFaceOccludedCount = 0;
 
     for (auto& [key, chunk] : _chunks)
     {
@@ -180,9 +182,10 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
         for (Entity* e : chunk.entities)
         {
             auto* mr = e->GetComponent<MeshRenderer>();
+            auto* modelR = e->GetComponent<ModelRenderer>();
             auto* tr = e->GetComponent<Transform>();
 
-            if (!mr || !tr)
+            if ((!mr && !modelR) || !tr)
             {
                 outEntities.push_back(e);
                 continue;
@@ -204,7 +207,13 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
             }
 
             if (!occluded)
+            {
                 outEntities.push_back(e);
+            }
+            else
+            {
+                ++_lastFaceOccludedCount;
+            }
         }
     }
 }

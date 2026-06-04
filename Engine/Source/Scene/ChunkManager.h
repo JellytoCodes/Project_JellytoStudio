@@ -37,6 +37,7 @@ public:
     int32 GetChunkCount() const { return static_cast<int32>(_chunks.size()); }
 
     int32 GetVisibleChunkCount() const { return _lastVisibleCount; }
+    int32 GetFaceOccludedCount() const { return _lastFaceOccludedCount; }
 
     std::vector<ChunkSnapshot> GetChunkSnapshots() const;
 
@@ -66,4 +67,5 @@ private:
     std::unordered_map<uint64, Entity*> _positionMap;
 
     int32 _lastVisibleCount = 0;
+    int32 _lastFaceOccludedCount = 0;
 };
