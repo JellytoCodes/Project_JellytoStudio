@@ -8,6 +8,7 @@
 #include "Graphics/Model/ModelRenderer.h"
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Managers/InstancingManager.h"
+#include "Graphics/RenderDebugOptions.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
 #include "Scene/ChunkManager.h"
@@ -110,10 +111,13 @@ void Camera::SortEntities()
                 entity->GetComponent<ModelAnimator>()  != nullptr;
             if (!hasRenderer) continue;
 
-            if (auto* aabb = entity->GetComponent<AABBCollider>())
+            if (RenderDebugOptions::Get().bEnableFrustumCulling)
             {
-                if (worldFrustum.Contains(aabb->GetBoundingBox()) == DirectX::DISJOINT)
-                    continue;
+                if (auto* aabb = entity->GetComponent<AABBCollider>())
+                {
+                    if (worldFrustum.Contains(aabb->GetBoundingBox()) == DirectX::DISJOINT)
+                        continue;
+                }
             }
             newForward.push_back(entity.get());
         }

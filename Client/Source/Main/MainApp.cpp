@@ -2,7 +2,6 @@
 #include "MainApp.h"
 
 #include "Actors.h"
-#include "Core/Managers/InputManager.h"
 #include "Core/Managers/TimeManager.h"
 #include "Data/BlockTable.h"
 #include "Entity/Actor.h"
@@ -12,7 +11,6 @@
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Managers/CollisionManager.h"
-#include "Graphics/Managers/InstancingManager.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
@@ -51,10 +49,7 @@ void MainApp::Init()
     CreateInventorySystem();
     CreateDebugTools();
 
-    Camera* mainCam = _scene->GetMainCamera();
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
-
-    _debugHUD.Init(mainCam);
 }
 
 void MainApp::InitScene()
@@ -194,13 +189,6 @@ void MainApp::CreateDebugTools()
 void MainApp::Update()
 {
     CollisionManager::CheckCollision();
-    _debugHUD.Update();
-
-    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F1))
-        GET_SINGLE(InstancingManager)->DumpInstancingStats();
-
-    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::F2) && _pickDebugPanel)
-        _pickDebugPanel->Toggle();
 
     if (_pickDebugPanel && _pickDebugPanel->IsVisible())
     {
@@ -215,5 +203,4 @@ void MainApp::Update()
 
 void MainApp::Render()
 {
-    _debugHUD.Render();
 }

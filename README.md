@@ -647,3 +647,38 @@ JellytoStudio/
 ---
 
 *C++17 · DirectX 11 · HLSL · WRL::ComPtr · Hardware Instancing · Ring Buffer · 2-Cascade CSM · Face Occlusion Culling · nlohmann/json*
+
+---
+
+## Controlled Benchmark Mode
+
+본 비교는 과거 커밋 기준의 before/after가 아니라, 동일 씬에서 최적화 옵션을 끈 baseline과 현재 구현을 비교하는 controlled benchmark입니다.
+
+### StressPanel Options
+
+| Button | Option | Description |
+|---|---|---|
+| Frustum ON/OFF | Frustum Culling | Chunk AABB 및 비관리 렌더러 frustum test 토글 |
+| Face ON/OFF | Face Occlusion | 6방향 이웃으로 완전히 가려진 mesh block 제외 토글 |
+| SmartRebuild ON/OFF | SmartRebuild | Dirty mesh group rebuild와 full mesh group rebuild 비교 |
+
+### Benchmark Presets
+
+StressPanel에서 다음 preset을 생성해 동일 조건으로 측정합니다.
+
+| Preset | Purpose |
+|---|---|
+| Flat 1K | 인스턴싱 draw call / total instance 기준 측정 |
+| Dense 16^3 | 내부 블록 face occlusion 효과 측정 |
+| Seed Random 10K | 대규모 랜덤 배치 및 chunk culling 기준 측정 |
+
+### Measurement Table
+
+| Scene | Mode | Total Entities | Visible Entities | Total Chunks | Visible Chunks | Mesh DrawCalls | Model DrawCalls | Total Instances | Mesh Groups Rebuilt | Mesh Groups Skipped | CPU Frame |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Flat 1K | Baseline OFF | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Flat 1K | Optimized ON | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Dense 16^3 | Culling OFF | 4096 | 4096 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Dense 16^3 | Face Occlusion ON | 4096 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Seed Random 10K | SmartRebuild OFF | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Seed Random 10K | SmartRebuild ON | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |

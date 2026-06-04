@@ -124,27 +124,55 @@ void Application::CreateMainMenu()
     ::AppendMenuW(hFile, MF_STRING, (UINT_PTR)AppMenuCmd::Exit, L"종료(&X)\tAlt+F4");
     ::AppendMenuW(hBar,  MF_POPUP,  (UINT_PTR)hFile, L"파일(&F)");
 
-    HMENU hWin = ::CreatePopupMenu();
-    ::AppendMenuW(hWin, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleToolWindow,   L"툴 창\tCtrl+T");
-    ::AppendMenuW(hWin, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleItemWindow,   L"아이템 창\tCtrl+I");
-    ::AppendMenuW(hWin, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleDetailWindow, L"디테일 창\tCtrl+D");
-    ::AppendMenuW(hBar, MF_POPUP,  (UINT_PTR)hWin, L"창(&W)");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleChunkDebugWindow, L"F1 Chunk");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleBlockTestPanel,   L"F2 Block");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleStressPanel,      L"F3 Stress");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::TogglePickDebugPanel,   L"F4 Pick");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleToolWindow,       L"F5 Tool");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleItemWindow,       L"F6 Item");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleDetailWindow,     L"F7 Detail");
 
     ::SetMenu(_desc.hWnd, hBar);
 }
 
 void Application::HandleShortcuts()
 {
-    if (!(::GetKeyState(VK_CONTROL) & 0x8000)) return;
-    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::T)) { ToggleToolWindow();   return; }
-    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::I)) { ToggleItemWindow();   return; }
-    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::D)) { ToggleDetailWindow(); return; }
+    if (ConsumeFunctionKey(1, VK_F1)) { ToggleWindowByCommand(AppMenuCmd::ToggleChunkDebugWindow); return; }
+    if (ConsumeFunctionKey(2, VK_F2)) { ToggleWindowByCommand(AppMenuCmd::ToggleBlockTestPanel);   return; }
+    if (ConsumeFunctionKey(3, VK_F3)) { ToggleWindowByCommand(AppMenuCmd::ToggleStressPanel);      return; }
+    if (ConsumeFunctionKey(4, VK_F4)) { ToggleWindowByCommand(AppMenuCmd::TogglePickDebugPanel);   return; }
+    if (ConsumeFunctionKey(5, VK_F5)) { ToggleWindowByCommand(AppMenuCmd::ToggleToolWindow);       return; }
+    if (ConsumeFunctionKey(6, VK_F6)) { ToggleWindowByCommand(AppMenuCmd::ToggleItemWindow);       return; }
+    if (ConsumeFunctionKey(7, VK_F7)) { ToggleWindowByCommand(AppMenuCmd::ToggleDetailWindow);     return; }
 }
 
-void Application::ToggleToolWindow()   { GET_SINGLE(WindowManager)->ToggleWindow(L"ToolWindow");   }
-void Application::ToggleItemWindow()   { GET_SINGLE(WindowManager)->ToggleWindow(L"ItemWindow");   }
-void Application::ToggleDetailWindow() { GET_SINGLE(WindowManager)->ToggleWindow(L"DetailWindow"); }
+bool Application::ConsumeFunctionKey(int index, int vk)
+{
+    const bool down = (::GetAsyncKeyState(vk) & 0x8000) != 0;
+    const bool pressed = down && !_functionKeyDown[index];
+    _functionKeyDown[index] = down;
+    return pressed;
+}
 
+void Application::ToggleWindowByCommand(AppMenuCmd cmd)
+{
+    switch (cmd)
+    {
+    case AppMenuCmd::ToggleChunkDebugWindow: ToggleRegisteredWindow(L"ChunkDebugWindow"); return;
+    case AppMenuCmd::ToggleBlockTestPanel:   ToggleRegisteredWindow(L"BlockTestPanel");   return;
+    case AppMenuCmd::ToggleStressPanel:      ToggleRegisteredWindow(L"StressPanel");      return;
+    case AppMenuCmd::TogglePickDebugPanel:   ToggleRegisteredWindow(L"PickDebugPanel");   return;
+    case AppMenuCmd::ToggleToolWindow:       ToggleRegisteredWindow(L"ToolWindow");       return;
+    case AppMenuCmd::ToggleItemWindow:       ToggleRegisteredWindow(L"ItemWindow");       return;
+    case AppMenuCmd::ToggleDetailWindow:     ToggleRegisteredWindow(L"DetailWindow");     return;
+    default: return;
+    }
+}
+
+void Application::ToggleRegisteredWindow(const std::wstring& name)
+{
+    GET_SINGLE(WindowManager)->ToggleWindow(name);
+}
 LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (msg == WM_NCCREATE)
@@ -173,12 +201,20 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
             return 0;
 
         case WM_COMMAND:
-            switch ((AppMenuCmd)LOWORD(wParam))
+            switch (const AppMenuCmd cmd = (AppMenuCmd)LOWORD(wParam))
             {
-            case AppMenuCmd::ToggleToolWindow:   self->ToggleToolWindow();   return 0;
-            case AppMenuCmd::ToggleItemWindow:   self->ToggleItemWindow();   return 0;
-            case AppMenuCmd::ToggleDetailWindow: self->ToggleDetailWindow(); return 0;
-            case AppMenuCmd::Exit:               ::PostQuitMessage(0);       return 0;
+            case AppMenuCmd::ToggleChunkDebugWindow:
+            case AppMenuCmd::ToggleBlockTestPanel:
+            case AppMenuCmd::ToggleStressPanel:
+            case AppMenuCmd::TogglePickDebugPanel:
+            case AppMenuCmd::ToggleToolWindow:
+            case AppMenuCmd::ToggleItemWindow:
+            case AppMenuCmd::ToggleDetailWindow:
+                self->ToggleWindowByCommand(cmd);
+                return 0;
+            case AppMenuCmd::Exit:
+                ::PostQuitMessage(0);
+                return 0;
             }
             break;
         }

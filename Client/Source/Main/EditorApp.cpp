@@ -24,10 +24,7 @@
 #include "Scripts/BlockPlacer.h"
 #include "Entity/Components/Light.h"
 #include "App/Managers/WindowManager.h"
-#include "UI/Widget.h"
-#include "UI/Components/UIText.h"
 #include "Scene/SceneSerializer.h"
-#include "Core/DisplayContext.h"
 #include "Data/BlockTable.h"
 
 EditorApp::EditorApp()  {}
@@ -65,7 +62,6 @@ void EditorApp::Init()
 
     SpawnDefaultActors();
     CreateCamera();
-    CreateHUD();
 
     Scene* rawScene = _scene.get();
     GET_SINGLE(SceneManager)->ChangeScene(std::move(_scene));
@@ -122,44 +118,6 @@ void EditorApp::SpawnDefaultActors()
     scene->Add(std::move(placerEntity));
 }
 
-void EditorApp::CreateHUD()
-{
-    Scene* scene = _scene.get();
-    float  cx    = GET_SINGLE(DisplayContext)->GetWidthF() * 0.5f - 130.f;
-
-    auto hud = std::make_unique<Widget>(L"HUD");
-    hud->SetScreenPos(cx, 12.f);
-
-    auto timeText = std::make_unique<UIText>();
-    timeText->SetRect(0.f, 0.f, 260.f, 36.f);
-    timeText->SetFontSize(20);
-    timeText->SetTextGetter([]()
-    {
-        const float t = GET_SINGLE(TimeManager)->GetTotalTime();
-        wchar_t buf[64];
-        swprintf_s(buf, L"Time  %02d:%02d", (int)(t / 60), (int)t % 60);
-        return std::wstring(buf);
-    });
-    hud->AddUIComponent(std::move(timeText));
-
-    auto saveText = std::make_unique<UIText>();
-    saveText->SetRect(0.f, 44.f, 300.f, 22.f);
-    saveText->SetFontSize(13);
-    saveText->SetTextGetter([this]() { return _saveStatusMsg; });
-    _saveStatusText = saveText.get();
-    hud->AddUIComponent(std::move(saveText));
-
-    auto hintText = std::make_unique<UIText>();
-    hintText->SetRect(0.f, 70.f, 500.f, 18.f);
-    hintText->SetFontSize(12);
-    hintText->SetTextGetter([]() {
-        return std::wstring(L"F2:Chunk  F3:Block  F4:Stress  F5:Pick  |  Ctrl+S:저장  Ctrl+L:로드  Del:삭제");
-    });
-    hud->AddUIComponent(std::move(hintText));
-
-    scene->Add(std::move(hud));
-}
-
 void EditorApp::CreateCamera()
 {
     Scene* scene = _scene.get();
@@ -205,30 +163,6 @@ void EditorApp::Update()
             _detailWindow->RefreshEntityList();
         }
     }
-
-    static bool prevF2 = false;
-    const  bool curF2  = (::GetAsyncKeyState(VK_F2) & 0x8000) != 0;
-    if (curF2 && !prevF2 && _chunkDebugWindow)
-        _chunkDebugWindow->Toggle();
-    prevF2 = curF2;
-
-    static bool prevF3 = false;
-    const  bool curF3  = (::GetAsyncKeyState(VK_F3) & 0x8000) != 0;
-    if (curF3 && !prevF3 && _blockTestPanel)
-        _blockTestPanel->Toggle();
-    prevF3 = curF3;
-
-    static bool prevF4 = false;
-    const  bool curF4  = (::GetAsyncKeyState(VK_F4) & 0x8000) != 0;
-    if (curF4 && !prevF4 && _stressPanel)
-        _stressPanel->Toggle();
-    prevF4 = curF4;
-
-    static bool prevF5 = false;
-    const  bool curF5  = (::GetAsyncKeyState(VK_F5) & 0x8000) != 0;
-    if (curF5 && !prevF5 && _pickDebugPanel)
-        _pickDebugPanel->Toggle();
-    prevF5 = curF5;
 
     if (_chunkDebugWindow && _chunkDebugWindow->IsVisible())
     {
@@ -276,15 +210,6 @@ void EditorApp::Update()
         if (_detailWindow) _detailWindow->MarkDirty();
     }
 
-    if (!_saveStatusMsg.empty())
-    {
-        _saveStatusTimer += dt;
-        if (_saveStatusTimer >= kSaveStatusDuration)
-        {
-            _saveStatusMsg.clear();
-            _saveStatusTimer = 0.f;
-        }
-    }
 }
 
 void EditorApp::Render() {}
@@ -436,7 +361,5 @@ void EditorApp::FillDetailInfo(Entity* entity, DetailInfo& info)
 
 void EditorApp::SetSaveStatus(const std::wstring& msg)
 {
-    _saveStatusMsg   = msg;
-    _saveStatusTimer = 0.f;
     ::OutputDebugStringW((msg + L"\n").c_str());
 }

@@ -4,10 +4,14 @@ class IExecute;
 
 enum class AppMenuCmd : UINT
 {
-    ToggleToolWindow   = 1001,
-    ToggleItemWindow   = 1002,
-    ToggleDetailWindow = 1003,
-    Exit               = 1004,
+    ToggleChunkDebugWindow = 1001,
+    ToggleBlockTestPanel   = 1002,
+    ToggleStressPanel      = 1003,
+    TogglePickDebugPanel   = 1004,
+    ToggleToolWindow       = 1005,
+    ToggleItemWindow       = 1006,
+    ToggleDetailWindow     = 1007,
+    Exit                   = 1008,
 };
 
 struct ApplicationDesc
@@ -39,11 +43,12 @@ private:
     BOOL    InitInstance();
     void    CreateMainMenu();
     void    HandleShortcuts();
-    void    ToggleToolWindow();
-    void    ToggleItemWindow();
-    void    ToggleDetailWindow();
+    bool    ConsumeFunctionKey(int index, int vk);
+    void    ToggleWindowByCommand(AppMenuCmd cmd);
+    void    ToggleRegisteredWindow(const std::wstring& name);
 
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     ApplicationDesc _desc;
+    bool _functionKeyDown[8] = {};
 };

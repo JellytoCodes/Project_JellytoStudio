@@ -19,7 +19,6 @@ class BlockTestPanel;
 class StressPanel;
 class PickDebugPanel;
 class IsometricCameraController;
-class UIText;
 
 class EditorApp : public IExecute
 {
@@ -35,7 +34,6 @@ private:
     void RegisterActors();
     void SpawnDefaultActors();
     void CreateCamera();
-    void CreateHUD();
 
     void UpdatePicking();
     void FillDetailInfo(Entity* entity, DetailInfo& out);
@@ -57,11 +55,6 @@ private:
     Entity*                             _characterEntity  = nullptr;
     IsometricCameraController*          _isoCamCtrl       = nullptr;
     BlockPlacer*                        _stressPlacer     = nullptr;
-
-    UIText*      _saveStatusText  = nullptr;
-    std::wstring _saveStatusMsg;
-    float        _saveStatusTimer = 0.f;
-    static constexpr float kSaveStatusDuration   = 3.0f;
 
     float _chunkRefreshTimer  = 0.f;
     float _stressRefreshTimer = 0.f;

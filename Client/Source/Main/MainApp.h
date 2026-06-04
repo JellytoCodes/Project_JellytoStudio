@@ -1,7 +1,6 @@
 
 #pragma once
 #include "Core/Interfaces/IExecute.h"
-#include "UI/DebugHUD.h"
 #include "UI/InventoryData.h"
 
 class Scene;
@@ -44,8 +43,6 @@ private:
     InventoryData              _inventoryData;             
     InventoryWidget*           _inventoryWidget = nullptr;
     PickDebugPanel*            _pickDebugPanel  = nullptr;
-
-    DebugHUD                   _debugHUD;
 
     float _pickDebugRefreshTimer = 0.f;
 };

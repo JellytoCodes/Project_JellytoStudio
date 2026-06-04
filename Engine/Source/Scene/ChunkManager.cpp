@@ -5,6 +5,7 @@
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Transform.h"
 #include "Entity/Components/MeshRenderer.h"
+#include "Graphics/RenderDebugOptions.h"
 #include "Graphics/Model/ModelRenderer.h"
 
 uint64 ChunkManager::CoordKey(int32 cx, int32 cz)
@@ -168,7 +169,9 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
         if (chunk.aabbDirty)
             chunk.RebuildAABB();
 
-        if (frustum.Contains(chunk.aabb) == DirectX::DISJOINT)
+        const auto& debugOptions = RenderDebugOptions::Get();
+        if (debugOptions.bEnableFrustumCulling &&
+            frustum.Contains(chunk.aabb) == DirectX::DISJOINT)
             continue;
 
         chunk.wasVisible = true;
@@ -185,14 +188,18 @@ void ChunkManager::CollectVisible(const DirectX::BoundingFrustum& frustum, std::
                 continue;
             }
 
-            const Vec3 pos = tr->GetLocalPosition();
-            bool occluded = true;
-            for (const Vec3& off : kNeighborOffsets)
+            bool occluded = false;
+            if (debugOptions.bEnableFaceOcclusionCulling)
             {
-                if (!HasSolidBlockAt(pos + off))
+                const Vec3 pos = tr->GetLocalPosition();
+                occluded = true;
+                for (const Vec3& off : kNeighborOffsets)
                 {
-                    occluded = false;
-                    break;
+                    if (!HasSolidBlockAt(pos + off))
+                    {
+                        occluded = false;
+                        break;
+                    }
                 }
             }
 

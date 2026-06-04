@@ -6,6 +6,7 @@
 #include "Entity/Components/MeshRenderer.h"
 #include "Graphics/Model/ModelRenderer.h"
 #include "Graphics/Model/ModelAnimator.h"
+#include "Graphics/RenderDebugOptions.h"
 #include "Pipeline/Shader.h"
 #include "Pipeline/DynamicInstancePool.h"
 #include "Scene/ChunkManager.h"
@@ -127,8 +128,9 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
 
     GET_SINGLE(DynamicInstancePool)->BeginFrame();
 
+    const auto& debugOptions = RenderDebugOptions::Get();
     const bool fullModelRebuild = _bDirty;
-    const bool fullMeshRebuild = _meshDirty;
+    const bool fullMeshRebuild = _meshDirty || !debugOptions.bEnableSmartRebuild;
 
     if (fullModelRebuild)
     {
@@ -199,6 +201,7 @@ void InstancingManager::Render(std::vector<Entity*>& entities)
             InstancingBuffer& buf = GetOrCreateMeshBuffer(id);
             buf.SetData(dataVec.data(), static_cast<uint32>(dataVec.size()));
             buf.UploadData();
+            _stats.meshGroupsRebuilt++;
         }
         _meshDirty = false;
         _meshGroupDirty = false;

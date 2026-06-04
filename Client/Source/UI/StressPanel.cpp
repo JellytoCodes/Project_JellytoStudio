@@ -1,7 +1,11 @@
 ﻿#include "pch.h"
 #include "StressPanel.h"
 
+#include "Entity/Components/Camera.h"
+#include "Graphics/RenderDebugOptions.h"
 #include "Scene/ChunkManager.h"
+#include "Scene/Scene.h"
+#include "Scene/SceneManager.h"
 #include "Pipeline/DynamicInstancePool.h"
 #include "Graphics/Managers/InstancingManager.h"
 #include "Core/Managers/TimeManager.h"
@@ -22,7 +26,7 @@ bool StressPanel::Create(HINSTANCE hInstance, HWND hMainWnd)
     const int x = hMainWnd ? mainRect.right + 8   : CW_USEDEFAULT;
     const int y = hMainWnd ? mainRect.top  + 700  : CW_USEDEFAULT;
 
-    RECT wr = { 0, 0, 380, 520 };
+    RECT wr = { 0, 0, 400, 620 };
     ::AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
     _hWnd = ::CreateWindowW(CLASS_NAME, L"Jellyto Studio — Stress Test",
@@ -56,13 +60,13 @@ void StressPanel::Toggle() { _visible ? Hide() : Show(); }
 
 void StressPanel::BuildUI()
 {
-    constexpr int W  = 350;
+    constexpr int W  = 360;
     constexpr int BW = 108;
     constexpr int BH = 28;
     constexpr int LX = 10;
     constexpr int VX = 180;
     constexpr int LW = 165;
-    constexpr int VW = 175;
+    constexpr int VW = 180;
     constexpr int RH = 17;
     constexpr int RS = 21;
 
@@ -77,9 +81,9 @@ void StressPanel::BuildUI()
             WS_CHILD | WS_VISIBLE | SS_ETCHEDHORZ,
             LX, yy + RH + 1, W, 2, _hWnd, nullptr, _hInstance, nullptr);
     };
-    auto MkBtn = [&](const wchar_t* txt, int x, int yy, int w, int id)
+    auto MkBtn = [&](const wchar_t* txt, int x, int yy, int w, int id) -> HWND
     {
-        ::CreateWindowW(L"BUTTON", txt,
+        return ::CreateWindowW(L"BUTTON", txt,
             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             x, yy, w, BH, _hWnd,
             (HMENU)(INT_PTR)id, _hInstance, nullptr);
@@ -108,6 +112,18 @@ void StressPanel::BuildUI()
     MkBtn(L"Seed Random 10K", LX + BW + 4,  y, BW + 20, ID_BTN_RANDOM10K);
     y += BH + 10;
 
+    MkSep(L">  벤치마크 프리셋", y); y += RH + 6;
+    MkBtn(L"Flat 1K",    LX,          y, BW, ID_BTN_FLAT1K);
+    MkBtn(L"Dense 16^3", LX + BW + 4, y, BW + 20, ID_BTN_DENSE16);
+    y += BH + 10;
+
+    MkSep(L">  최적화 옵션", y); y += RH + 6;
+    _hBtnFrustum = MkBtn(L"", LX,           y, BW + 12, ID_BTN_FRUSTUM);
+    _hBtnFace    = MkBtn(L"", LX + BW + 16, y, BW + 12, ID_BTN_FACE);
+    y += BH + 4;
+    _hBtnSmart   = MkBtn(L"", LX, y, BW + 80, ID_BTN_SMART);
+    y += BH + 10;
+
     MkSep(L"▶  삭제", y); y += RH + 6;
     MkBtn(L"Clear All",       LX,            y, BW + 20, ID_BTN_CLEAR);
     MkBtn(L"Random 10% 삭제", LX + BW + 24,  y, BW + 20, ID_BTN_DEL10);
@@ -116,17 +132,24 @@ void StressPanel::BuildUI()
     MkSep(L"▶  현재 통계  (0.25초 갱신)", y); y += RH + 6;
 
     MkL(L"배치 블록 수",      y); MkV(_hValBlockCount,  L"—", y); y += RS;
-    MkL(L"추정 Draw Calls",   y); MkV(_hValDrawCalls,   L"—", y); y += RS;
-    MkL(L"사용 인스턴스",     y); MkV(_hValInstances,   L"—", y); y += RS;
+    MkL(L"Total Entities",    y); MkV(_hValTotalEnt,    L"—", y); y += RS;
+    MkL(L"Visible Entities",  y); MkV(_hValVisibleEnt,  L"—", y); y += RS;
+    MkL(L"Culled Entities",   y); MkV(_hValCulledEnt,   L"—", y); y += RS;
+    MkL(L"Actual Draw Calls", y); MkV(_hValDrawCalls,   L"—", y); y += RS;
+    MkL(L"Render Instances",  y); MkV(_hValRenderInst,  L"—", y); y += RS;
+    MkL(L"Pool Instances",    y); MkV(_hValInstances,   L"—", y); y += RS;
     MkL(L"Ring Buffer 슬롯",  y); MkV(_hValRingSlot,    L"—", y); y += RS;
     MkL(L"총 청크 수",        y); MkV(_hValTotalChunks, L"—", y); y += RS;
     MkL(L"가시 청크 수",      y); MkV(_hValVisChunks,   L"—", y); y += RS;
+    MkL(L"Mesh Rebuild/Skip", y); MkV(_hValMeshGroups,  L"—", y); y += RS;
     MkL(L"Frame Time (CPU)",  y); MkV(_hValFrameMs,     L"—", y); y += RS + 10;
     MkL(L"마지막 시나리오",    y); MkV(_hValScenario,    L"Idle", y); y += RS + 10;
 
     MkSep(L"▶  덤프", y); y += RH + 6;
     MkBtn(L"통계 덤프", LX, y, BW + 20, ID_BTN_DUMP);
     MkBtn(L"CSV 기록",  LX + BW + 24, y, BW + 20, ID_BTN_EXPORT);
+
+    RefreshOptionButtons();
 }
 
 std::vector<int32> StressPanel::CollectValidTypes() const
@@ -139,6 +162,22 @@ std::vector<int32> StressPanel::CollectValidTypes() const
     for (const BlockRecord& rec : records)
         if (!rec.key.empty() && !rec.isEraser)
             validTypes.push_back(rec.typeId);
+
+    return validTypes;
+}
+
+std::vector<int32> StressPanel::CollectValidMeshTypes() const
+{
+    std::vector<int32> validTypes;
+    if (!GET_SINGLE(BlockTable)->IsLoaded()) return validTypes;
+
+    const auto& records = GET_SINGLE(BlockTable)->GetAllRecords();
+    validTypes.reserve(records.size());
+    for (const BlockRecord& rec : records)
+    {
+        if (!rec.key.empty() && !rec.isEraser && rec.renderType == BlockRenderType::Mesh)
+            validTypes.push_back(rec.typeId);
+    }
 
     return validTypes;
 }
@@ -162,6 +201,62 @@ void StressPanel::SpawnBlocks(int count)
     }
 
     _lastScenario = L"Append Random +" + std::to_wstring(count);
+    RefreshStats();
+}
+
+void StressPanel::SpawnFlatPreset(int count)
+{
+    if (!_placer) return;
+    const auto validTypes = CollectValidMeshTypes();
+    if (validTypes.empty()) return;
+
+    _placer->ClearAllBlocks();
+
+    const int side = static_cast<int>(std::ceil(std::sqrt(static_cast<float>(count))));
+    const float origin = -static_cast<float>(side - 1) * 0.5f;
+
+    for (int i = 0; i < count; ++i)
+    {
+        const int ix = i % side;
+        const int iz = i / side;
+        const float x = origin + static_cast<float>(ix);
+        const float z = origin + static_cast<float>(iz);
+        const int32 type = validTypes[static_cast<size_t>(i) % validTypes.size()];
+        _placer->PlaceBlock(x, 0.f, z, type);
+    }
+
+    _lastScenario = L"Flat " + std::to_wstring(count);
+    RefreshStats();
+}
+
+void StressPanel::SpawnDenseCubePreset(int side)
+{
+    if (!_placer) return;
+    const auto validTypes = CollectValidMeshTypes();
+    if (validTypes.empty()) return;
+
+    _placer->ClearAllBlocks();
+
+    const float origin = -static_cast<float>(side - 1) * 0.5f;
+    int index = 0;
+
+    for (int y = 0; y < side; ++y)
+    {
+        for (int z = 0; z < side; ++z)
+        {
+            for (int x = 0; x < side; ++x)
+            {
+                const int32 type = validTypes[static_cast<size_t>(index) % validTypes.size()];
+                _placer->PlaceBlock(origin + static_cast<float>(x),
+                                    static_cast<float>(y),
+                                    origin + static_cast<float>(z),
+                                    type);
+                ++index;
+            }
+        }
+    }
+
+    _lastScenario = L"Dense " + std::to_wstring(side) + L"^3";
     RefreshStats();
 }
 
@@ -235,6 +330,47 @@ void StressPanel::DeleteRandom10Pct()
     RefreshStats();
 }
 
+void StressPanel::MarkBenchmarkDirty()
+{
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Camera* camera = scene->GetMainCamera())
+            camera->SetSortDirty();
+    }
+
+    auto* instancing = GET_SINGLE(InstancingManager);
+    instancing->SetMeshDirty();
+    instancing->SetMeshGroupDirty();
+    instancing->SetDirty();
+}
+
+void StressPanel::ToggleFrustumCulling()
+{
+    auto& options = RenderDebugOptions::Get();
+    options.bEnableFrustumCulling = !options.bEnableFrustumCulling;
+    MarkBenchmarkDirty();
+    RefreshOptionButtons();
+    RefreshStats();
+}
+
+void StressPanel::ToggleFaceOcclusionCulling()
+{
+    auto& options = RenderDebugOptions::Get();
+    options.bEnableFaceOcclusionCulling = !options.bEnableFaceOcclusionCulling;
+    MarkBenchmarkDirty();
+    RefreshOptionButtons();
+    RefreshStats();
+}
+
+void StressPanel::ToggleSmartRebuild()
+{
+    auto& options = RenderDebugOptions::Get();
+    options.bEnableSmartRebuild = !options.bEnableSmartRebuild;
+    MarkBenchmarkDirty();
+    RefreshOptionButtons();
+    RefreshStats();
+}
+
 void StressPanel::DumpToLog()
 {
     if (!_placer) return;
@@ -247,6 +383,12 @@ void StressPanel::DumpToLog()
     ChunkManager*       cm   = GET_SINGLE(ChunkManager);
     DynamicInstancePool* pool = GET_SINGLE(DynamicInstancePool);
     const RenderStats&   rs   = GET_SINGLE(InstancingManager)->GetStats();
+    Camera::CullStats    cs   = {};
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Camera* camera = scene->GetMainCamera())
+            cs = camera->GetCullStats();
+    }
 
     const int32 total   = cm->GetChunkCount();
     const int32 visible = cm->GetVisibleChunkCount();
@@ -259,8 +401,12 @@ void StressPanel::DumpToLog()
         L"[StressPanel Dump]\n"
         L"  마지막 시나리오  : %s\n"
         L"  배치 블록 수     : %d\n"
+        L"  Total Entities   : %u\n"
+        L"  Visible Entities : %u\n"
+        L"  Culled Entities  : %u\n"
         L"  실제 Draw Calls  : %u  (Mesh %u / Model %u)\n"
         L"  렌더 인스턴스    : %u\n"
+        L"  Mesh Rebuild/Skip: %u / %u\n"
         L"  고유 블록 타입   : %d\n"
         L"  사용 인스턴스    : %u / %u\n"
         L"  Ring Buffer 슬롯 : %u / %u\n"
@@ -269,8 +415,12 @@ void StressPanel::DumpToLog()
         L"  Frame Time (CPU) : %.2f ms\n",
         _lastScenario.c_str(),
         static_cast<int>(placed.size()),
+        cs.totalEntities,
+        cs.visibleEntities,
+        cs.culledEntities,
         rs.totalDrawCalls, rs.meshDrawCalls, rs.modelDrawCalls,
         rs.totalInstances,
+        rs.meshGroupsRebuilt, rs.meshGroupsSkipped,
         (int)typeSet.size(),
         pool->GetUsedInstances(), DynamicInstancePool::kMaxInstances,
         pool->GetCurrentSlot(),   DynamicInstancePool::kRingCount,
@@ -306,8 +456,16 @@ void StressPanel::ExportCsv()
     if (writeHeader)
     {
         out << "scenario,blocks,draw_calls,mesh_draw_calls,model_draw_calls,"
-            << "render_instances,pool_instances,pool_max,ring_slot,total_chunks,"
-            << "visible_chunks,cull_pct,cpu_frame_ms\n";
+            << "render_instances,total_entities,visible_entities,culled_entities,"
+            << "mesh_groups_rebuilt,mesh_groups_skipped,pool_instances,pool_max,"
+            << "ring_slot,total_chunks,visible_chunks,cull_pct,cpu_frame_ms\n";
+    }
+
+    Camera::CullStats cs = {};
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Camera* camera = scene->GetMainCamera())
+            cs = camera->GetCullStats();
     }
 
     std::string scenario;
@@ -320,6 +478,11 @@ void StressPanel::ExportCsv()
         << rs.meshDrawCalls << ','
         << rs.modelDrawCalls << ','
         << rs.totalInstances << ','
+        << cs.totalEntities << ','
+        << cs.visibleEntities << ','
+        << cs.culledEntities << ','
+        << rs.meshGroupsRebuilt << ','
+        << rs.meshGroupsSkipped << ','
         << pool->GetUsedInstances() << ','
         << DynamicInstancePool::kMaxInstances << ','
         << pool->GetCurrentSlot() << ','
@@ -351,25 +514,35 @@ void StressPanel::RefreshStats()
         return s;
     };
 
-    int32 blockCount  = 0;
-    int32 drawCallEst = 0;
+    int32 blockCount = 0;
 
     if (_placer)
     {
         const auto& placed = _placer->GetPlacedBlocks();
         blockCount = static_cast<int32>(placed.size());
-
-        std::unordered_set<int32> typeSet;
-        for (const auto& rec : placed) typeSet.insert(rec.type);
-        drawCallEst = static_cast<int32>(typeSet.size());
     }
 
     SetW(_hValBlockCount, FmtInt(blockCount) + L" 개");
     const RenderStats& rs = GET_SINGLE(InstancingManager)->GetStats();
+    Camera::CullStats cs = {};
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Camera* camera = scene->GetMainCamera())
+            cs = camera->GetCullStats();
+    }
+
+    SetW(_hValTotalEnt,   FmtInt(static_cast<int32>(cs.totalEntities)));
+    SetW(_hValVisibleEnt, FmtInt(static_cast<int32>(cs.visibleEntities)));
+    SetW(_hValCulledEnt,  FmtInt(static_cast<int32>(cs.culledEntities)));
+
     SetW(_hValDrawCalls,
         FmtInt(static_cast<int32>(rs.totalDrawCalls))
         + L" 회  (Mesh " + FmtInt(static_cast<int32>(rs.meshDrawCalls))
         + L" / Model " + FmtInt(static_cast<int32>(rs.modelDrawCalls)) + L")");
+    SetW(_hValRenderInst, FmtInt(static_cast<int32>(rs.totalInstances)));
+    SetW(_hValMeshGroups,
+        FmtInt(static_cast<int32>(rs.meshGroupsRebuilt))
+        + L" / " + FmtInt(static_cast<int32>(rs.meshGroupsSkipped)));
 
     DynamicInstancePool* pool = GET_SINGLE(DynamicInstancePool);
     if (pool->IsReady())
@@ -401,6 +574,20 @@ void StressPanel::RefreshStats()
     SetW(_hValFrameMs, msBuf);
 
     SetW(_hValScenario, _lastScenario);
+    RefreshOptionButtons();
+}
+
+void StressPanel::RefreshOptionButtons()
+{
+    auto SetW = [](HWND h, const std::wstring& s)
+    {
+        if (h) ::SetWindowTextW(h, s.c_str());
+    };
+
+    const auto& options = RenderDebugOptions::Get();
+    SetW(_hBtnFrustum, std::wstring(L"Frustum ") + (options.bEnableFrustumCulling ? L"ON" : L"OFF"));
+    SetW(_hBtnFace,    std::wstring(L"Face ")    + (options.bEnableFaceOcclusionCulling ? L"ON" : L"OFF"));
+    SetW(_hBtnSmart,   std::wstring(L"SmartRebuild ") + (options.bEnableSmartRebuild ? L"ON" : L"OFF"));
 }
 
 void StressPanel::RegisterWindowClass(HINSTANCE hInstance)
@@ -445,6 +632,8 @@ LRESULT CALLBACK StressPanel::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
             case ID_BTN_SPAWN10K:  self->SpawnBlocks(10000);   return 0;
             case ID_BTN_GRID10K:   self->SpawnGridPreset(10000); return 0;
             case ID_BTN_RANDOM10K: self->SpawnRandomPreset(10000); return 0;
+            case ID_BTN_FLAT1K:    self->SpawnFlatPreset(1000); return 0;
+            case ID_BTN_DENSE16:   self->SpawnDenseCubePreset(16); return 0;
             case ID_BTN_CLEAR:
                 if (self->_placer)
                 {
@@ -456,6 +645,9 @@ LRESULT CALLBACK StressPanel::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
             case ID_BTN_DEL10:     self->DeleteRandom10Pct();  return 0;
             case ID_BTN_DUMP:      self->DumpToLog();          return 0;
             case ID_BTN_EXPORT:    self->ExportCsv();          return 0;
+            case ID_BTN_FRUSTUM:   self->ToggleFrustumCulling(); return 0;
+            case ID_BTN_FACE:      self->ToggleFaceOcclusionCulling(); return 0;
+            case ID_BTN_SMART:     self->ToggleSmartRebuild(); return 0;
             }
             break;
         }

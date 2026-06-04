@@ -142,7 +142,7 @@ void BlockTestPanel::BuildUI()
             LX, yy + RH + 1, W, 2, _hWnd, nullptr, _hInstance, nullptr);
     };
 
-    MkSep(L"▶  Block List  (F3 토글)", y); y += RH + 6;
+    MkSep(L"▶  Block List", y); y += RH + 6;
 
     _hCountLabel = MkL(L"전체 0개", y); y += RS;
 
