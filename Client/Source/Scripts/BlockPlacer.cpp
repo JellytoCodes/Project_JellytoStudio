@@ -15,6 +15,7 @@
 #include "Scene/SceneManager.h"
 #include "Scene/SceneSerializer.h"
 #include "Scene/ChunkManager.h"
+#include "App/Managers/WindowManager.h"
 #include "Resource/Managers/ResourceManager.h"
 #include "Resource/Mesh.h"
 #include "Graphics/Model/Model.h"
@@ -84,6 +85,15 @@ void BlockPlacer::Update()
 		SceneSerializer::Load(GET_SINGLE(SceneManager)->GetCurrentScene(), _savePath, this);
 
 	const SlotType st = _palette ? _palette->GetSelectedSlotType() : SlotType::Priming1;
+	const POINT mousePos = input->GetMousePos();
+	if (GET_SINGLE(WindowManager)->IsMouseOverUI(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)))
+	{
+		FramePickResult uiPick;
+		uiPick.mousePos = mousePos;
+		UpdatePickDebug(uiPick, st);
+		HidePreview();
+		return;
+	}
 
 	if (!_placingMode)
 	{

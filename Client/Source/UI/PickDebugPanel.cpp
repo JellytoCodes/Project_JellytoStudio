@@ -2,10 +2,14 @@
 #include "PickDebugPanel.h"
 
 #include "Scripts/BlockPlacer.h"
+#include "UI/UIManager.h"
 
 bool PickDebugPanel::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
     if (_created) return true;
+    _created = true;
+    return true;
+
     _hInstance = hInstance;
 
     RegisterWindowClass(hInstance);
@@ -32,6 +36,9 @@ bool PickDebugPanel::Create(HINSTANCE hInstance, HWND hMainWnd)
 
 void PickDebugPanel::Show()
 {
+    _visible = true;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_SHOW);
     ::SetForegroundWindow(_hWnd);
@@ -40,6 +47,9 @@ void PickDebugPanel::Show()
 
 void PickDebugPanel::Hide()
 {
+    _visible = false;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_HIDE);
     _visible = false;
@@ -48,6 +58,74 @@ void PickDebugPanel::Hide()
 void PickDebugPanel::Toggle()
 {
     _visible ? Hide() : Show();
+}
+
+bool PickDebugPanel::HitTest(float x, float y) const
+{
+    if (!_visible) return false;
+    const float panelX = 14.f;
+    const float panelY = 576.f;
+    const float panelW = 520.f;
+    const float panelH = 250.f;
+    return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
+}
+
+void PickDebugPanel::DrawUI()
+{
+    if (!_visible) return;
+
+    auto* ui = GET_SINGLE(UIManager);
+    const float x = 14.f;
+    const float y = 576.f;
+    const float w = 520.f;
+    const float h = 250.f;
+    float rowY = y + 44.f;
+
+    ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
+    ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
+    ui->AddText(L"Pick / Collision", x + 14.f, y + 10.f, 180.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+
+    auto Row = [&](const std::wstring& label, const std::wstring& value)
+    {
+        ui->AddText(label, x + 18.f, rowY, 105.f, 18.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12);
+        ui->AddText(value.empty() ? L"-" : value, x + 128.f, rowY, w - 146.f, 18.f, Color(0.94f, 0.96f, 1.f, 1.f), 12);
+        rowY += 20.f;
+    };
+
+    if (!_placer)
+    {
+        Row(L"Mode", L"No BlockPlacer");
+        return;
+    }
+
+    auto VecStr = [](const Vec3& v)
+    {
+        wchar_t buf[96];
+        swprintf_s(buf, L"%.2f, %.2f, %.2f", v.x, v.y, v.z);
+        return std::wstring(buf);
+    };
+    auto HitStr = [](const BlockPlacer::PickDebugInfo::HitInfo& hit)
+    {
+        if (!hit.valid) return std::wstring(L"No Hit");
+        wchar_t buf[256];
+        swprintf_s(buf, L"%s d=%.2f n=(%.1f,%.1f,%.1f) %s",
+            hit.entityName.c_str(), hit.dist, hit.normal.x, hit.normal.y, hit.normal.z, hit.face.c_str());
+        return std::wstring(buf);
+    };
+
+    const auto& info = _placer->GetPickDebugInfo();
+    wchar_t mouseBuf[64];
+    swprintf_s(mouseBuf, L"%ld, %ld", info.mousePos.x, info.mousePos.y);
+    Row(L"Mode", info.placingMode ? L"Placing On" : L"Placing Off");
+    Row(L"Mouse", mouseBuf);
+    Row(L"Slot", info.selectedSlot);
+    Row(L"Result", info.result);
+    Row(L"Reason", info.rejectReason);
+    Row(L"Channel", info.selectedChannel.empty() ? L"None" : info.selectedChannel);
+    Row(L"Target", info.canPlace ? VecStr(info.resolvedPos) : L"-");
+    Row(L"Priming", HitStr(info.priming));
+    Row(L"Floor", HitStr(info.floor));
+    Row(L"Mushroom", HitStr(info.mushroom));
 }
 
 void PickDebugPanel::BuildUI()

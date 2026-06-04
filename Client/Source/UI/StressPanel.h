@@ -12,10 +12,12 @@ public:
 
     virtual bool IsVisible() const override { return _visible; }
     virtual HWND GetHWnd()   const override { return nullptr; }
+    virtual bool UsesInternalUI() const override { return true; }
 
     void SetPlacer(IBlockPlacer* placer) { _placer = placer; }
-    void Update();
+    virtual void Update() override;
     virtual void DrawUI() override;
+    virtual bool HitTest(float x, float y) const override;
     void Refresh();
 
     static constexpr float kRefreshInterval = 0.25f;

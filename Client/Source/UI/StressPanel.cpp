@@ -571,6 +571,19 @@ void StressPanel::Update()
     }
 }
 
+bool StressPanel::HitTest(float x, float y) const
+{
+    if (!_visible) return false;
+
+    const float panelW = 462.f;
+    const float panelH = 646.f;
+    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - panelW - 14.f;
+    const float panelY = 42.f;
+
+    return x >= panelX && x <= panelX + panelW &&
+           y >= panelY && y <= panelY + panelH;
+}
+
 void StressPanel::DrawButton(const HudButton& button, float panelX, float panelY, bool hovered)
 {
     auto* ui = GET_SINGLE(UIManager);

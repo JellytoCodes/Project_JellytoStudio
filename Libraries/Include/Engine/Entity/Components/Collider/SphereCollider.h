@@ -15,7 +15,7 @@ public:
 	BoundingSphere& GetBoundingSphere()				{ return _boundingSphere; }
 
 	float GetRadius() const							{ return _radius; }
-	void SetRadius(float r)							{ _radius = r; }
+	void SetRadius(float r)							{ _radius = r; InvalidateBounds(); }
 
 protected:
 	virtual void UpdateBounds() override;

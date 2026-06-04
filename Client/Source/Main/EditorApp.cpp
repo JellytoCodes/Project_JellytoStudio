@@ -148,9 +148,6 @@ void EditorApp::Update()
 {
     CollisionManager::CheckCollision();
 
-    if (_stressPanel && _stressPanel->IsVisible())
-        _stressPanel->Update();
-
     UpdatePicking();
 
     const float dt    = GET_SINGLE(TimeManager)->GetDeltaTime();
@@ -223,6 +220,9 @@ void EditorApp::Render()
 void EditorApp::UpdatePicking()
 {
     Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene();
+    const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+    if (GET_SINGLE(WindowManager)->IsMouseOverUI(static_cast<float>(mp.x), static_cast<float>(mp.y)))
+        return;
 
     if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::DEL))
     {
@@ -243,7 +243,6 @@ void EditorApp::UpdatePicking()
     if (!GET_SINGLE(InputManager)->IsMainWindowActive())             return;
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
-    const POINT mp     = GET_SINGLE(InputManager)->GetMousePos();
     Entity*     picked = scene ? scene->Pick((int32)mp.x, (int32)mp.y) : nullptr;
     _pickedEntity      = picked;
 

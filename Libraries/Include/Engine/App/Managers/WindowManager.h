@@ -18,17 +18,24 @@ public:
 	{
 		auto it = _windows.find(name);
 		if (it != _windows.end())
-			it->second->Toggle();
-	}
-
-	void DrawUI()
-	{
-		for (auto& [name, window] : _windows)
 		{
-			if (window && window->IsVisible())
-				window->DrawUI();
+			it->second->Toggle();
+			if (it->second->UsesInternalUI() && it->second->IsVisible())
+			{
+				auto orderIt = std::find(_windowOrder.begin(), _windowOrder.end(), name);
+				if (orderIt != _windowOrder.end())
+					_windowOrder.erase(orderIt);
+				_windowOrder.push_back(name);
+				_activeHudName = name;
+			}
+			else if (_activeHudName == name)
+				ActivateNextVisibleHud();
 		}
 	}
+
+	void DrawUI();
+	void UpdateUI();
+	bool IsMouseOverUI(float x, float y) const;
 
 	template<typename T>
 	T* RegisterWindow(const std::wstring& name);
@@ -37,9 +44,13 @@ public:
 	T* GetWindow(const std::wstring& name);
 
 private:
+	void ActivateNextVisibleHud();
+
 	HINSTANCE _hInstance = nullptr;
 	HWND      _hMainWnd  = nullptr;
 
+	std::vector<std::wstring> _windowOrder;
+	std::wstring _activeHudName;
 	std::unordered_map<std::wstring, std::unique_ptr<IWindow>> _windows;
 };
 
@@ -55,6 +66,7 @@ T* WindowManager::RegisterWindow(const std::wstring& name)
 
 	T* raw = window.get();
 	_windows[name] = std::move(window);
+	_windowOrder.push_back(name);
 	return raw;
 }
 

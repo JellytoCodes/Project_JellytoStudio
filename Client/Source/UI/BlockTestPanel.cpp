@@ -2,6 +2,9 @@
 #include "BlockTestPanel.h"
 
 #include "Data/BlockTable.h"
+#include "Core/DisplayContext.h"
+#include "Core/Managers/InputManager.h"
+#include "UI/UIManager.h"
 
 namespace
 {
@@ -67,6 +70,9 @@ namespace
 bool BlockTestPanel::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
     if (_created) return true;
+    _created = true;
+    return true;
+
     _hInstance = hInstance;
 
     RegisterWindowClass(hInstance);
@@ -93,6 +99,9 @@ bool BlockTestPanel::Create(HINSTANCE hInstance, HWND hMainWnd)
 
 void BlockTestPanel::Show()
 {
+    _visible = true;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_SHOW);
     ::SetForegroundWindow(_hWnd);
@@ -101,12 +110,113 @@ void BlockTestPanel::Show()
 
 void BlockTestPanel::Hide()
 {
+    _visible = false;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_HIDE);
     _visible = false;
 }
 
 void BlockTestPanel::Toggle() { _visible ? Hide() : Show(); }
+
+bool BlockTestPanel::HitTest(float x, float y) const
+{
+    if (!_visible) return false;
+    const float panelW = 430.f;
+    const float panelH = 560.f;
+    const float panelX = 448.f;
+    const float panelY = 42.f;
+    return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
+}
+
+void BlockTestPanel::Update()
+{
+    if (!_visible || !GET_SINGLE(BlockTable)->IsLoaded()) return;
+    if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
+
+    const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+    const float x = 448.f;
+    const float y = 42.f;
+    const float listX = x + 14.f;
+    const float listY = y + 64.f;
+    const float rowH = 20.f;
+    if (mp.x < listX || mp.x > listX + 180.f || mp.y < listY || mp.y > listY + rowH * 16.f)
+        return;
+
+    const int row = static_cast<int>((mp.y - listY) / rowH);
+    const auto& records = GET_SINGLE(BlockTable)->GetAllRecords();
+    int visibleIndex = 0;
+    for (int i = 0; i < static_cast<int>(records.size()); ++i)
+    {
+        if (records[i].key.empty()) continue;
+        if (visibleIndex == row)
+        {
+            _selectedRecord = i;
+            return;
+        }
+        ++visibleIndex;
+    }
+}
+
+void BlockTestPanel::DrawUI()
+{
+    if (!_visible || !GET_SINGLE(BlockTable)->IsLoaded()) return;
+
+    auto* ui = GET_SINGLE(UIManager);
+    const auto& records = GET_SINGLE(BlockTable)->GetAllRecords();
+    if (_selectedRecord < 0 || _selectedRecord >= static_cast<int>(records.size()))
+        _selectedRecord = 0;
+
+    const float x = 448.f;
+    const float y = 42.f;
+    const float w = 430.f;
+    const float h = 560.f;
+    ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
+    ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
+    ui->AddText(L"Block Master", x + 14.f, y + 10.f, 180.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+
+    float rowY = y + 64.f;
+    int visibleIndex = 0;
+    for (int i = 0; i < static_cast<int>(records.size()) && visibleIndex < 16; ++i)
+    {
+        const BlockRecord& rec = records[i];
+        if (rec.key.empty()) continue;
+        const bool selected = i == _selectedRecord;
+        if (selected)
+            ui->AddRect(x + 12.f, rowY - 1.f, 185.f, 20.f, Color(0.88f, 0.62f, 0.12f, 0.92f));
+        std::wstring line = L"[" + std::to_wstring(rec.typeId) + L"] " + rec.key;
+        ui->AddText(line, x + 16.f, rowY, 176.f, 17.f,
+            selected ? Color(0.08f, 0.08f, 0.08f, 1.f) : Color(0.86f, 0.90f, 0.96f, 1.f), 11);
+        rowY += 20.f;
+        ++visibleIndex;
+    }
+
+    const BlockRecord& rec = records[_selectedRecord];
+    float dx = x + 214.f;
+    float dy = y + 64.f;
+    auto Row = [&](const std::wstring& label, const std::wstring& value)
+    {
+        ui->AddText(label, dx, dy, 90.f, 18.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12);
+        ui->AddText(value.empty() ? L"-" : value, dx + 96.f, dy, 190.f, 18.f, Color(0.94f, 0.96f, 1.f, 1.f), 12);
+        dy += 22.f;
+    };
+
+    wchar_t buf[96];
+    Row(L"ID", std::to_wstring(rec.typeId));
+    Row(L"Key", rec.key);
+    Row(L"Label", rec.label);
+    Row(L"Eraser", rec.isEraser ? L"Yes" : L"No");
+    Row(L"Render", RenderTypeStr(rec.renderType));
+    Row(L"Model", rec.modelName);
+    swprintf_s(buf, L"%.3f", rec.modelScale); Row(L"Scale", buf);
+    Row(L"Collider", ColliderStr(rec.collider));
+    Row(L"Own", ChannelStr(rec.ownChannel));
+    Row(L"Pickable", MaskStr(rec.pickableMask));
+    Row(L"Faces", FaceStr(rec.faceMask));
+    swprintf_s(buf, L"%.2f, %.2f, %.2f, %.2f", rec.color.x, rec.color.y, rec.color.z, rec.color.w);
+    Row(L"Color", buf);
+}
 
 void BlockTestPanel::BuildUI()
 {

@@ -81,6 +81,8 @@ void Application::Update()
     GET_SINGLE(InputManager)->Update();
     
 	UpdateWindowTitle();
+
+	GET_SINGLE(WindowManager)->UpdateUI();
     
 	GET_SINGLE(SceneManager)->Update();
     

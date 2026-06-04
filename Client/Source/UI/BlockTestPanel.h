@@ -10,7 +10,11 @@ public:
     virtual void Toggle() override;
 
     virtual bool IsVisible() const override { return _visible; }
-    virtual HWND GetHWnd()   const override { return _hWnd;    }
+    virtual HWND GetHWnd()   const override { return nullptr;  }
+    virtual bool UsesInternalUI() const override { return true; }
+    virtual void Update() override;
+    virtual void DrawUI() override;
+    virtual bool HitTest(float x, float y) const override;
 
     void Load();
 
@@ -26,6 +30,7 @@ private:
     HINSTANCE _hInstance = nullptr;
     bool      _visible   = false;
     bool      _created   = false;
+    int       _selectedRecord = 0;
 
     HWND _hCountLabel = nullptr;
     HWND _hList       = nullptr;

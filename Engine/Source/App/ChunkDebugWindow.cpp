@@ -4,6 +4,8 @@
 #include "Scene/ChunkManager.h"
 #include "Pipeline/DynamicInstancePool.h"
 #include "Entity/Entity.h"
+#include "Core/DisplayContext.h"
+#include "UI/UIManager.h"
 
 namespace
 {
@@ -40,6 +42,9 @@ ChunkDebugWindow::~ChunkDebugWindow()
 bool ChunkDebugWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
     if (_created) return true;
+    _created = true;
+    return true;
+
     _hInstance = hInstance;
 
     RegisterWindowClass(hInstance);
@@ -66,6 +71,9 @@ bool ChunkDebugWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 
 void ChunkDebugWindow::Show()
 {
+    _visible = true;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_SHOW);
     ::SetForegroundWindow(_hWnd);
@@ -74,12 +82,87 @@ void ChunkDebugWindow::Show()
 
 void ChunkDebugWindow::Hide()
 {
+    _visible = false;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_HIDE);
     _visible = false;
 }
 
 void ChunkDebugWindow::Toggle() { _visible ? Hide() : Show(); }
+
+bool ChunkDebugWindow::HitTest(float x, float y) const
+{
+    if (!_visible) return false;
+    const float panelW = 420.f;
+    const float panelH = 520.f;
+    const float panelX = 14.f;
+    const float panelY = 42.f;
+    return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
+}
+
+void ChunkDebugWindow::DrawUI()
+{
+    if (!_visible) return;
+
+    auto* ui = GET_SINGLE(UIManager);
+    ChunkManager* cm = GET_SINGLE(ChunkManager);
+    DynamicInstancePool* pool = GET_SINGLE(DynamicInstancePool);
+
+    const float x = 14.f;
+    const float y = 42.f;
+    const float w = 420.f;
+    const float h = 520.f;
+    float rowY = y + 46.f;
+
+    ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
+    ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
+    ui->AddText(L"Chunk / Instancing", x + 14.f, y + 10.f, 220.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+
+    auto Row = [&](const std::wstring& label, const std::wstring& value)
+    {
+        ui->AddText(label, x + 18.f, rowY, 165.f, 18.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12);
+        ui->AddText(value, x + 190.f, rowY, 210.f, 18.f, Color(0.94f, 0.96f, 1.f, 1.f), 12);
+        rowY += 21.f;
+    };
+
+    const int32 total = cm->GetChunkCount();
+    const int32 visible = cm->GetVisibleChunkCount();
+    const int32 culled = total - visible;
+    const float cullPct = total > 0 ? static_cast<float>(culled) / static_cast<float>(total) * 100.f : 0.f;
+
+    wchar_t buf[96];
+    Row(L"Total Chunks", FmtInt(total));
+    swprintf_s(buf, L"%s", FmtInt(visible).c_str()); Row(L"Visible Chunks", buf);
+    swprintf_s(buf, L"%s (%.1f%%)", FmtInt(culled).c_str(), cullPct); Row(L"Culled Chunks", buf);
+
+    rowY += 10.f;
+    if (pool->IsReady())
+    {
+        swprintf_s(buf, L"%s / %s", FmtInt(static_cast<int32>(pool->GetUsedInstances())).c_str(), FmtInt(DynamicInstancePool::kMaxInstances).c_str());
+        Row(L"Pool Instances", buf);
+        swprintf_s(buf, L"%u / %u", pool->GetCurrentSlot(), DynamicInstancePool::kRingCount);
+        Row(L"Ring Slot", buf);
+    }
+
+    rowY += 12.f;
+    ui->AddText(L"Visible Chunk Samples", x + 18.f, rowY, 220.f, 18.f, Color(0.66f, 0.74f, 0.84f, 1.f), 12);
+    rowY += 22.f;
+
+    int count = 0;
+    for (const ChunkSnapshot& s : cm->GetChunkSnapshots())
+    {
+        if (count >= 12) break;
+        swprintf_s(buf, L"(%d,%d)  ent=%d  %s  C=(%.0f,%.0f,%.0f)",
+            s.cx, s.cz, s.entityCount, s.wasVisible ? L"VIS" : L"CULL",
+            s.aabb.Center.x, s.aabb.Center.y, s.aabb.Center.z);
+        ui->AddText(buf, x + 18.f, rowY, w - 36.f, 17.f,
+            s.wasVisible ? Color(0.86f, 1.f, 0.88f, 1.f) : Color(0.70f, 0.72f, 0.78f, 1.f), 11);
+        rowY += 18.f;
+        ++count;
+    }
+}
 
 void ChunkDebugWindow::BuildUI()
 {

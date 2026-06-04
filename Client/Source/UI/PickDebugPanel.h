@@ -12,7 +12,10 @@ public:
     virtual void Toggle() override;
 
     virtual bool IsVisible() const override { return _visible; }
-    virtual HWND GetHWnd()   const override { return _hWnd;    }
+    virtual HWND GetHWnd()   const override { return nullptr;  }
+    virtual bool UsesInternalUI() const override { return true; }
+    virtual void DrawUI() override;
+    virtual bool HitTest(float x, float y) const override;
 
     void SetPlacer(BlockPlacer* placer) { _placer = placer; }
     void Refresh();

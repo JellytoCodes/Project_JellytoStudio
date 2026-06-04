@@ -12,5 +12,8 @@ public:
 
 	virtual bool IsVisible() const = 0;
 	virtual HWND GetHWnd() const = 0;
+	virtual bool UsesInternalUI() const { return false; }
+	virtual void Update() {}
 	virtual void DrawUI() {}
+	virtual bool HitTest(float x, float y) const { return false; }
 };

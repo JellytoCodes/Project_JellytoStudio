@@ -13,6 +13,8 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
+#include "Core/Managers/InputManager.h"
+#include "UI/UIManager.h"
 
 namespace
 {
@@ -72,6 +74,9 @@ namespace
 bool DetailWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 {
     if (_created) return true;
+    _created = true;
+    return true;
+
     _hInstance = hInstance;
 
     RegisterWindowClass(hInstance);
@@ -98,6 +103,10 @@ bool DetailWindow::Create(HINSTANCE hInstance, HWND hMainWnd)
 
 void DetailWindow::Show()
 {
+    RefreshEntityList();
+    _visible = true;
+    return;
+
     if (!_hWnd) return;
     RefreshEntityList();
     ::ShowWindow(_hWnd, SW_SHOW);
@@ -107,12 +116,118 @@ void DetailWindow::Show()
 
 void DetailWindow::Hide()
 {
+    _visible = false;
+    return;
+
     if (!_hWnd) return;
     ::ShowWindow(_hWnd, SW_HIDE);
     _visible = false;
 }
 
 void DetailWindow::Toggle() { _visible ? Hide() : Show(); }
+
+bool DetailWindow::HitTest(float x, float y) const
+{
+    if (!_visible) return false;
+    const float panelW = 390.f;
+    const float panelH = 700.f;
+    const float panelX = 890.f;
+    const float panelY = 42.f;
+    return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
+}
+
+void DetailWindow::Update()
+{
+    if (!_visible || !_scene) return;
+    if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
+
+    const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
+    const float x = 890.f;
+    const float y = 42.f;
+    const float listX = x + 14.f;
+    const float listY = y + 66.f;
+    const float rowH = 20.f;
+    if (mp.x < listX || mp.x > listX + 360.f || mp.y < listY || mp.y > listY + rowH * 12.f)
+        return;
+
+    _entitySnapshot.clear();
+    for (const auto& entityPtr : _scene->GetEntities())
+        if (entityPtr) _entitySnapshot.push_back(entityPtr.get());
+
+    const int idx = static_cast<int>((mp.y - listY) / rowH);
+    if (idx >= 0 && idx < static_cast<int>(_entitySnapshot.size()))
+        _selectedEntity = _entitySnapshot[idx];
+}
+
+void DetailWindow::DrawUI()
+{
+    if (!_visible) return;
+
+    auto* ui = GET_SINGLE(UIManager);
+    const float x = 890.f;
+    const float y = 42.f;
+    const float w = 390.f;
+    const float h = 700.f;
+
+    ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
+    ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
+    ui->AddText(L"Detail Inspector", x + 14.f, y + 10.f, 190.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+
+    float rowY = y + 66.f;
+    _entitySnapshot.clear();
+    if (_scene)
+    {
+        int idx = 0;
+        for (const auto& entityPtr : _scene->GetEntities())
+        {
+            if (!entityPtr || idx >= 12) continue;
+            Entity* entity = entityPtr.get();
+            _entitySnapshot.push_back(entity);
+            const bool selected = entity == _selectedEntity;
+            if (selected)
+                ui->AddRect(x + 12.f, rowY - 1.f, w - 24.f, 20.f, Color(0.88f, 0.62f, 0.12f, 0.92f));
+            ui->AddText(entity->GetEntityName(), x + 16.f, rowY, w - 32.f, 17.f,
+                selected ? Color(0.08f, 0.08f, 0.08f, 1.f) : Color(0.86f, 0.90f, 0.96f, 1.f), 11);
+            rowY += 20.f;
+            ++idx;
+        }
+    }
+
+    rowY = y + 330.f;
+    auto Row = [&](const std::wstring& label, const std::wstring& value)
+    {
+        ui->AddText(label, x + 18.f, rowY, 120.f, 18.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12);
+        ui->AddText(value.empty() ? L"-" : value, x + 142.f, rowY, w - 160.f, 18.f, Color(0.94f, 0.96f, 1.f, 1.f), 12);
+        rowY += 21.f;
+    };
+
+    if (!_selectedEntity)
+    {
+        Row(L"Selected", L"None");
+        return;
+    }
+
+    Row(L"Selected", _selectedEntity->GetEntityName());
+    if (Transform* tf = _selectedEntity->GetComponent<Transform>())
+    {
+        wchar_t buf[96];
+        const Vec3 p = tf->GetLocalPosition();
+        const Vec3 r = tf->GetLocalRotation();
+        const Vec3 s = tf->GetLocalScale();
+        swprintf_s(buf, L"%.2f, %.2f, %.2f", p.x, p.y, p.z); Row(L"Position", buf);
+        swprintf_s(buf, L"%.1f, %.1f, %.1f", XMConvertToDegrees(r.x), XMConvertToDegrees(r.y), XMConvertToDegrees(r.z)); Row(L"Rotation", buf);
+        swprintf_s(buf, L"%.2f, %.2f, %.2f", s.x, s.y, s.z); Row(L"Scale", buf);
+    }
+    Row(L"Renderer", _selectedEntity->GetComponent<MeshRenderer>() ? L"MeshRenderer" :
+        (_selectedEntity->GetComponent<ModelAnimator>() ? L"ModelAnimator" : L"-"));
+    if (BaseCollider* col = _selectedEntity->GetComponent<BaseCollider>())
+    {
+        Row(L"Collider", ColliderShapeStr(col->GetColliderType()));
+        Row(L"Own Channel", ChannelName(col->GetOwnChannel()));
+        Row(L"Pickable", MaskToChannelStr(col->GetPickableMask()));
+        Row(L"Static", col->IsStatic() ? L"Yes" : L"No");
+    }
+}
 
 void DetailWindow::BuildUI()
 {
