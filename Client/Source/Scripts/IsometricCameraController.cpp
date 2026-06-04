@@ -5,6 +5,7 @@
 #include "Core/Managers/TimeManager.h"
 
 #include "Entity/Entity.h"
+#include "Entity/Components/Camera.h"
 #include "Entity/Components/Transform.h"
 
 void IsometricCameraController::Awake()
@@ -104,6 +105,18 @@ void IsometricCameraController::ApplyTransform()
 	lookDir.Normalize();
 
 	Vec3 camPos = _pivot - lookDir * _distance;
+	Vec3 camRot(pitchRad, yawRad, 0.f);
+	const Vec3 prevPos = transform->GetLocalPosition();
+	const Vec3 prevRot = transform->GetLocalRotation();
+
 	transform->SetLocalPosition(camPos);
-	transform->SetLocalRotation(Vec3(pitchRad, yawRad, 0.f));
+	transform->SetLocalRotation(camRot);
+
+	const bool moved = (prevPos - camPos).LengthSquared() > 0.000001f;
+	const bool rotated = (prevRot - camRot).LengthSquared() > 0.000001f;
+	if ((moved || rotated) && GetEntity())
+	{
+		if (Camera* camera = GetEntity()->GetComponent<Camera>())
+			camera->SetSortDirty();
+	}
 }

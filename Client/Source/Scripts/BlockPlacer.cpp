@@ -510,6 +510,7 @@ Entity* BlockPlacer::AcquireMeshBlock(const BlockRecord& rec,
 
 	Entity* raw = entity.get();
 	scene->AddDirect(std::move(entity));
+	col->InvalidateBounds();
 	col->Update();
 	return raw;
 }
@@ -561,6 +562,7 @@ Entity* BlockPlacer::AcquireModelBlock(const BlockRecord& rec,
 
 	Entity* raw = entity.get();
 	scene->AddDirect(std::move(entity));
+	col->InvalidateBounds();
 	col->Update();
 	return raw;
 }

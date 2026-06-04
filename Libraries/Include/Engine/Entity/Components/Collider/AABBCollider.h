@@ -17,7 +17,7 @@ public:
 	BoundingBox& GetBoundingBox()					{ Update(); return _boundingBox; }
 
 	Vec3 GetBoxExtents() const						{ return _boxExtents; }
-	void SetBoxExtents(const Vec3& e)				{ _boxExtents = e; }
+	void SetBoxExtents(const Vec3& e)				{ _boxExtents = e; InvalidateBounds(); }
 
 protected:
 	virtual void UpdateBounds() override;

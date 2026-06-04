@@ -21,6 +21,15 @@ public:
 			it->second->Toggle();
 	}
 
+	void DrawUI()
+	{
+		for (auto& [name, window] : _windows)
+		{
+			if (window && window->IsVisible())
+				window->DrawUI();
+		}
+	}
+
 	template<typename T>
 	T* RegisterWindow(const std::wstring& name);
 

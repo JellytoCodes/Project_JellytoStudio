@@ -147,6 +147,10 @@ void EditorApp::CreateCamera()
 void EditorApp::Update()
 {
     CollisionManager::CheckCollision();
+
+    if (_stressPanel && _stressPanel->IsVisible())
+        _stressPanel->Update();
+
     UpdatePicking();
 
     const float dt    = GET_SINGLE(TimeManager)->GetDeltaTime();
@@ -212,7 +216,9 @@ void EditorApp::Update()
 
 }
 
-void EditorApp::Render() {}
+void EditorApp::Render()
+{
+}
 
 void EditorApp::UpdatePicking()
 {

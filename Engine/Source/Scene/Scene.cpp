@@ -7,6 +7,7 @@
 #include "Entity/Components/Collider/AABBCollider.h"
 #include "Entity/Components/Light.h"
 #include "Entity/Managers/CollisionManager.h"
+#include "App/Managers/WindowManager.h"
 #include "UI/Widget.h"
 #include "UI/UIManager.h"
 #include "Graphics/Managers/InstancingManager.h"
@@ -106,6 +107,7 @@ void Scene::Render()
     for (Widget* widget : _widgetObjects)
         widget->DrawUI();
 
+    GET_SINGLE(WindowManager)->DrawUI();
     GET_SINGLE(UIManager)->Render();
     --_iterationDepth;
     FlushPendingMutations();

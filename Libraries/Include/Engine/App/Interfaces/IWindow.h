@@ -12,4 +12,5 @@ public:
 
 	virtual bool IsVisible() const = 0;
 	virtual HWND GetHWnd() const = 0;
+	virtual void DrawUI() {}
 };

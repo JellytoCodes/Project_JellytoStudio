@@ -30,13 +30,13 @@ public:
 	ColliderType GetColliderType() const { return _colliderType; }
 
 	Vec3 GetOffsetPosition() const				{ return _offsetPosition; }
-	void SetOffsetPosition(const Vec3& pos)		{ _offsetPosition = pos; }
+	void SetOffsetPosition(const Vec3& pos)		{ _offsetPosition = pos; InvalidateBounds(); }
 
 	Vec3 GetOffsetRotation() const				{ return _offsetRotation; }
-	void SetOffsetRotation(const Vec3& rot)		{ _offsetRotation = rot; }
+	void SetOffsetRotation(const Vec3& rot)		{ _offsetRotation = rot; InvalidateBounds(); }
 
 	Vec3 GetOffsetScale() const					{ return _offsetScale; }
-	void SetOffsetScale(const Vec3& scale)		{ _offsetScale = scale; }
+	void SetOffsetScale(const Vec3& scale)		{ _offsetScale = scale; InvalidateBounds(); }
 
 	Matrix GetColliderWorldMatrix() const		{ return _colliderWorld; }
 
