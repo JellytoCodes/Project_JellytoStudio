@@ -95,9 +95,9 @@ void ChunkDebugWindow::Toggle() { _visible ? Hide() : Show(); }
 bool ChunkDebugWindow::HitTest(float x, float y) const
 {
     if (!_visible) return false;
-    const float panelW = 420.f;
-    const float panelH = 520.f;
-    const float panelX = 14.f;
+    const float panelW = 462.f;
+    const float panelH = 646.f;
+    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - panelW - 14.f;
     const float panelY = 42.f;
     return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
 }
@@ -110,15 +110,15 @@ void ChunkDebugWindow::DrawUI()
     ChunkManager* cm = GET_SINGLE(ChunkManager);
     DynamicInstancePool* pool = GET_SINGLE(DynamicInstancePool);
 
-    const float x = 14.f;
+    const float w = 462.f;
+    const float h = 646.f;
+    const float x = GET_SINGLE(DisplayContext)->GetWidthF() - w - 14.f;
     const float y = 42.f;
-    const float w = 420.f;
-    const float h = 520.f;
-    float rowY = y + 46.f;
+    float rowY = y + 92.f;
 
     ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
     ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
-    ui->AddText(L"Chunk / Instancing", x + 14.f, y + 10.f, 220.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+    ui->AddText(L"Chunk / Instancing", x + 14.f, y + 66.f, 220.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
 
     auto Row = [&](const std::wstring& label, const std::wstring& value)
     {

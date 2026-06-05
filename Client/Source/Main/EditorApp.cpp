@@ -71,6 +71,7 @@ void EditorApp::Init()
 
     if (_blockTestPanel) _blockTestPanel->Load();
     if (_stressPanel && _stressPlacer) _stressPanel->SetPlacer(_stressPlacer);
+    if (_stressPanel && _isoCamCtrl)   _stressPanel->SetCameraController(_isoCamCtrl);
     if (_pickDebugPanel && _stressPlacer) _pickDebugPanel->SetPlacer(_stressPlacer);
 
     RegisterActors();

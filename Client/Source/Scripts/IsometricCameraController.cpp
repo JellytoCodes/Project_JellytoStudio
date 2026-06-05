@@ -30,6 +30,19 @@ void IsometricCameraController::OnDestroy()
 	
 }
 
+void IsometricCameraController::SetBenchmarkView(const Vec3& pivot, float distance, float yawDeg)
+{
+	ClearTarget();
+	_pivot = pivot;
+	_targetPivot = pivot;
+	_distance = std::clamp(distance, _minDist, _maxDist);
+	_targetDistance = _distance;
+	_yawDeg = yawDeg;
+	if (_yawDeg >= 360.f) _yawDeg -= 360.f;
+	if (_yawDeg <    0.f) _yawDeg += 360.f;
+	ApplyTransform();
+}
+
 void IsometricCameraController::Update()
 {
 	const float dt = GET_SINGLE(TimeManager)->GetDeltaTime();

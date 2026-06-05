@@ -63,6 +63,8 @@ public:
     void SelectEntity(Entity* entity);
 
 private:
+    void RebuildEntitySnapshot();
+    void ClampScrollOffset();
     void BuildUI();
 
     void OnEntityListClicked();
@@ -84,6 +86,7 @@ private:
     Scene*              _scene          = nullptr;
     Entity*             _selectedEntity = nullptr;
     std::vector<Entity*> _entitySnapshot;
+    int                 _scrollOffset   = 0;
 
     HWND _hSceneName    = nullptr;
 

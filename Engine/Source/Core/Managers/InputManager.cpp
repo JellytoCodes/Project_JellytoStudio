@@ -10,6 +10,9 @@ void InputManager::Init(HWND hwnd)
 
 void InputManager::Update()
 {
+	_mouseWheelDelta = _pendingMouseWheelDelta;
+	_pendingMouseWheelDelta = 0;
+
 	HWND activeHwnd = ::GetActiveWindow();
 
 	bool isAllowed = (activeHwnd == _hwnd);
@@ -23,6 +26,7 @@ void InputManager::Update()
 	{
 		for (uint32 key = 0; key < KEY_TYPE_COUNT; key++)
 			_states[key] = KEY_STATE::NONE;
+		_mouseWheelDelta = 0;
 		return;
 	}
 

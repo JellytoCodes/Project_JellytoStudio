@@ -123,9 +123,9 @@ void BlockTestPanel::Toggle() { _visible ? Hide() : Show(); }
 bool BlockTestPanel::HitTest(float x, float y) const
 {
     if (!_visible) return false;
-    const float panelW = 430.f;
-    const float panelH = 560.f;
-    const float panelX = 448.f;
+    const float panelW = 462.f;
+    const float panelH = 646.f;
+    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - panelW - 14.f;
     const float panelY = 42.f;
     return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
 }
@@ -136,10 +136,11 @@ void BlockTestPanel::Update()
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
     const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
-    const float x = 448.f;
+    const float w = 462.f;
+    const float x = GET_SINGLE(DisplayContext)->GetWidthF() - w - 14.f;
     const float y = 42.f;
     const float listX = x + 14.f;
-    const float listY = y + 64.f;
+    const float listY = y + 110.f;
     const float rowH = 20.f;
     if (mp.x < listX || mp.x > listX + 180.f || mp.y < listY || mp.y > listY + rowH * 16.f)
         return;
@@ -168,15 +169,15 @@ void BlockTestPanel::DrawUI()
     if (_selectedRecord < 0 || _selectedRecord >= static_cast<int>(records.size()))
         _selectedRecord = 0;
 
-    const float x = 448.f;
+    const float w = 462.f;
+    const float x = GET_SINGLE(DisplayContext)->GetWidthF() - w - 14.f;
     const float y = 42.f;
-    const float w = 430.f;
-    const float h = 560.f;
+    const float h = 646.f;
     ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
     ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
-    ui->AddText(L"Block Master", x + 14.f, y + 10.f, 180.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+    ui->AddText(L"Block Master", x + 14.f, y + 66.f, 180.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
 
-    float rowY = y + 64.f;
+    float rowY = y + 110.f;
     int visibleIndex = 0;
     for (int i = 0; i < static_cast<int>(records.size()) && visibleIndex < 16; ++i)
     {
@@ -194,7 +195,7 @@ void BlockTestPanel::DrawUI()
 
     const BlockRecord& rec = records[_selectedRecord];
     float dx = x + 214.f;
-    float dy = y + 64.f;
+    float dy = y + 110.f;
     auto Row = [&](const std::wstring& label, const std::wstring& value)
     {
         ui->AddText(label, dx, dy, 90.f, 18.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12);

@@ -23,6 +23,7 @@ public:
 	void  SetMaxDistance(float distance)	{ _maxDist    = distance; }
 	void  SetDistance(float distance)		{ _distance   = distance; }
 	void  SetPivot(Vec3 pivot)				{ _pivot      = pivot; }
+	void  SetBenchmarkView(const Vec3& pivot, float distance, float yawDeg);
 
 	float GetDistance()  const				{ return _distance; }
 	float GetYawDegree() const				{ return _yawDeg;   }

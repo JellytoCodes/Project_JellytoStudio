@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PickDebugPanel.h"
 
+#include "Core/DisplayContext.h"
 #include "Scripts/BlockPlacer.h"
 #include "UI/UIManager.h"
 
@@ -63,10 +64,10 @@ void PickDebugPanel::Toggle()
 bool PickDebugPanel::HitTest(float x, float y) const
 {
     if (!_visible) return false;
-    const float panelX = 14.f;
-    const float panelY = 576.f;
-    const float panelW = 520.f;
-    const float panelH = 250.f;
+    const float panelW = 462.f;
+    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - panelW - 14.f;
+    const float panelY = 42.f;
+    const float panelH = 646.f;
     return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
 }
 
@@ -75,15 +76,15 @@ void PickDebugPanel::DrawUI()
     if (!_visible) return;
 
     auto* ui = GET_SINGLE(UIManager);
-    const float x = 14.f;
-    const float y = 576.f;
-    const float w = 520.f;
-    const float h = 250.f;
-    float rowY = y + 44.f;
+    const float w = 462.f;
+    const float h = 646.f;
+    const float x = GET_SINGLE(DisplayContext)->GetWidthF() - w - 14.f;
+    const float y = 42.f;
+    float rowY = y + 92.f;
 
     ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
     ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
-    ui->AddText(L"Pick / Collision", x + 14.f, y + 10.f, 180.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+    ui->AddText(L"Pick / Collision", x + 14.f, y + 66.f, 180.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
 
     auto Row = [&](const std::wstring& label, const std::wstring& value)
     {

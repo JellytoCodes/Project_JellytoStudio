@@ -13,6 +13,7 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
+#include "Core/DisplayContext.h"
 #include "Core/Managers/InputManager.h"
 #include "UI/UIManager.h"
 
@@ -126,12 +127,28 @@ void DetailWindow::Hide()
 
 void DetailWindow::Toggle() { _visible ? Hide() : Show(); }
 
+void DetailWindow::RebuildEntitySnapshot()
+{
+    _entitySnapshot.clear();
+    if (!_scene) return;
+
+    for (const auto& entityPtr : _scene->GetEntities())
+        if (entityPtr) _entitySnapshot.push_back(entityPtr.get());
+}
+
+void DetailWindow::ClampScrollOffset()
+{
+    constexpr int visibleRows = 15;
+    const int maxOffset = std::max(0, static_cast<int>(_entitySnapshot.size()) - visibleRows);
+    _scrollOffset = std::clamp(_scrollOffset, 0, maxOffset);
+}
+
 bool DetailWindow::HitTest(float x, float y) const
 {
     if (!_visible) return false;
-    const float panelW = 390.f;
-    const float panelH = 700.f;
-    const float panelX = 890.f;
+    const float panelW = 462.f;
+    const float panelH = 646.f;
+    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - panelW - 14.f;
     const float panelY = 42.f;
     return x >= panelX && x <= panelX + panelW && y >= panelY && y <= panelY + panelH;
 }
@@ -139,22 +156,49 @@ bool DetailWindow::HitTest(float x, float y) const
 void DetailWindow::Update()
 {
     if (!_visible || !_scene) return;
-    if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
 
     const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
-    const float x = 890.f;
+    const float w = 462.f;
+    const float x = GET_SINGLE(DisplayContext)->GetWidthF() - w - 14.f;
     const float y = 42.f;
     const float listX = x + 14.f;
-    const float listY = y + 66.f;
+    const float listY = y + 110.f;
     const float rowH = 20.f;
-    if (mp.x < listX || mp.x > listX + 360.f || mp.y < listY || mp.y > listY + rowH * 12.f)
+    constexpr int visibleRows = 15;
+
+    RebuildEntitySnapshot();
+    ClampScrollOffset();
+
+    const bool overList = mp.x >= listX && mp.x <= listX + w - 28.f &&
+                          mp.y >= listY && mp.y <= listY + rowH * visibleRows;
+    const bool overPanel = mp.x >= x && mp.x <= x + w &&
+                           mp.y >= y && mp.y <= y + 646.f;
+
+    if (overPanel)
+    {
+        const int wheel = GET_SINGLE(InputManager)->GetMouseWheelDelta();
+        if (wheel != 0)
+        {
+            _scrollOffset -= wheel * 3;
+            ClampScrollOffset();
+        }
+    }
+
+    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::PAGEUP))
+    {
+        _scrollOffset -= visibleRows;
+        ClampScrollOffset();
+    }
+    if (GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::PAGEDOWN))
+    {
+        _scrollOffset += visibleRows;
+        ClampScrollOffset();
+    }
+
+    if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON) || !overList)
         return;
 
-    _entitySnapshot.clear();
-    for (const auto& entityPtr : _scene->GetEntities())
-        if (entityPtr) _entitySnapshot.push_back(entityPtr.get());
-
-    const int idx = static_cast<int>((mp.y - listY) / rowH);
+    const int idx = _scrollOffset + static_cast<int>((mp.y - listY) / rowH);
     if (idx >= 0 && idx < static_cast<int>(_entitySnapshot.size()))
         _selectedEntity = _entitySnapshot[idx];
 }
@@ -164,36 +208,58 @@ void DetailWindow::DrawUI()
     if (!_visible) return;
 
     auto* ui = GET_SINGLE(UIManager);
-    const float x = 890.f;
+    const float w = 462.f;
+    const float x = GET_SINGLE(DisplayContext)->GetWidthF() - w - 14.f;
     const float y = 42.f;
-    const float w = 390.f;
-    const float h = 700.f;
+    const float h = 646.f;
 
     ui->AddRect(x, y, w, h, Color(0.055f, 0.065f, 0.080f, 0.93f));
     ui->AddRectBorder(x, y, w, h, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
-    ui->AddText(L"Detail Inspector", x + 14.f, y + 10.f, 190.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
+    ui->AddText(L"Detail Inspector", x + 14.f, y + 66.f, 190.f, 22.f, Color(0.90f, 0.94f, 1.f, 1.f), 17);
 
-    float rowY = y + 66.f;
-    _entitySnapshot.clear();
-    if (_scene)
+    RebuildEntitySnapshot();
+    ClampScrollOffset();
+
+    constexpr int visibleRows = 15;
+    constexpr float rowH = 20.f;
+    float rowY = y + 110.f;
+    const int total = static_cast<int>(_entitySnapshot.size());
+    const int first = total > 0 ? _scrollOffset + 1 : 0;
+    const int last = std::min(total, _scrollOffset + visibleRows);
+    wchar_t countBuf[96];
+    swprintf_s(countBuf, L"Entities  %d-%d / %d", first, last, total);
+    ui->AddText(countBuf, x + 240.f, y + 68.f, 200.f, 18.f, Color(0.66f, 0.74f, 0.84f, 1.f), 12);
+
+    for (int row = 0; row < visibleRows; ++row)
     {
-        int idx = 0;
-        for (const auto& entityPtr : _scene->GetEntities())
-        {
-            if (!entityPtr || idx >= 12) continue;
-            Entity* entity = entityPtr.get();
-            _entitySnapshot.push_back(entity);
-            const bool selected = entity == _selectedEntity;
-            if (selected)
-                ui->AddRect(x + 12.f, rowY - 1.f, w - 24.f, 20.f, Color(0.88f, 0.62f, 0.12f, 0.92f));
-            ui->AddText(entity->GetEntityName(), x + 16.f, rowY, w - 32.f, 17.f,
-                selected ? Color(0.08f, 0.08f, 0.08f, 1.f) : Color(0.86f, 0.90f, 0.96f, 1.f), 11);
-            rowY += 20.f;
-            ++idx;
-        }
+        const int idx = _scrollOffset + row;
+        if (idx >= total) break;
+
+        Entity* entity = _entitySnapshot[idx];
+        const bool selected = entity == _selectedEntity;
+        if (selected)
+            ui->AddRect(x + 12.f, rowY - 1.f, w - 24.f, 20.f, Color(0.88f, 0.62f, 0.12f, 0.92f));
+        ui->AddText(entity->GetEntityName(), x + 16.f, rowY, w - 32.f, 17.f,
+            selected ? Color(0.08f, 0.08f, 0.08f, 1.f) : Color(0.86f, 0.90f, 0.96f, 1.f), 11);
+        rowY += 20.f;
     }
 
-    rowY = y + 330.f;
+    const float trackX = x + w - 18.f;
+    const float trackY = y + 110.f;
+    const float trackH = rowH * visibleRows;
+    const bool scrollable = total > visibleRows;
+    const float thumbH = scrollable
+        ? std::max(28.f, trackH * static_cast<float>(visibleRows) / static_cast<float>(total))
+        : trackH;
+    const float maxOffset = static_cast<float>(std::max(1, total - visibleRows));
+    const float thumbY = scrollable
+        ? trackY + (trackH - thumbH) * static_cast<float>(_scrollOffset) / maxOffset
+        : trackY;
+    ui->AddRect(trackX, trackY, 5.f, trackH, Color(0.16f, 0.18f, 0.22f, 0.85f));
+    ui->AddRect(trackX, thumbY, 5.f, thumbH,
+        scrollable ? Color(0.72f, 0.78f, 0.88f, 0.95f) : Color(0.34f, 0.38f, 0.44f, 0.80f));
+
+    rowY = y + 430.f;
     auto Row = [&](const std::wstring& label, const std::wstring& value)
     {
         ui->AddText(label, x + 18.f, rowY, 120.f, 18.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12);

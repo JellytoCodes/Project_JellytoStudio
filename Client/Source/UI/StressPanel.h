@@ -2,6 +2,8 @@
 #include "App/Interfaces/IWindow.h"
 #include "Scene/BlockPlacerInterface.h"
 
+class IsometricCameraController;
+
 class StressPanel : public IWindow
 {
 public:
@@ -15,6 +17,7 @@ public:
     virtual bool UsesInternalUI() const override { return true; }
 
     void SetPlacer(IBlockPlacer* placer) { _placer = placer; }
+    void SetCameraController(IsometricCameraController* controller) { _cameraController = controller; }
     virtual void Update() override;
     virtual void DrawUI() override;
     virtual bool HitTest(float x, float y) const override;
@@ -43,6 +46,9 @@ private:
         ToggleSmart,
         ClearAll,
         DeleteRandom10Pct,
+        ApplyCameraPreset,
+        CaptureBaseline,
+        CaptureOptimized,
         Dump,
         ExportCsv,
     };
@@ -67,10 +73,25 @@ private:
         std::wstring value;
     };
 
+    struct MetricSnapshot
+    {
+        bool valid = false;
+        std::wstring scenario = L"-";
+        int32 blocks = 0;
+        uint32 visibleEntities = 0;
+        uint32 culledEntities = 0;
+        uint32 drawCalls = 0;
+        uint32 instances = 0;
+        uint32 meshRebuilt = 0;
+        uint32 meshSkipped = 0;
+        float cpuMs = 0.f;
+    };
+
     void BuildButtons(std::vector<HudButton>& outButtons) const;
     void ExecuteCommand(HudCommand command);
     void DrawButton(const HudButton& button, float panelX, float panelY, bool hovered);
     void DrawStatRow(const StatRow& row, float x, float y, float labelW, float valueW);
+    void DrawSnapshotComparison(float x, float y);
 
     void SpawnFrustumPreset(int count, float spacing, ActivePreset preset);
     void SpawnFacePreset(int side, ActivePreset preset);
@@ -82,6 +103,11 @@ private:
     void ToggleFrustumCulling();
     void ToggleFaceOcclusionCulling();
     void ToggleSmartRebuild();
+    void ApplyCameraPreset();
+    void CaptureBaseline();
+    void CaptureOptimized();
+    MetricSnapshot CaptureMetrics() const;
+    void ShowNotice(const std::wstring& message, bool warn = false);
     void MarkBenchmarkDirty();
     void MarkVisibilityDirty();
     void MarkSmartProbeDirty();
@@ -96,6 +122,7 @@ private:
     std::string  NarrowScenario() const;
 
     IBlockPlacer* _placer = nullptr;
+    IsometricCameraController* _cameraController = nullptr;
     bool _visible = false;
     bool _created = false;
 
@@ -107,6 +134,11 @@ private:
 
     std::vector<StatRow> _statRows;
     std::wstring _frameTimeText = L"-";
+    MetricSnapshot _baselineSnapshot;
+    MetricSnapshot _optimizedSnapshot;
+    std::wstring _noticeMessage;
+    float _noticeTimer = 0.f;
+    bool _noticeWarn = false;
 
     static constexpr float kSpawnRange = 48.f;
     static constexpr uint32 kRandomSeed = 20260522u;

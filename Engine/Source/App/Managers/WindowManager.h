@@ -19,17 +19,23 @@ public:
 		auto it = _windows.find(name);
 		if (it != _windows.end())
 		{
-			it->second->Toggle();
-			if (it->second->UsesInternalUI() && it->second->IsVisible())
+			if (it->second->UsesInternalUI())
 			{
-				auto orderIt = std::find(_windowOrder.begin(), _windowOrder.end(), name);
-				if (orderIt != _windowOrder.end())
-					_windowOrder.erase(orderIt);
-				_windowOrder.push_back(name);
+				const bool toggleGroup = name == L"StressPanel";
+				const bool closeHud = _internalHudVisible && toggleGroup;
+				_internalHudVisible = !closeHud;
+				if (closeHud)
+				{
+					ActivateNextVisibleHud();
+					return;
+				}
+
 				_activeHudName = name;
-			}
-			else if (_activeHudName == name)
 				ActivateNextVisibleHud();
+				return;
+			}
+
+			it->second->Toggle();
 		}
 	}
 
@@ -49,7 +55,7 @@ private:
 	HINSTANCE _hInstance = nullptr;
 	HWND      _hMainWnd  = nullptr;
 
-	std::vector<std::wstring> _windowOrder;
+	bool _internalHudVisible = false;
 	std::wstring _activeHudName;
 	std::unordered_map<std::wstring, std::unique_ptr<IWindow>> _windows;
 };
@@ -66,7 +72,6 @@ T* WindowManager::RegisterWindow(const std::wstring& name)
 
 	T* raw = window.get();
 	_windows[name] = std::move(window);
-	_windowOrder.push_back(name);
 	return raw;
 }
 

@@ -25,6 +25,8 @@ public:
 
 	const POINT& GetMousePos() const { return _mousePos; }
 	const POINT& GetMouseDelta() const { return _mouseDelta; }
+	int GetMouseWheelDelta() const { return _mouseWheelDelta; }
+	void AddMouseWheelDelta(int delta) { _pendingMouseWheelDelta += delta; }
 
 private:
 	inline KEY_STATE GetState(KEY_TYPE key) { return _states[static_cast<uint8>(key)]; }
@@ -34,4 +36,6 @@ private:
 	std::vector<KEY_STATE> _states;
 	POINT _mousePos = {};
 	POINT _mouseDelta = {};
+	int _mouseWheelDelta = 0;
+	int _pendingMouseWheelDelta = 0;
 };

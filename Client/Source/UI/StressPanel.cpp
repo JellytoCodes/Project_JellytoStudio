@@ -12,6 +12,7 @@
 #include "Scene/ChunkManager.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
+#include "Scripts/IsometricCameraController.h"
 #include "UI/UIManager.h"
 
 #include <filesystem>
@@ -202,14 +203,23 @@ void StressPanel::SpawnRandomPreset(int count, ActivePreset preset)
 
 void StressPanel::DeleteRandom10Pct()
 {
-    if (!_placer) return;
+    if (!_placer)
+    {
+        ShowNotice(L"Block placer is not connected.", true);
+        return;
+    }
 
     std::vector<PlacedBlockRecord> snapshot = _placer->GetPlacedBlocks();
-    if (snapshot.empty()) return;
+    if (snapshot.empty())
+    {
+        ShowNotice(L"No blocks to delete.", true);
+        return;
+    }
 
     std::mt19937 rng{ std::random_device{}() };
     std::shuffle(snapshot.begin(), snapshot.end(), rng);
 
+    const size_t beforeCount = snapshot.size();
     const int keepCount = static_cast<int>(snapshot.size() * 0.9f);
     snapshot.resize(static_cast<size_t>(keepCount));
 
@@ -220,6 +230,7 @@ void StressPanel::DeleteRandom10Pct()
     _lastScenario = L"Delete Random 10%";
     MarkBenchmarkDirty();
     RequestDeferredRefresh();
+    ShowNotice(L"Deleted " + FormatInt(static_cast<int32>(beforeCount - snapshot.size())) + L" blocks.");
 }
 
 void StressPanel::MarkBenchmarkDirty()
@@ -285,6 +296,72 @@ void StressPanel::ToggleSmartRebuild()
     RequestDeferredRefresh();
 }
 
+void StressPanel::ApplyCameraPreset()
+{
+    if (!_cameraController)
+    {
+        ShowNotice(L"Camera controller is not connected.", true);
+        return;
+    }
+
+    _cameraController->SetBenchmarkView(Vec3::Zero, 55.f, 45.f);
+
+    MarkVisibilityDirty();
+    RequestDeferredRefresh();
+    ShowNotice(L"Benchmark camera view applied.");
+}
+
+StressPanel::MetricSnapshot StressPanel::CaptureMetrics() const
+{
+    MetricSnapshot snap;
+    snap.valid = true;
+    snap.scenario = _lastScenario;
+
+    if (_placer)
+        snap.blocks = static_cast<int32>(_placer->GetPlacedBlocks().size());
+
+    const RenderStats& rs = GET_SINGLE(InstancingManager)->GetStats();
+    snap.drawCalls = rs.totalDrawCalls;
+    snap.instances = rs.totalInstances;
+    snap.meshRebuilt = rs.meshGroupsRebuilt;
+    snap.meshSkipped = rs.meshGroupsSkipped;
+
+    if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
+    {
+        if (Camera* camera = scene->GetMainCamera())
+        {
+            camera->SortEntities();
+            const Camera::CullStats& cs = camera->GetCullStats();
+            snap.visibleEntities = cs.visibleEntities;
+            snap.culledEntities = cs.culledEntities;
+        }
+    }
+
+    snap.cpuMs = GET_SINGLE(TimeManager)->GetDeltaTime() * 1000.f;
+    return snap;
+}
+
+void StressPanel::CaptureBaseline()
+{
+    RefreshStats();
+    _baselineSnapshot = CaptureMetrics();
+    ShowNotice(L"Baseline snapshot captured.");
+}
+
+void StressPanel::CaptureOptimized()
+{
+    RefreshStats();
+    _optimizedSnapshot = CaptureMetrics();
+    ShowNotice(L"Optimized snapshot captured.");
+}
+
+void StressPanel::ShowNotice(const std::wstring& message, bool warn)
+{
+    _noticeMessage = message;
+    _noticeWarn = warn;
+    _noticeTimer = 2.2f;
+}
+
 void StressPanel::SetActivePreset(ActivePreset preset)
 {
     _activePreset = preset;
@@ -310,11 +387,16 @@ void StressPanel::DumpToLog()
     text += L"  Frame Time (CPU) : " + _frameTimeText + L"\n";
 
     ::OutputDebugStringW(text.c_str());
+    ShowNotice(L"Metrics dumped to Output window.");
 }
 
 void StressPanel::ExportCsv()
 {
-    if (!_placer) return;
+    if (!_placer)
+    {
+        ShowNotice(L"Block placer is not connected.", true);
+        return;
+    }
     RefreshStats();
 
     const auto& placed = _placer->GetPlacedBlocks();
@@ -344,7 +426,11 @@ void StressPanel::ExportCsv()
     const bool writeHeader = !std::filesystem::exists(file);
 
     std::ofstream out(file, std::ios::app);
-    if (!out.is_open()) return;
+    if (!out.is_open())
+    {
+        ShowNotice(L"CSV export failed.", true);
+        return;
+    }
 
     if (writeHeader)
     {
@@ -376,6 +462,7 @@ void StressPanel::ExportCsv()
         << '\n';
 
     ::OutputDebugStringW(L"[StressPanel] CSV exported: ../StressReports/stress_metrics.csv\n");
+    ShowNotice(L"CSV exported to StressReports.");
 }
 
 void StressPanel::Refresh()
@@ -468,7 +555,7 @@ void StressPanel::BuildButtons(std::vector<HudButton>& outButtons) const
 {
     const auto& options = RenderDebugOptions::Get();
     constexpr float x0 = 14.f;
-    constexpr float y0 = 54.f;
+    constexpr float y0 = 114.f;
     constexpr float bw = 104.f;
     constexpr float bh = 26.f;
     constexpr float gap = 8.f;
@@ -502,10 +589,15 @@ void StressPanel::BuildButtons(std::vector<HudButton>& outButtons) const
         false, options.bEnableSmartRebuild, false });
 
     const float actionY = optY + bh + 12.f;
-    outButtons.push_back({ HudCommand::ClearAll, ActivePreset::None, L"Clear", x0, actionY, bw, bh, false, false, true });
-    outButtons.push_back({ HudCommand::DeleteRandom10Pct, ActivePreset::None, L"Delete 10%", x0 + bw + gap, actionY, bw, bh, false, false, true });
-    outButtons.push_back({ HudCommand::Dump, ActivePreset::None, L"Dump", x0 + 2.f * (bw + gap), actionY, bw, bh, false, false, false });
-    outButtons.push_back({ HudCommand::ExportCsv, ActivePreset::None, L"CSV", x0 + 3.f * (bw + gap), actionY, 64.f, bh, false, false, false });
+    outButtons.push_back({ HudCommand::ClearAll, ActivePreset::None, L"Clear", x0, actionY, 74.f, bh, false, false, true });
+    outButtons.push_back({ HudCommand::DeleteRandom10Pct, ActivePreset::None, L"Del 10%", x0 + 82.f, actionY, 78.f, bh, false, false, true });
+    outButtons.push_back({ HudCommand::ApplyCameraPreset, ActivePreset::None, L"Camera", x0 + 168.f, actionY, 78.f, bh, false, false, false });
+    outButtons.push_back({ HudCommand::Dump, ActivePreset::None, L"Dump", x0 + 254.f, actionY, 62.f, bh, false, false, false });
+    outButtons.push_back({ HudCommand::ExportCsv, ActivePreset::None, L"CSV", x0 + 324.f, actionY, 54.f, bh, false, false, false });
+
+    const float snapY = actionY + bh + 10.f;
+    outButtons.push_back({ HudCommand::CaptureBaseline, ActivePreset::None, L"Baseline", x0, snapY, 104.f, bh, false, false, false });
+    outButtons.push_back({ HudCommand::CaptureOptimized, ActivePreset::None, L"Optimized", x0 + bw + gap, snapY, 104.f, bh, false, false, false });
 }
 
 void StressPanel::ExecuteCommand(HudCommand command)
@@ -527,6 +619,9 @@ void StressPanel::ExecuteCommand(HudCommand command)
     case HudCommand::ToggleFrustum: ToggleFrustumCulling(); return;
     case HudCommand::ToggleFace:    ToggleFaceOcclusionCulling(); return;
     case HudCommand::ToggleSmart:   ToggleSmartRebuild(); return;
+    case HudCommand::ApplyCameraPreset: ApplyCameraPreset(); return;
+    case HudCommand::CaptureBaseline: CaptureBaseline(); return;
+    case HudCommand::CaptureOptimized: CaptureOptimized(); return;
     case HudCommand::ClearAll:
         if (_placer)
         {
@@ -535,6 +630,11 @@ void StressPanel::ExecuteCommand(HudCommand command)
             _lastScenario = L"Clear All";
             MarkBenchmarkDirty();
             RequestDeferredRefresh();
+            ShowNotice(L"All blocks cleared.");
+        }
+        else
+        {
+            ShowNotice(L"Block placer is not connected.", true);
         }
         return;
     case HudCommand::DeleteRandom10Pct: DeleteRandom10Pct(); return;
@@ -548,13 +648,16 @@ void StressPanel::Update()
     if (!_visible) return;
     if (!GET_SINGLE(InputManager)->IsMainWindowActive()) return;
 
+    if (_noticeTimer > 0.f)
+        _noticeTimer = std::max(0.f, _noticeTimer - GET_SINGLE(TimeManager)->GetDeltaTime());
+
     std::vector<HudButton> buttons;
     BuildButtons(buttons);
 
     const POINT mp = GET_SINGLE(InputManager)->GetMousePos();
     const float mx = static_cast<float>(mp.x);
     const float my = static_cast<float>(mp.y);
-    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - 474.f;
+    const float panelX = GET_SINGLE(DisplayContext)->GetWidthF() - 476.f;
     const float panelY = 42.f;
 
     if (!GET_SINGLE(InputManager)->GetButtonDown(KEY_TYPE::LBUTTON)) return;
@@ -647,6 +750,47 @@ void StressPanel::DrawStatRow(const StatRow& row, float x, float y, float labelW
     ui->AddText(row.value, x + labelW, y, valueW, 17.f, Color(0.94f, 0.96f, 1.f, 1.f), 12, L"Arial");
 }
 
+void StressPanel::DrawSnapshotComparison(float x, float y)
+{
+    auto* ui = GET_SINGLE(UIManager);
+    ui->AddText(L"Snapshot Compare", x, y, 160.f, 18.f, Color(0.66f, 0.74f, 0.84f, 1.f), 12, L"Arial");
+    y += 20.f;
+
+    if (!_baselineSnapshot.valid || !_optimizedSnapshot.valid)
+    {
+        ui->AddText(L"Capture Baseline and Optimized to compare.", x, y, 360.f, 18.f,
+            Color(0.58f, 0.64f, 0.72f, 1.f), 11, L"Arial");
+        return;
+    }
+
+    auto Row = [&](const std::wstring& label, const std::wstring& a, const std::wstring& b)
+    {
+        ui->AddText(label, x, y, 92.f, 16.f, Color(0.64f, 0.70f, 0.78f, 1.f), 11, L"Arial");
+        ui->AddText(a, x + 96.f, y, 100.f, 16.f, Color(0.92f, 0.95f, 1.f, 1.f), 11, L"Arial");
+        ui->AddText(b, x + 202.f, y, 100.f, 16.f, Color(0.95f, 1.f, 0.88f, 1.f), 11, L"Arial");
+        y += 17.f;
+    };
+
+    wchar_t a[48];
+    wchar_t b[48];
+    Row(L"Mode", L"Baseline", L"Optimized");
+    swprintf_s(a, L"%d", _baselineSnapshot.blocks);
+    swprintf_s(b, L"%d", _optimizedSnapshot.blocks);
+    Row(L"Blocks", a, b);
+    swprintf_s(a, L"%u", _baselineSnapshot.visibleEntities);
+    swprintf_s(b, L"%u", _optimizedSnapshot.visibleEntities);
+    Row(L"Visible", a, b);
+    swprintf_s(a, L"%u", _baselineSnapshot.drawCalls);
+    swprintf_s(b, L"%u", _optimizedSnapshot.drawCalls);
+    Row(L"DrawCalls", a, b);
+    swprintf_s(a, L"%u", _baselineSnapshot.instances);
+    swprintf_s(b, L"%u", _optimizedSnapshot.instances);
+    Row(L"Instances", a, b);
+    swprintf_s(a, L"%.2f ms", _baselineSnapshot.cpuMs);
+    swprintf_s(b, L"%.2f ms", _optimizedSnapshot.cpuMs);
+    Row(L"CPU", a, b);
+}
+
 void StressPanel::DrawUI()
 {
     if (!_visible) return;
@@ -662,10 +806,8 @@ void StressPanel::DrawUI()
 
     ui->AddRect(panelX, panelY, panelW, panelH, Color(0.055f, 0.065f, 0.080f, 0.93f));
     ui->AddRectBorder(panelX, panelY, panelW, panelH, Color(0.30f, 0.36f, 0.44f, 0.95f), 1.5f);
-    ui->AddText(L"Stress Benchmark", panelX + 14.f, panelY + 10.f, 190.f, 22.f,
+    ui->AddText(L"Stress Benchmark", panelX + 14.f, panelY + 66.f, 190.f, 22.f,
         Color(0.90f, 0.94f, 1.00f, 1.f), 17, L"Arial");
-    ui->AddText(L"F3 Hide", panelX + panelW - 76.f, panelY + 10.f, 62.f, 20.f,
-        Color(0.56f, 0.62f, 0.70f, 1.f), 12, L"Arial");
 
     std::vector<HudButton> buttons;
     BuildButtons(buttons);
@@ -674,10 +816,24 @@ void StressPanel::DrawUI()
     const float mx = static_cast<float>(mp.x);
     const float my = static_cast<float>(mp.y);
 
-    ui->AddText(L"Scenario Presets", panelX + 14.f, panelY + 34.f, 180.f, 18.f,
+    ui->AddText(L"Scenario Presets", panelX + 14.f, panelY + 90.f, 180.f, 18.f,
         Color(0.66f, 0.74f, 0.84f, 1.f), 12, L"Arial");
-    ui->AddText(L"Optimization Toggles", panelX + 14.f, panelY + 188.f, 180.f, 18.f,
+    ui->AddText(L"Optimization Toggles", panelX + 14.f, panelY + 252.f, 180.f, 18.f,
         Color(0.66f, 0.74f, 0.84f, 1.f), 12, L"Arial");
+    if (_noticeTimer > 0.f && !_noticeMessage.empty())
+    {
+        const Color bg = _noticeWarn
+            ? Color(0.28f, 0.12f, 0.09f, 0.98f)
+            : Color(0.08f, 0.22f, 0.16f, 0.98f);
+        const Color border = _noticeWarn
+            ? Color(0.95f, 0.42f, 0.28f, 1.f)
+            : Color(0.32f, 0.95f, 0.62f, 1.f);
+
+        ui->AddRect(panelX + 206.f, panelY + 66.f, 222.f, 24.f, bg);
+        ui->AddRectBorder(panelX + 206.f, panelY + 66.f, 222.f, 24.f, border, 1.5f);
+        ui->AddText(_noticeMessage, panelX + 214.f, panelY + 69.f, 206.f, 18.f,
+            Color(0.92f, 0.98f, 0.94f, 1.f), 11, L"Arial");
+    }
 
     for (const HudButton& button : buttons)
     {
@@ -688,7 +844,9 @@ void StressPanel::DrawUI()
     }
 
     const float statX = panelX + 14.f;
-    float statY = panelY + 286.f;
+    DrawSnapshotComparison(statX, panelY + 402.f);
+
+    float statY = panelY + 526.f;
     ui->AddText(L"Current Metrics", statX, statY, 160.f, 18.f,
         Color(0.66f, 0.74f, 0.84f, 1.f), 12, L"Arial");
     statY += 22.f;

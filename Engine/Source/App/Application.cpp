@@ -126,26 +126,18 @@ void Application::CreateMainMenu()
     ::AppendMenuW(hFile, MF_STRING, (UINT_PTR)AppMenuCmd::Exit, L"종료(&X)\tAlt+F4");
     ::AppendMenuW(hBar,  MF_POPUP,  (UINT_PTR)hFile, L"파일(&F)");
 
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleChunkDebugWindow, L"F1 Chunk");
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleBlockTestPanel,   L"F2 Block");
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleStressPanel,      L"F3 Stress");
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::TogglePickDebugPanel,   L"F4 Pick");
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleToolWindow,       L"F5 Tool");
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleItemWindow,       L"F6 Item");
-    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleDetailWindow,     L"F7 Detail");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleToolWindow,       L"F1 Tool");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleItemWindow,       L"F2 Item");
+    ::AppendMenuW(hBar, MF_STRING, (UINT_PTR)AppMenuCmd::ToggleStressPanel,      L"F3 Debug HUD");
 
     ::SetMenu(_desc.hWnd, hBar);
 }
 
 void Application::HandleShortcuts()
 {
-    if (ConsumeFunctionKey(1, VK_F1)) { ToggleWindowByCommand(AppMenuCmd::ToggleChunkDebugWindow); return; }
-    if (ConsumeFunctionKey(2, VK_F2)) { ToggleWindowByCommand(AppMenuCmd::ToggleBlockTestPanel);   return; }
+    if (ConsumeFunctionKey(1, VK_F1)) { ToggleWindowByCommand(AppMenuCmd::ToggleToolWindow);       return; }
+    if (ConsumeFunctionKey(2, VK_F2)) { ToggleWindowByCommand(AppMenuCmd::ToggleItemWindow);       return; }
     if (ConsumeFunctionKey(3, VK_F3)) { ToggleWindowByCommand(AppMenuCmd::ToggleStressPanel);      return; }
-    if (ConsumeFunctionKey(4, VK_F4)) { ToggleWindowByCommand(AppMenuCmd::TogglePickDebugPanel);   return; }
-    if (ConsumeFunctionKey(5, VK_F5)) { ToggleWindowByCommand(AppMenuCmd::ToggleToolWindow);       return; }
-    if (ConsumeFunctionKey(6, VK_F6)) { ToggleWindowByCommand(AppMenuCmd::ToggleItemWindow);       return; }
-    if (ConsumeFunctionKey(7, VK_F7)) { ToggleWindowByCommand(AppMenuCmd::ToggleDetailWindow);     return; }
 }
 
 bool Application::ConsumeFunctionKey(int index, int vk)
@@ -200,6 +192,10 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
         }
         case WM_DESTROY:
             ::PostQuitMessage(0);
+            return 0;
+
+        case WM_MOUSEWHEEL:
+            GET_SINGLE(InputManager)->AddMouseWheelDelta(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
             return 0;
 
         case WM_COMMAND:
