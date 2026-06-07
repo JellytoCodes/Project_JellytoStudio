@@ -330,8 +330,8 @@ StressPanel::MetricSnapshot StressPanel::CaptureMetrics() const
     const RenderStats& rs = GET_SINGLE(InstancingManager)->GetStats();
     snap.drawCalls = rs.totalDrawCalls;
     snap.instances = rs.totalInstances;
-    snap.meshRebuilt = rs.meshGroupsRebuilt;
-    snap.meshSkipped = rs.meshGroupsSkipped;
+    snap.meshRebuilt = rs.meshGroupsRebuilt != 0 ? rs.meshGroupsRebuilt : _lastNonZeroMeshRebuilt;
+    snap.meshSkipped = rs.meshGroupsSkipped != 0 ? rs.meshGroupsSkipped : _lastNonZeroMeshSkipped;
 
     if (Scene* scene = GET_SINGLE(SceneManager)->GetCurrentScene())
     {
@@ -753,29 +753,45 @@ void StressPanel::DrawButton(const HudButton& button, float panelX, float panelY
 void StressPanel::DrawStatRow(const StatRow& row, float x, float y, float labelW, float valueW)
 {
     auto* ui = GET_SINGLE(UIManager);
-    ui->AddText(row.label, x, y, labelW, 17.f, Color(0.64f, 0.70f, 0.78f, 1.f), 12, L"Arial");
-    ui->AddText(row.value, x + labelW, y, valueW, 17.f, Color(0.94f, 0.96f, 1.f, 1.f), 12, L"Arial");
+    ui->AddText(row.label, x, y, labelW, 16.f, Color(0.64f, 0.70f, 0.78f, 1.f), 11, L"Arial");
+    ui->AddText(row.value, x + labelW, y, valueW, 16.f, Color(0.94f, 0.96f, 1.f, 1.f), 11, L"Arial");
 }
 
 void StressPanel::DrawSnapshotComparison(float x, float y)
 {
     auto* ui = GET_SINGLE(UIManager);
-    ui->AddText(L"Snapshot Compare", x, y, 160.f, 18.f, Color(0.66f, 0.74f, 0.84f, 1.f), 12, L"Arial");
-    y += 20.f;
+    constexpr float boxW = 406.f;
+    constexpr float boxH = 158.f;
+
+    ui->AddRect(x, y, boxW, boxH, Color(0.075f, 0.090f, 0.110f, 0.96f));
+    ui->AddRectBorder(x, y, boxW, boxH, Color(0.34f, 0.39f, 0.48f, 0.95f), 1.2f);
+    ui->AddRect(x, y, boxW, 22.f, Color(0.095f, 0.115f, 0.145f, 0.98f));
+    ui->AddText(L"Snapshot Compare", x + 10.f, y + 4.f, 160.f, 14.f,
+        Color(0.78f, 0.86f, 0.96f, 1.f), 11, L"Arial");
+    y += 28.f;
 
     if (!_baselineSnapshot.valid || !_optimizedSnapshot.valid)
     {
-        ui->AddText(L"Capture Baseline and Optimized to compare.", x, y, 360.f, 18.f,
+        ui->AddText(L"Capture Baseline and Optimized to compare.", x + 12.f, y + 16.f, 360.f, 18.f,
             Color(0.58f, 0.64f, 0.72f, 1.f), 11, L"Arial");
         return;
     }
 
+    const float labelX = x + 12.f;
+    const float baseX = x + 120.f;
+    const float optX = x + 258.f;
+
+    ui->AddRect(baseX - 8.f, y - 3.f, 112.f, 116.f, Color(0.10f, 0.14f, 0.19f, 0.88f));
+    ui->AddRectBorder(baseX - 8.f, y - 3.f, 112.f, 116.f, Color(0.38f, 0.48f, 0.62f, 0.95f), 1.f);
+    ui->AddRect(optX - 8.f, y - 3.f, 112.f, 116.f, Color(0.13f, 0.11f, 0.05f, 0.90f));
+    ui->AddRectBorder(optX - 8.f, y - 3.f, 112.f, 116.f, Color(0.95f, 0.72f, 0.24f, 1.f), 1.4f);
+
     auto Row = [&](const std::wstring& label, const std::wstring& a, const std::wstring& b)
     {
-        ui->AddText(label, x, y, 92.f, 16.f, Color(0.64f, 0.70f, 0.78f, 1.f), 11, L"Arial");
-        ui->AddText(a, x + 96.f, y, 100.f, 16.f, Color(0.92f, 0.95f, 1.f, 1.f), 11, L"Arial");
-        ui->AddText(b, x + 202.f, y, 100.f, 16.f, Color(0.95f, 1.f, 0.88f, 1.f), 11, L"Arial");
-        y += 17.f;
+        ui->AddText(label, labelX, y, 96.f, 15.f, Color(0.64f, 0.70f, 0.78f, 1.f), 10, L"Arial");
+        ui->AddText(a, baseX, y, 90.f, 15.f, Color(0.92f, 0.95f, 1.f, 1.f), 10, L"Arial");
+        ui->AddText(b, optX, y, 90.f, 15.f, Color(1.00f, 0.96f, 0.78f, 1.f), 10, L"Arial");
+        y += 15.f;
     };
 
     wchar_t a[48];
@@ -793,6 +809,9 @@ void StressPanel::DrawSnapshotComparison(float x, float y)
     swprintf_s(a, L"%u", _baselineSnapshot.instances);
     swprintf_s(b, L"%u", _optimizedSnapshot.instances);
     Row(L"Instances", a, b);
+    swprintf_s(a, L"%u / %u", _baselineSnapshot.meshRebuilt, _baselineSnapshot.meshSkipped);
+    swprintf_s(b, L"%u / %u", _optimizedSnapshot.meshRebuilt, _optimizedSnapshot.meshSkipped);
+    Row(L"Smart R/S", a, b);
     swprintf_s(a, L"%.2f ms", _baselineSnapshot.cpuMs);
     swprintf_s(b, L"%.2f ms", _optimizedSnapshot.cpuMs);
     Row(L"CPU", a, b);
@@ -851,21 +870,43 @@ void StressPanel::DrawUI()
     }
 
     const float statX = panelX + 14.f;
-    DrawSnapshotComparison(statX, panelY + 402.f);
+    DrawSnapshotComparison(statX, panelY + 368.f);
 
-    float statY = panelY + 526.f;
-    ui->AddText(L"Current Metrics", statX, statY, 160.f, 18.f,
+    float statY = panelY + 536.f;
+    ui->AddRect(statX, statY, 406.f, 94.f, Color(0.070f, 0.083f, 0.100f, 0.92f));
+    ui->AddRectBorder(statX, statY, 406.f, 94.f, Color(0.24f, 0.29f, 0.36f, 0.92f), 1.f);
+    ui->AddText(L"Current Metrics", statX + 10.f, statY + 5.f, 160.f, 14.f,
         Color(0.66f, 0.74f, 0.84f, 1.f), 12, L"Arial");
-    statY += 22.f;
+    statY += 24.f;
 
+    const std::wstring* values[9] = {};
     for (const StatRow& row : _statRows)
     {
-        DrawStatRow(row, statX, statY, 150.f, 280.f);
-        statY += 18.f;
+        if (row.label == L"Blocks") values[0] = &row.value;
+        else if (row.label == L"Visible Entities") values[1] = &row.value;
+        else if (row.label == L"Culled Entities") values[2] = &row.value;
+        else if (row.label == L"Draw Calls") values[3] = &row.value;
+        else if (row.label == L"Render Instances") values[4] = &row.value;
+        else if (row.label == L"Pool Instances") values[5] = &row.value;
+        else if (row.label == L"Face Culled") values[6] = &row.value;
+        else if (row.label == L"Mesh Rebuild/Skip") values[7] = &row.value;
+        else if (row.label == L"Visible Chunks") values[8] = &row.value;
     }
 
-    statY += 8.f;
-    DrawStatRow({ L"CPU Frame", _frameTimeText }, statX, statY, 150.f, 280.f);
-    statY += 22.f;
-    DrawStatRow({ L"Scenario", _lastScenario }, statX, statY, 150.f, 280.f);
+    const StatRow compactRows[] =
+    {
+        { L"Blocks", values[0] ? *values[0] : L"-" },
+        { L"Visible / Culled", (values[1] ? *values[1] : L"-") + L" / " + (values[2] ? *values[2] : L"-") },
+        { L"Draw Calls", values[3] ? *values[3] : L"-" },
+        { L"Render Instances", values[4] ? *values[4] : L"-" },
+        { L"Mesh R/S", values[7] ? *values[7] : L"-" },
+        { L"CPU Frame", _frameTimeText },
+    };
+
+    for (int i = 0; i < 6; ++i)
+    {
+        const float colX = statX + 10.f + static_cast<float>(i % 2) * 198.f;
+        const float rowY = statY + static_cast<float>(i / 2) * 19.f;
+        DrawStatRow(compactRows[i], colX, rowY, 92.f, 98.f);
+    }
 }
