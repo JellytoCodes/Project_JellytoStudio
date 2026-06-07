@@ -2,7 +2,7 @@
 #include "App/Interfaces/IWindow.h"
 #include "Scene/BlockPlacerInterface.h"
 
-class IsometricCameraController;
+class FreeCameraController;
 
 class StressPanel : public IWindow
 {
@@ -17,7 +17,7 @@ public:
     virtual bool UsesInternalUI() const override { return true; }
 
     void SetPlacer(IBlockPlacer* placer) { _placer = placer; }
-    void SetCameraController(IsometricCameraController* controller) { _cameraController = controller; }
+    void SetCameraController(FreeCameraController* controller) { _cameraController = controller; }
     virtual void Update() override;
     virtual void DrawUI() override;
     virtual bool HitTest(float x, float y) const override;
@@ -122,7 +122,7 @@ private:
     std::string  NarrowScenario() const;
 
     IBlockPlacer* _placer = nullptr;
-    IsometricCameraController* _cameraController = nullptr;
+    FreeCameraController* _cameraController = nullptr;
     bool _visible = false;
     bool _created = false;
 

@@ -9,6 +9,7 @@
     <ClCompile Include="Source\Scripts\PointClickController.cpp" />
     <ClCompile Include="Source\Main\EditorApp.cpp" />
     <ClCompile Include="Source\Scripts\BlockPlacer.cpp" />
+    <ClCompile Include="Source\Scripts\FreeCameraController.cpp" />
     <ClCompile Include="Source\UI\PaletteWidget.cpp" />
     <ClCompile Include="Source\Scripts\OneBlockScript.cpp" />
     <ClCompile Include="Source\UI\InventoryData.cpp" />
@@ -28,6 +29,7 @@
     <ClInclude Include="Source\Scripts\PointClickController.h" />
     <ClInclude Include="Source\Main\EditorApp.h" />
     <ClInclude Include="Source\Scripts\BlockPlacer.h" />
+    <ClInclude Include="Source\Scripts\FreeCameraController.h" />
     <ClInclude Include="Source\UI\PaletteWidget.h" />
     <ClInclude Include="Source\Scripts\OneBlockScript.h" />
     <ClInclude Include="Source\UI\InventoryData.h" />

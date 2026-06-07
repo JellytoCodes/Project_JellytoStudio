@@ -12,13 +12,14 @@ class Scene;
 class Entity;
 class Actor;
 class BlockPlacer;
+class Light;
 class ItemWindow;
 class DetailWindow;
 class ChunkDebugWindow;
 class BlockTestPanel;
 class StressPanel;
 class PickDebugPanel;
-class IsometricCameraController;
+class FreeCameraController;
 
 class EditorApp : public IExecute
 {
@@ -50,10 +51,10 @@ private:
     PickDebugPanel*                     _pickDebugPanel   = nullptr;
 
     std::vector<std::unique_ptr<Actor>> _defaultActors;
+    std::unique_ptr<Light>              _captureLight;
 
     Entity*                             _pickedEntity     = nullptr;
-    Entity*                             _characterEntity  = nullptr;
-    IsometricCameraController*          _isoCamCtrl       = nullptr;
+    FreeCameraController*               _freeCamCtrl      = nullptr;
     BlockPlacer*                        _stressPlacer     = nullptr;
 
     float _chunkRefreshTimer  = 0.f;

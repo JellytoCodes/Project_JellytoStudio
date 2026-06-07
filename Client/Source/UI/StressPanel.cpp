@@ -12,7 +12,7 @@
 #include "Scene/ChunkManager.h"
 #include "Scene/Scene.h"
 #include "Scene/SceneManager.h"
-#include "Scripts/IsometricCameraController.h"
+#include "Scripts/FreeCameraController.h"
 #include "UI/UIManager.h"
 
 #include <filesystem>
@@ -112,7 +112,7 @@ void StressPanel::SpawnFrustumPreset(int count, float spacing, ActivePreset pres
     RequestDeferredRefresh();
 }
 
-void StressPanel::SpawnFacePreset(int side, ActivePreset preset)
+void StressPanel::SpawnFacePreset(int baseSide, ActivePreset preset)
 {
     if (!_placer) return;
     const auto validTypes = CollectBenchmarkBlockTypes();
@@ -120,18 +120,25 @@ void StressPanel::SpawnFacePreset(int side, ActivePreset preset)
 
     _placer->ClearAllBlocks();
 
-    const float origin = -static_cast<float>(side - 1) * 0.5f;
+    if (baseSide % 2 != 0)
+        ++baseSide;
+
+    const int layerCount = baseSide / 2;
+    const float baseOrigin = -static_cast<float>(baseSide) * 0.5f;
     int index = 0;
 
-    for (int y = 0; y < side; ++y)
+    for (int layer = 0; layer < layerCount; ++layer)
     {
-        for (int z = 0; z < side; ++z)
+        const int layerSide = baseSide - layer * 2;
+        const float origin = baseOrigin + static_cast<float>(layer);
+
+        for (int z = 0; z < layerSide; ++z)
         {
-            for (int x = 0; x < side; ++x)
+            for (int x = 0; x < layerSide; ++x)
             {
                 const int32 type = validTypes[static_cast<size_t>(index) % validTypes.size()];
                 _placer->PlaceBlock(origin + static_cast<float>(x),
-                                    static_cast<float>(y),
+                                    static_cast<float>(layer),
                                     origin + static_cast<float>(z),
                                     type);
                 ++index;
@@ -140,7 +147,7 @@ void StressPanel::SpawnFacePreset(int side, ActivePreset preset)
     }
 
     SetActivePreset(preset);
-    _lastScenario = L"Face Solid " + std::to_wstring(side) + L"^3";
+    _lastScenario = L"Face Pyramid " + std::to_wstring(baseSide);
     MarkBenchmarkDirty();
     RequestDeferredRefresh();
 }
@@ -607,9 +614,9 @@ void StressPanel::ExecuteCommand(HudCommand command)
     case HudCommand::FrustumLow:  SpawnFrustumPreset(1000, 2.0f, ActivePreset::FrustumLow); return;
     case HudCommand::FrustumMid:  SpawnFrustumPreset(5000, 2.4f, ActivePreset::FrustumMid); return;
     case HudCommand::FrustumHigh: SpawnFrustumPreset(10000, 2.8f, ActivePreset::FrustumHigh); return;
-    case HudCommand::FaceLow:     SpawnFacePreset(8, ActivePreset::FaceLow); return;
-    case HudCommand::FaceMid:     SpawnFacePreset(12, ActivePreset::FaceMid); return;
-    case HudCommand::FaceHigh:    SpawnFacePreset(16, ActivePreset::FaceHigh); return;
+    case HudCommand::FaceLow:     SpawnFacePreset(12, ActivePreset::FaceLow); return;
+    case HudCommand::FaceMid:     SpawnFacePreset(20, ActivePreset::FaceMid); return;
+    case HudCommand::FaceHigh:    SpawnFacePreset(28, ActivePreset::FaceHigh); return;
     case HudCommand::SmartLow:    SpawnSmartPreset(1000, ActivePreset::SmartLow); return;
     case HudCommand::SmartMid:    SpawnSmartPreset(5000, ActivePreset::SmartMid); return;
     case HudCommand::SmartHigh:   SpawnSmartPreset(10000, ActivePreset::SmartHigh); return;

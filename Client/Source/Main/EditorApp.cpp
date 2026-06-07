@@ -20,7 +20,7 @@
 #include "Graphics/Model/ModelAnimator.h"
 #include "Graphics/Model/Model.h"
 #include "Graphics/Model/ModelAnimation.h"
-#include "Scripts/IsometricCameraController.h"
+#include "Scripts/FreeCameraController.h"
 #include "Scripts/BlockPlacer.h"
 #include "Entity/Components/Light.h"
 #include "App/Managers/WindowManager.h"
@@ -71,7 +71,7 @@ void EditorApp::Init()
 
     if (_blockTestPanel) _blockTestPanel->Load();
     if (_stressPanel && _stressPlacer) _stressPanel->SetPlacer(_stressPlacer);
-    if (_stressPanel && _isoCamCtrl)   _stressPanel->SetCameraController(_isoCamCtrl);
+    if (_stressPanel && _freeCamCtrl)  _stressPanel->SetCameraController(_freeCamCtrl);
     if (_pickDebugPanel && _stressPlacer) _pickDebugPanel->SetPlacer(_stressPlacer);
 
     RegisterActors();
@@ -100,16 +100,17 @@ void EditorApp::SpawnDefaultActors()
     };
 
     spawn(std::make_unique<SkySphereActor>());
-    spawn(std::make_unique<FloorActor>());
-    spawn(std::make_unique<CubeActor>());
-    spawn(std::make_unique<SphereActor>());
 
-    Actor* charActor = spawn(std::make_unique<CharacterActor>());
-    _characterEntity = charActor->GetEntity();
-
-    Actor* lightActor = spawn(std::make_unique<LightActor>());
-    if (Light* lightComp = lightActor->GetEntity()->GetComponent<Light>())
-        scene->SetMainLight(lightComp);
+    _captureLight = std::make_unique<Light>();
+    LightDesc lightDesc;
+    lightDesc.ambient = Color(0.35f, 0.38f, 0.42f, 1.f);
+    lightDesc.diffuse = Color(1.0f, 0.95f, 0.85f, 1.f);
+    lightDesc.specular = Color(0.6f, 0.6f, 0.6f, 1.f);
+    lightDesc.emissive = Color(0.0f, 0.0f, 0.0f, 1.f);
+    lightDesc.direction = Vec3(1.f, -3.f, 1.f);
+    lightDesc.direction.Normalize();
+    _captureLight->SetLightDesc(lightDesc);
+    scene->SetMainLight(_captureLight.get());
 
     auto placerEntity = std::make_unique<Entity>(L"StressPlacer");
     placerEntity->AddComponent(std::make_unique<Transform>());
@@ -127,22 +128,19 @@ void EditorApp::CreateCamera()
     cam->AddComponent(std::make_unique<Transform>());
     cam->AddComponent(std::make_unique<Camera>());
 
-    auto isoCtrl = std::make_unique<IsometricCameraController>();
-    isoCtrl->SetDistance(20.f);
-    isoCtrl->SetPanSpeed(10.f);
-    isoCtrl->SetZoomSpeed(15.f);
-    isoCtrl->SetMinDistance(5.f);
-    isoCtrl->SetMaxDistance(60.f);
+    auto freeCtrl = std::make_unique<FreeCameraController>();
+    freeCtrl->SetMoveSpeed(16.f);
+    freeCtrl->SetFastMultiplier(3.f);
+    freeCtrl->SetLookSpeed(0.14f);
+    freeCtrl->SetWheelSpeed(5.f);
 
-    _isoCamCtrl     = isoCtrl.get();
+    _freeCamCtrl    = freeCtrl.get();
     Camera* camComp = cam->GetComponent<Camera>();
 
-    cam->AddComponent(std::move(isoCtrl));
+    cam->AddComponent(std::move(freeCtrl));
+    _freeCamCtrl->SetView(Vec3(0.f, 18.f, -30.f), 28.f, 0.f);
     scene->SetMainCamera(camComp);
     scene->Add(std::move(cam));
-
-    if (_characterEntity)
-        _isoCamCtrl->SetTarget(_characterEntity);
 }
 
 void EditorApp::Update()
