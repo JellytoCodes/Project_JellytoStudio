@@ -1,922 +1,316 @@
-# JellytoStudio — DirectX 11 Custom Block Editor Engine
+# Jellyto Studio
 
-DirectX 11과 C++17을 기반으로 제작한 커스텀 3D 블록 에디터 엔진입니다.  
-외부 게임 엔진 없이 Win32 애플리케이션, D3D11 렌더링 파이프라인, Entity-Component 구조, Scene 관리, Chunk 기반 공간 분할, Hardware Instancing, Shadow Mapping, UI 렌더링, JSON 기반 씬 직렬화를 직접 구현했습니다.
+> **C++20과 Direct3D 11로 구현한 1인 3D Block Editor 프로젝트**입니다.  
+> Block 배치 입력이 Scene 소유권, 공간 질의, Instance Group, GPU Buffer 제출로 이어지는 데이터 흐름과 FBX 선변환·GPU Skinning 파이프라인을 직접 설계했습니다.
 
-이 프로젝트의 목적은 단순한 블록 배치 툴 제작이 아니라, 렌더링 파이프라인과 엔진 내부 구조를 직접 설계하고 병목을 최적화하는 클라이언트/렌더링 개발 역량을 보여주는 것입니다.
+## 프로젝트 개요
+
+| 항목 | 내용 |
+| --- | --- |
+| 개발 기간 | 2026.03–2026.06 |
+| 개발 인원 | 1인 개발 |
+| 언어 | C++20 / HLSL |
+| 플랫폼 | Windows / Win32 |
+| Graphics API | Direct3D 11 |
+| 개발 환경 | Visual Studio 2022 / v143 |
+
+이 프로젝트는 범용 게임 엔진 제작을 목표로 하지 않습니다. **Editor에서 발생한 상태 변경을 안전한 경계에서 반영하고, 공간 후보를 줄인 뒤 동일 Resource를 묶어 GPU에 제출하는 과정**을 직접 구현하는 데 초점을 두었습니다.
+
+## 핵심 결과
+
+| 항목 | 측정·구현 결과 | 해석 범위 |
+| --- | --- | --- |
+| Instance 제출 | 대표 10,000 Block Scene을 `InstancingManager` 기준 Mesh 1회 + Model 3회, 총 **4 Draw**로 제출 | Shadow·Debug·UI를 포함한 전체 Frame Draw 수가 아님 |
+| Frustum Culling | Render 후보 **10,001 → 3,656**, 63.4% 감소 | 동일 Preset에서 Frustum Toggle만 변경 |
+| Fully-enclosed 검사 | Render 후보 **4,061 → 1,461**, 64.0% 감소 | 6방향 Grid 점유가 가능한 정적 Block 대상 |
+| Skeletal Rendering | Geometry·Animation Texture를 공유하고 Clip·Frame·Tween을 Instance별로 전달 | 동일 Model의 Instance별 GPU Skinning |
+
+> 위 수치는 FPS 또는 Frame Time 향상률이 아니라, 동일 조건에서 **Render 후보와 제출 Instance 수가 줄어든 비율**입니다.
 
 ---
 
-## 핵심 구현 요약
+## Editor 사용 흐름
 
-- DirectX 11 기반 Forward Rendering Pipeline 직접 구현
-- Hardware Instancing 기반 대량 블록 렌더링
-- DynamicInstancePool 기반 Persistent Map + 3-Slot Ring Buffer
-- ChunkManager 기반 Frustum Culling 및 Face Occlusion Culling
-- 2-Cascade Shadow Map 기반 방향광 그림자 처리
-- Entity-Component 구조와 Scene Mutation Buffer 구현
-- JSON 기반 블록 데이터 정의 및 씬 저장/불러오기
-- Orthographic 독립 UI 렌더 패스 구현
-- 렌더러 의존성을 제거한 `IBlockPlacer` 인터페이스 설계
-- Controlled Benchmark Mode를 통한 최적화 옵션별 비교 측정 구조 구현
-
----
-
-## 빌드 환경 및 의존성
-
-### 요구 사양
-
-| 항목 | 요구 사양 |
-|------|----------|
-| OS | Windows 10/11 (x64) |
-| IDE | Visual Studio 2022 이상 |
-| Windows SDK | 10.0.19041 이상 |
-| Language | C++17 |
-| Graphics API | DirectX 11 |
-
-### 의존성 라이브러리
-
-| 라이브러리 | 버전 | 포함 방식 | 비고 |
-|-----------|------|----------|------|
-| [Effect11 / FX11](https://github.com/microsoft/FX11) | 11.30 / Archived | 소스 직접 포함 | `.fx` 기반 Effect Framework 사용 |
-| [DirectXTK](https://github.com/microsoft/DirectXTK) | 최신 | 소스 직접 포함 | SimpleMath (`Vector3`, `Matrix` 등) 사용 |
-| [nlohmann/json](https://github.com/nlohmann/json) | 3.x | 단일 헤더 포함 | 씬 직렬화 용도 |
-| D3DX11 | Deprecated | 미사용 | 과거 Effect Framework 계열. 현재 프로젝트는 Effect11 사용 |
-
-> **D3DX11 / Effect11 관련 안내**  
-> 이 프로젝트는 `.fx` 파일 기반 셰이더 파이프라인을 사용하므로 Effect11을 사용합니다.  
-> D3DX11은 deprecated된 레거시 유틸리티 라이브러리이며, 현재 프로젝트에서는 직접 사용하지 않습니다.  
-> Effect11 역시 신규 프로젝트에 권장되는 방식은 아니며, 향후에는 Shader, InputLayout, ConstantBuffer, Sampler, Rasterizer/Blend/DepthStencil State를 명시적으로 관리하는 수동 바인딩 구조로 전환하는 것을 목표로 합니다.
-
-### 빌드 순서
-
-```text
-1. JellytoStudio.sln 열기
-2. 구성: Release | x64 선택
-3. 솔루션 빌드
-   - Engine 정적 라이브러리
-   - Client 실행 파일
-4. 실행: Client/x64/Release/JellytoStudio.exe
+```mermaid
+flowchart LR
+    A["Block 선택"] --> B["World Ray Picking"]
+    B --> C{"배치 규칙 통과"}
+    C -->|No| D["차단 Preview"]
+    C -->|Yes| E["유효 Preview"]
+    E --> F["Commit"]
+    F --> G["Inventory 차감·Entity 생성"]
+    G --> H["Scene·Chunk·Grid·Save Record 등록"]
+    H --> I["Detail 편집·Viewport 검증"]
 ```
 
-리소스 경로는 실행 파일 기준 상위 디렉터리를 참조합니다.
+Preview 단계에서는 Ray Hit, 허용 Collision Channel, 배치 Face, Collider Extent, Character 중첩을 검사하되 Scene 상태는 변경하지 않습니다. 모든 조건을 통과한 위치에서 클릭을 확정한 경우에만 Inventory를 차감하고 Entity와 Save Record를 생성합니다.
 
-```text
-../Resources/Models/MapModel/       FBX 모델
-../Resources/Textures/              텍스처
-../Resources/Data/BlockMaster.json  블록 정의 JSON
-../Saved/                           씬 저장 파일
-```
+이 경계를 통해 다음 불일치를 방지했습니다.
+
+- 화면에는 Preview가 보이지만 실제로는 배치할 수 없는 상태
+- 실패한 배치가 Scene 또는 Save 데이터에 남는 상태
+- Item·Collider·Material·저장 복원 규칙이 서로 다른 Type 기준을 사용하는 상태
 
 ---
 
-## 아키텍처
+## 전체 데이터 흐름
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│  Client Layer                                                │
-│  EditorApp / MainApp / IsometricCameraController             │
-│  BlockPlacer   ←  IBlockPlacer + PlacedBlockRecord           │
-│  InventoryData / PaletteWidget / DebugHUD                    │
-│  ID3D11* 완전 미참조 ─ 렌더러 의존성 없음                    │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ PlacedBlockRecord { x, y, z, type }
-                           │ IBlockPlacer { GetPlacedBlocks, PlaceBlock, ClearAll }
-┌──────────────────────────▼───────────────────────────────────┐
-│  Scene & Spatial Layer                                       │
-│  Scene ─ 엔티티 생명주기, 뮤테이션 버퍼                       │
-│  ChunkManager ─ 16.0f 그리드, Frustum / Occlusion Culling     │
-│  CollisionManager ─ AABB 충돌 처리                           │
-│  SceneSerializer ─ JSON 저장/불러오기                        │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ vector<Entity*> visibleEntities
-┌──────────────────────────▼───────────────────────────────────┐
-│  Render & Pipeline Layer                                     │
-│  InstancingManager ─ SmartRebuild, Upload / Draw Phase 분리   │
-│  DynamicInstancePool ─ Ring Buffer, Persistent Map            │
-│  InstancingBuffer ─ Tiered 정적 버퍼 + 동적 풀 연결           │
-│  ShadowPass ─ 2-Cascade Shadow Map                           │
-│  UIManager ─ Orthographic 독립 패스                          │
-│  Graphics ─ D3D11 Device, SwapChain, State Cache              │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ DrawIndexedInstanced
-┌──────────────────────────▼───────────────────────────────────┐
-│  D3D11 Hardware                                              │
-│  ID3D11Device / ID3D11DeviceContext / IDXGISwapChain          │
-│  Ring Buffers / HLSL Shaders / Texture2DArray ShadowMap       │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    Data["BlockMaster.json"] --> Editor["Select·Preview·Commit"]
+    Editor --> Scene["Scene 소유권·지연 Mutation"]
+    Scene --> Spatial["Chunk AABB·3D Grid"]
+    Spatial --> Visible["Render 후보 수집"]
+    Visible --> Group["Resource Group"]
+    Group --> Buffer["Instance Buffer"]
+    Buffer --> Pass["Shadow·Forward·Debug·UI"]
+
+    FBX["Model·Animation FBX"] --> Converter["Editor Converter"]
+    Converter --> Cache[".mesh·.clip·Material Cache"]
+    Cache --> Group
 ```
 
 ---
 
-## 렌더러 의존성 분리
+## 1. Scene 소유권과 지연 Mutation
 
-`IBlockPlacer` 인터페이스와 `PlacedBlockRecord` POD 구조체를 통해 게임 로직과 D3D11 렌더러 의존성을 분리했습니다.
+`Scene`이 `std::unique_ptr<Entity>`로 객체 수명을 소유합니다. Update 또는 Render 순회 중 Add·Remove 요청이 발생하면 즉시 Container를 변경하지 않고 Pending 목록에 저장한 뒤, 순회가 끝난 안전한 시점에 반영합니다.
 
 ```cpp
-// BlockPlacerInterface.h
-struct PlacedBlockRecord {
-    float x;
-    float y;
-    float z;
-    int32 type;
-};
+void Scene::Add(std::unique_ptr<Entity> object)
+{
+    if (!object)
+        return;
 
-class IBlockPlacer {
-public:
-    virtual const std::vector<PlacedBlockRecord>& GetPlacedBlocks() const = 0;
-    virtual bool PlaceBlock(float x, float y, float z, int32 type) = 0;
-    virtual void ClearAllBlocks() = 0;
-};
-```
+    if (IsIterating())
+    {
+        _pendingAdds.push_back(std::move(object));
+        return;
+    }
 
-`BlockPlacer`는 `IBlockPlacer`와 `MonoBehaviour`를 다중 상속합니다.  
-DirectX 11 객체인 `ID3D11Buffer`, `ID3D11ShaderResourceView` 등은 Client Layer에 포함하지 않습니다.
+    AddImmediate(std::move(object));
+}
 
-이 구조 덕분에 씬 저장, 블록 배치, 팔레트 UI, 인벤토리 데이터는 렌더러 상태와 독립적으로 동작합니다.
+void Scene::FlushPendingMutations()
+{
+    if (IsIterating())
+        return;
 
----
+    for (Entity* object : _pendingRemoves)
+        RemoveImmediate(object);
+    _pendingRemoves.clear();
 
-## 렌더링 파이프라인
+    auto pendingAdds = std::move(_pendingAdds);
+    _pendingAdds.clear();
 
-`Scene::Render()`는 다음 순서로 실행됩니다.
-
-```text
-1. ShadowPass::Render(visibleEntities, lightDir, camPos)
-   └─ ComputeCascadeVPs()
-   └─ BeginFrame()
-   └─ RenderCascade(0)
-   └─ RenderCascade(1)
-   └─ EndFrame()
-
-2. Camera::RenderForward()
-   └─ InstancingManager::Render(entities)
-      ├─ Upload Phase
-      │   ├─ DynamicInstancePool::BeginFrame()
-      │   ├─ SmartRebuildMeshGroups()
-      │   ├─ RenderModelRenderer()
-      │   ├─ BuildAnimData()
-      │   └─ DynamicInstancePool::EndFrame()
-      └─ Draw Phase
-          ├─ RenderMeshRenderer()
-          ├─ RenderModelRenderer()
-          └─ DrawAnimRenderer()
-
-3. UIManager::Render()
-   └─ Orthographic UI Pass
-```
-
-Upload Phase와 Draw Phase를 분리하는 이유는 D3D11에서 `Map`된 버퍼를 `IASetVertexBuffers`와 `DrawIndexedInstanced`에 동시에 사용하는 것을 피하기 위해서입니다.
-
-`DynamicInstancePool::BeginFrame()`에서 버퍼를 `Map`하면, `EndFrame()`에서 `Unmap`하기 전까지 해당 버퍼를 Draw에 사용하지 않습니다.  
-따라서 인스턴스 데이터 업로드를 먼저 끝낸 뒤 Draw Phase에서 바인딩과 드로우 호출을 수행합니다.
-
----
-
-## 공간 분할 시스템
-
-### ChunkManager
-
-모든 블록 엔티티는 `kChunkSize = 16.0f` 단위 청크로 관리합니다.
-
-```cpp
-// 청크 좌표 -> uint64 키 압축
-static uint64 CoordKey(int32 cx, int32 cz);
-
-// 엔티티 -> 청크 역색인
-std::unordered_map<Entity*, uint64> _entityToKey;
-
-struct Chunk {
-    std::vector<Entity*>  entities;
-    DirectX::BoundingBox  aabb;
-    bool                  aabbDirty;
-    bool                  wasVisible;
-};
-```
-
-### Frustum Culling
-
-`BoundingFrustum`과 각 청크의 `AABB`를 교차 판정합니다.
-
-```text
-Camera Frustum
-  -> Chunk AABB test
-  -> DISJOINT이면 청크 전체 제외
-  -> 통과한 청크만 내부 엔티티 검사
-```
-
-청크 AABB는 매 프레임 재계산하지 않습니다.  
-엔티티 추가, 제거, 이동으로 청크 구성이 변경된 경우에만 `aabbDirty`를 설정하고 `RebuildAABB()`를 수행합니다.
-
-### Face Visibility Occlusion Culling
-
-Mesh 블록은 6방향 이웃이 모두 채워진 경우 렌더 리스트에서 제외합니다.  
-위치 조회는 `_positionMap`을 사용해 O(1)로 처리합니다.
-
-```cpp
-// 20비트 x 3축, 바이어스 524288로 음수 좌표 처리
-static uint64 PositionKey(const Vec3& pos) {
-    const int32 ix = static_cast<int32>(std::round(pos.x)) + 524288;
-    const int32 iy = static_cast<int32>(std::round(pos.y)) + 524288;
-    const int32 iz = static_cast<int32>(std::round(pos.z)) + 524288;
-
-    return (uint64(ix) << 40) | (uint64(iy) << 20) | uint64(iz);
+    for (auto& object : pendingAdds)
+        AddImmediate(std::move(object));
 }
 ```
 
-`CollectVisible()`에서 Mesh 블록은 6방향 이웃 전체를 `HasSolidBlockAt()`으로 확인합니다.
+실제 변경이 확정되는 경계에서 다음 상태를 함께 갱신합니다.
 
-```text
-+X / -X
-+Y / -Y
-+Z / -Z
-```
+- Scene 소유 목록
+- Collider 등록 상태
+- Chunk·Grid 공간 인덱스
+- Camera Sort / Visibility Dirty
+- Instancing Group Dirty
 
-6방향이 모두 채워진 경우 내부 블록으로 판단해 `outEntities`에 추가하지 않습니다.  
-Model 블록은 나무, 버섯처럼 비균일 형태를 가지므로 Face Occlusion 대상에서 제외하고 항상 통과시킵니다.
-
-### 레이 피킹
-
-`PickBlocks`는 Priming, Floor, Mushroom 세 채널을 단일 순회로 처리합니다.
-
-```text
-기존 방식:
-  Priming Raycast
-  Floor Raycast
-  Mushroom Raycast
-
-현재 방식:
-  PickBlocks 1회
-    -> 채널별 후보 수집
-    -> 거리 기준 최종 선택
-```
+목적은 순회 중 Container 변경에 따른 Crash 방지뿐 아니라, **Collision·Culling·Renderer가 같은 Frame의 Entity 상태를 참조하도록 변경 시점을 통일하는 것**입니다.
 
 ---
 
-## 인스턴싱 시스템
+## 2. `BlockMaster.json`을 기준으로 한 데이터 주도 확장
 
-### InstanceID
+Block Type별 분기를 Item Window, Preview, Collider, Material, Save·Load에 반복하지 않도록 `BlockMaster.json`을 단일 정의 기준으로 사용합니다.
 
-동일한 Mesh, Material, Chunk를 공유하는 엔티티를 하나의 인스턴싱 그룹으로 자동 분류합니다.
-
-```cpp
-struct InstanceID {
-    uint64 resource0;  // Mesh 포인터 해시
-    uint64 resource1;  // Material 포인터 해시
-    uint64 bucket;     // Chunk Key
-};
+```json
+{
+  "key": "Priming1",
+  "renderType": "Model",
+  "modelName": "Priming_01",
+  "collider": "Unit",
+  "ownChannel": "Priming",
+  "pickable": ["Priming", "Floor", "Character"],
+  "faces": ["Top", "Side"]
+}
 ```
 
-해시 결합에는 Fibonacci Hash 계열의 조합식을 사용합니다.
+시작 시 `BlockTable`이 문자열 속성을 Runtime Enum과 Bit Mask로 변환하고, 각 시스템은 동일한 `BlockRecord`를 조회합니다.
 
-```cpp
-h ^= hash(resource1) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
-```
+| 데이터 | 사용 경로 |
+| --- | --- |
+| `id` · `key` · 표시 정보 | Item Window · Palette · Save Record |
+| `renderType` · `modelName` · `modelScale` | Mesh·Model 생성과 초기 크기 |
+| `collider` · `ownChannel` | 배치 중심 계산과 Collision 등록 |
+| `pickable` · `faces` | World Ray 후보와 허용 면 판정 |
+| `paletteU` · `paletteV` | Atlas UV와 Instance Material Index |
 
-### SmartRebuildMeshGroups
+새 Block은 데이터와 필요한 Resource를 추가해 확장하며, Tool Window마다 Type 분기를 복제하지 않습니다.
 
-Mesh 인스턴싱 그룹은 매 프레임 전체 재빌드하지 않고 dirty 상태에 따라 갱신합니다.
+---
+
+## 3. 공간 인덱스를 공유하는 질의 구조
+
+`ChunkManager`는 XZ Chunk AABB와 3차원 Grid 점유 정보를 함께 유지합니다. 이 구조를 렌더링 최적화 전용으로 두지 않고 Picking과 Collision Broad Phase에도 공유했습니다.
+
+| 사용 경로 | 공간 인덱스의 역할 |
+| --- | --- |
+| Frustum Culling | Camera Frustum과 교차하지 않는 Chunk 전체 제외 |
+| Fully-enclosed 검사 | 6방향 Grid가 모두 점유된 정적 Block을 Render 후보에서 제외 |
+| Ray Picking | Ray가 통과할 수 있는 Chunk와 Collider만 Hit 후보로 검사 |
+| Collision Broad Phase | 전체 Scene이 아닌 인접 공간의 Collider 후보 전달 |
+
+Fully-enclosed 검사는 Face Mesh를 다시 생성하는 방식이 아닙니다. 격자형 정적 Block의 6방향이 모두 막힌 경우 해당 Entity를 Instance Buffer 후보에서 제외합니다. 임의 회전 Mesh나 비격자 Geometry를 처리하는 범용 Occlusion Culling으로는 사용하지 않습니다.
+
+---
+
+## 4. Resource Group과 Instance Buffer 제출
+
+Culling이 GPU에 전달할 후보 수를 줄인다면, Instancing은 남은 후보를 동일 Resource 단위로 묶어 객체 수가 아닌 Group 수만큼 Draw합니다.
+
+| Renderer | Instance Group Key | 목적 |
+| --- | --- | --- |
+| `MeshRenderer` | Mesh × Material × Chunk | 동일 Resource를 묶고 공간 변경의 Dirty 범위를 Chunk로 제한 |
+| `ModelRenderer` | Model × Shader | 동일 Geometry와 Shader Binding 공유 |
+| `ModelAnimator` | Model × Shader | Geometry·Animation Texture 공유, Animation 상태만 Instance별 전달 |
+
+Group 변화 범위에 따라 갱신 경로를 분리했습니다.
+
+| 갱신 경로 | 선택 조건 | 처리 |
+| --- | --- | --- |
+| Full Rebuild | Scene 구조 또는 Model·Shader Group 전체 변경 | Group Cache와 InstanceData 전체 재구성 |
+| Smart Group Rebuild | Visible Set 또는 특정 Mesh Group 멤버 변경 | 변경 Group만 재구성하고 동일 Group은 Skip |
+| Partial Update | Group 구성은 같고 일부 Transform만 변경 | 해당 InstanceID의 Matrix만 갱신 |
+
+장기 유지 Group은 필요한 Instance 수에 따라 Tier Buffer를 선택하고, 동적 Group은 3개의 Ring Slot을 순환하는 공유 `DynamicInstancePool`에 기록합니다.
 
 ```text
-전체 재빌드 조건:
-  _bDirty || _meshDirty
-
-부분 재빌드 조건:
-  _meshGroupDirty
-
-건너뛰기 조건:
-  엔티티 수 불변 && !_partialDirtyMesh.count(id)
+Frame Begin: Map 1회
+  -> Group A Append
+  -> Group B Append
+  -> Group C Append
+Frame End: Unmap 1회
+  -> 각 Group이 보관한 Offset으로 Draw
 ```
 
-`_tmpMeshCache`를 영구 멤버로 유지해 매 프레임 `unordered_map` 힙 할당과 해제를 줄입니다.
-
-```cpp
-std::swap(_meshCache, _tmpMeshCache);
-_tmpMeshCache.clear();
-```
-
-`move`를 사용하면 `_tmpMeshCache`가 최소 상태로 리셋되어 다음 프레임 insert 시 버킷 재성장이 발생할 수 있습니다.  
-`swap` 후 `clear`를 사용하면 이전 프레임에서 충분히 성장한 버킷 배열을 유지하면서 원소만 제거할 수 있습니다.
-
-### RenderStats
-
-렌더링 통계는 `RenderStats`에 집계하고 `DebugHUD`에서 실시간 표시합니다.
-
-```cpp
-struct RenderStats {
-    uint32 modelDrawCalls;
-    uint32 meshDrawCalls;
-    uint32 totalDrawCalls;
-    uint32 totalInstances;
-    uint32 dynamicBuffers;
-    uint32 staticBuffers;
-    uint32 meshGroupsRebuilt;
-    uint32 meshGroupsSkipped;
-};
-```
-
-`DumpInstancingStats()`를 통해 로그 출력도 지원합니다.
+Group마다 Map·Unmap하던 책임을 Frame 수명으로 이동해, Group 수가 늘어도 API 호출 구조가 `Map 1회 → Append N회 → Unmap 1회`로 유지되도록 구성했습니다. GPU Stall 감소율은 별도로 측정하지 않았습니다.
 
 ---
 
-## 버퍼 관리 전략
+## 5. FBX 선변환과 Instance별 GPU Skinning
 
-### DynamicInstancePool — Persistent Map
+Runtime에서 FBX를 직접 해석하지 않고 Editor Converter가 프로젝트 전용 Cache를 생성합니다.
 
-```cpp
-void   BeginFrame();
-uint32 Append(const InstancingData* data, uint32 count);
-void   EndFrame();
+| 변환 결과 | 포함 데이터 | Runtime 역할 |
+| --- | --- | --- |
+| `.mesh` | Bone 계층·Offset Matrix·Vertex·Index·Skin Weight | Skeleton과 Vertex·Index Buffer 구성 |
+| `.clip` | Frame Rate·Frame Count·Bone Channel Transform | Animation Texture 생성 |
+| Material JSON | Material 속성과 Texture 경로 | Shader Resource Binding |
+| Texture | Diffuse·Normal 등 이미지 | Texture / SRV 생성 |
+
+```mermaid
+flowchart LR
+    FBX["Model·Animation FBX"] --> Convert["Editor Converter"]
+    Convert --> Mesh[".mesh"]
+    Convert --> Clip[".clip"]
+    Convert --> Material["Material JSON·Texture"]
+    Mesh --> Model["Runtime Model"]
+    Material --> Model
+    Clip --> Anim["Animation Texture2DArray"]
+    Model --> Skin["Instanced GPU Skinning"]
+    Anim --> Skin
 ```
 
-`BeginFrame()`에서 `WRITE_DISCARD`로 Map을 1회 수행하고, `Append()`는 내부에서 `memcpy`만 수행합니다.  
-`EndFrame()`에서 Unmap을 1회 수행합니다.
+같은 Model을 사용하는 Character는 Geometry와 Animation Texture를 공유합니다. Instance에는 현재·다음 Clip, Frame, Tween Ratio만 전달하고 Vertex Shader가 `instanceID`로 각 Animation 상태를 선택합니다.
 
-3-Slot Ring Buffer를 사용해 GPU가 이전 프레임의 인스턴스 데이터를 읽는 동안 CPU가 다음 슬롯에 데이터를 작성할 수 있도록 했습니다.  
-이를 통해 Map/Unmap 호출 횟수를 줄이고 CPU-GPU 동기화 대기 가능성을 최소화합니다.
+Animation Texture는 다음 기준으로 Packing합니다.
 
-```text
-Frame N     -> Slot 0
-Frame N + 1 -> Slot 1
-Frame N + 2 -> Slot 2
-Frame N + 3 -> Slot 0 재사용
-```
+- Array Slice: Animation Clip
+- Y: Frame, 최대 500
+- X: Bone Matrix Row, 최대 250 Bone × 4 Texel
+- Instance Data: 현재·다음 Clip, Frame, 보간 Ratio
 
-### InstancingBuffer — Tiered Allocation
+Model FBX와 Animation FBX의 Bone 이름이 Namespace 또는 Assimp Pivot Suffix 때문에 달라지는 문제는 Raw Name을 먼저 조회하고, 알려진 Suffix와 Namespace를 제거한 정규화 이름으로 재조회하도록 해결했습니다.
 
-정적 인스턴싱 버퍼는 필요한 인스턴스 수에 따라 최소 티어를 선택합니다.
-
-| 티어 | 크기 | 적합 용도 |
-|------|------|----------|
-| kTierSmall | 64 | 희박한 청크 |
-| kTierMedium | 512 | 일반 블록 그룹 |
-| kTierLarge | 4,096 | 밀집 씬 |
-| kTierMax | 10,000 | 전체 씬 |
-
-### SetData 직접 포인터 경로
-
-동적 버퍼에서 `SetData`를 호출할 때 `_data(vector)` 복사를 건너뛰고 외부 포인터를 직접 보관합니다.  
-`UploadData()`가 `Pool->Append()`를 호출할 때 외부 버퍼에서 Pool 버퍼로 `memcpy` 1회만 수행합니다.
-
-```text
-SetData 경로:
-  외부 worldVec -> Pool
-  memcpy 1회
-
-AddData 누적 경로:
-  _data -> Pool
-  memcpy 1회
-
-정적 버퍼 경로:
-  _data -> Static Buffer
-  memcpy 1회
-```
-
-### Block Entity Pool
-
-블록 배치와 제거에서 런타임 `new/delete`를 줄이기 위해 Entity Pool을 사용합니다.
-
-```text
-시작 시 사전 할당:
-  Mesh 블록 128개
-  Model 블록 16개 / 종류
-
-배치 시:
-  _meshPool.pop_back()
-  -> 컴포넌트 재구성
-  -> Scene::AddDirect()
-
-제거 시:
-  ChunkManager::Unregister()
-  -> Scene::Detach()
-  -> _meshPool.push_back()
-```
-
-`Scene::AddDirect()`는 `AddImmediate()` 경로를 사용하며, Awake/Start 재실행 없이 씬에 직접 추가합니다.  
-`Scene::Detach()`는 swap-and-pop으로 `_objects`에서 분리한 뒤 `unique_ptr<Entity>`를 반환합니다.
+`.mesh`와 `.clip`은 범용 교환 포맷이 아니라 Jellyto Studio Runtime 전용 Cache입니다. Source FBX가 변경되면 Editor에서 다시 변환하는 흐름을 전제로 합니다.
 
 ---
 
-## 섀도우 패스
+## 6. Frame Pipeline과 Viewport
 
-### 2-Cascade Shadow Map
-
-단일 `Texture2DArray`로 두 개의 Shadow Cascade를 관리합니다.
-
-```text
-Cascade 0:
-  카메라 반경 kNearCascadeRadius = 25.0f 기준 sphere tight fit VP
-
-Cascade 1:
-  씬 전체 정적 엔티티 AABB 기반 VP
+```mermaid
+flowchart LR
+    Shadow["Shadow<br/>Static·Skinned"] --> Forward["Forward Lighting"]
+    Forward --> Debug["Debug Geometry"]
+    Debug --> UI["Viewport UI·HUD"]
+    UI --> Present["Present"]
 ```
 
-### 리소스 생성
-
-```cpp
-td.Format    = DXGI_FORMAT_R32_TYPELESS;
-td.ArraySize = kCascadeCount;
-td.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-
-// 슬라이스별 DSV
-dsvd.ViewDimension                  = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-dsvd.Texture2DArray.FirstArraySlice = cascadeIdx;
-dsvd.Texture2DArray.ArraySize       = 1;
-
-// 단일 SRV
-srvd.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-srvd.Format        = DXGI_FORMAT_R32_FLOAT;
-```
-
-### Render 흐름
-
-```text
-BuildGroups(entities)
-  -> 엔티티 순회 1회
-
-ComputeCascadeVPs(camPos)
-  -> 2개 Light VP 계산
-
-for cascade in [0, 1]:
-  RenderCascade(cascade, VP[cascade])
-    -> DSV[cascade] 바인딩
-    -> ConstantBuffer 업데이트
-    -> Draw
-```
-
-Depth Vertex Shader는 런타임에 내장 문자열 리터럴에서 `D3DCompile`로 컴파일합니다.  
-스태틱 메시용과 스키닝 메시용 두 가지 Depth VS를 내장하고 있습니다.
-
-### 픽셀 셰이더 카스케이드 선택
-
-```hlsl
-float dist    = length(worldPos - CameraPosition());
-int   cascade = (dist < CascadeSplit) ? 0 : 1;
-
-float4 lsPos = mul(float4(worldPos, 1.0f), LightVP[cascade]);
-
-shadow += ShadowMap.SampleCmpLevelZero(
-    ShadowSampler,
-    float3(uv + offset * ShadowTexelSize, (float)cascade),
-    depth
-);
-```
-
-Shadow Sampler 설정은 다음과 같습니다.
-
-```text
-Filter         : COMPARISON_MIN_MAG_LINEAR_MIP_POINT
-AddressU/V     : BORDER
-BorderColor    : white(1, 1, 1, 1)
-ComparisonFunc : LESS_EQUAL
-```
-
-범위를 벗어난 UV는 흰색으로 처리되어 섀도우가 없는 영역으로 샘플링됩니다.
+- 방향광 Shadow는 Editor Scene 범위에 맞춘 고정 2-Cascade 구조입니다.
+- Static과 Skinned Instance 모두 Resource Group 단위로 Shadow Pass에 제출합니다.
+- Skinned Shadow와 Forward Pass는 같은 Animation Texture와 Tween Data를 사용합니다.
+- Viewport UI는 Orthographic Pass로 분리해 3D Depth·Lighting State와 섞이지 않도록 했습니다.
+- Tool·Item·Detail·Chunk Debug Window는 Win32 Native Window로 분리했습니다.
 
 ---
 
-## UI 시스템
+## 대표 트러블슈팅
 
-`UIManager`는 3D 렌더 패스 이후 Orthographic 독립 패스로 실행됩니다.  
-이 패스에서는 Depth Test를 끄고 UI 전용 Vertex Buffer / Index Buffer를 사용합니다.
+### Camera 이동 시 불필요한 Cache 전체 재구성
 
-```cpp
-struct DrawCmd {
-    uint32 indexOffset;
-    uint32 indexCount;
-    uint32 pass;   // 0 = 단색, 1 = 텍스처
-    ComPtr<ID3D11ShaderResourceView> srv;
-};
-```
+기존에는 Visible Set이 바뀌면 Mesh·Model·Animator Cache를 모두 Dirty 처리했습니다. 공간 후보 수집은 한 번만 수행하되 Mesh와 Model 계열의 Visibility Hash를 별도로 계산하고, 실제로 변경된 Renderer 계열에만 Dirty 신호를 전달하도록 수정했습니다.
 
-지원 API는 다음과 같습니다.
+검증 범위는 HUD의 계열별 Rebuild Count를 통해 **불필요한 재구성 경로가 선택되지 않는지** 확인하는 것이며, CPU·GPU Frame Time 감소율은 주장하지 않습니다.
 
-```text
-AddRect
-AddRectBorder
-AddTexturedRect
-AddText
-```
+### FBX Bone 이름 차이로 인한 Animation Channel 연결 실패
 
-텍스트는 GDI+ `Graphics::DrawString`으로 오프스크린 비트맵에 렌더링한 뒤 `CreateTexture2D`와 `CreateShaderResourceView`를 통해 D3D11 텍스처로 변환해 캐싱합니다.
-
-모든 쿼드는 단일 VB/IB에 누적한 뒤 `DrawCmd` 순서대로 `DrawIndexed`를 일괄 호출합니다.
-
----
-
-## 엔티티 컴포넌트 시스템
-
-### Entity
-
-컴포넌트는 고정 크기 배열에 저장합니다.  
-`GetComponent<T>()`는 컴파일 타임 인덱스 기반 O(1) 조회를 수행합니다.
-
-```cpp
-std::array<std::unique_ptr<Component>, FIXED_COMPONENT_COUNT> _components;
-std::vector<std::unique_ptr<MonoBehaviour>>                   _scripts;
-```
-
-`GetComponent<T>()`는 `ComponentTypeOf<T>::kType`으로 배열 인덱스를 정적으로 결정합니다.
-
-### Camera
-
-카메라는 Culling 결과와 정렬 상태를 추적합니다.
-
-```cpp
-struct CullStats {
-    uint32 totalEntities;
-    uint32 visibleEntities;
-    uint32 culledEntities;
-    uint32 meshRebuildCount;
-    uint32 modelRebuildCount;
-};
-```
-
-`_meshVisibilityHash`, `_modelVisibilityHash`, `_prevCamPos`, `_prevCamYaw`를 추적해 카메라 정지 시 불필요한 소트와 재빌드를 건너뜁니다.
-
-### Scene Mutation Buffer
-
-Scene은 순회 중 엔티티 추가/삭제로 인한 iterator invalidation을 방지하기 위해 Mutation Buffer를 사용합니다.
-
-```cpp
-std::vector<std::unique_ptr<Entity>> _pendingAdds;
-std::vector<Entity*>                 _pendingRemoves;
-uint32                               _iterationDepth;
-```
-
-이터레이션 중 추가/제거 요청은 pending 버퍼에 기록하고, 이터레이션 종료 후 `FlushPendingMutations()`에서 일괄 반영합니다.
-
-`_objects`는 `vector<unique_ptr<Entity>>`로 연속 메모리를 유지하고, 삭제는 swap-and-pop으로 O(1) 처리합니다.
-
-### Collision Channel
-
-```cpp
-enum class CollisionChannel : uint8 {
-    None      = 0,
-    Default   = 1 << 0,
-    Character = 1 << 1,
-    Priming   = 1 << 2,
-    Mushroom  = 1 << 3,
-    Floor     = 1 << 4,
-    All       = 0xFF
-};
-
-enum class PlaceFace : uint8 {
-    Top    = 1 << 0,
-    Side   = 1 << 1,
-    Bottom = 1 << 2,
-    All    = 0xFF
-};
-```
-
-`CollisionChannel`은 레이 피킹과 충돌 판정 대상을 구분하는 데 사용합니다.  
-`PlaceFace`는 블록 배치 가능 면을 제한하는 데 사용합니다.
-
----
-
-## 블록 데이터 정의
-
-모든 블록 속성은 `BlockMaster.json`에서 정의하며 `BlockTable::Load()`로 파싱합니다.
-
-```cpp
-struct BlockRecord {
-    int32            typeId;
-    std::wstring     key;
-    std::wstring     label;
-    bool             isEraser;
-    BlockRenderType  renderType;
-    std::wstring     modelName;
-    float            modelScale;
-    BlockUVRect      paletteRect;
-    ColliderSize     collider;
-    CollisionChannel ownChannel;
-    uint8            pickableMask;
-    uint8            faceMask;
-};
-```
-
-주요 필드는 다음 역할을 가집니다.
-
-| 필드 | 역할 |
-|------|------|
-| `typeId` | 블록 타입 식별자 |
-| `key` | 내부 데이터 키 |
-| `label` | UI 표시 이름 |
-| `isEraser` | 삭제 도구 여부 |
-| `renderType` | Mesh / Model 렌더링 방식 |
-| `modelName` | Model 블록에서 사용할 FBX 모델 이름 |
-| `modelScale` | 모델 스케일 |
-| `paletteRect` | 텍스처 아틀라스 UV 영역 |
-| `collider` | Collider 크기 타입 |
-| `ownChannel` | 자신의 충돌 채널 |
-| `pickableMask` | 피킹 가능한 대상 채널 |
-| `faceMask` | 배치 가능한 면 |
-
----
-
-## 씬 직렬화
-
-`SceneSerializer`는 nlohmann/json을 사용해 씬을 저장하고 불러옵니다.
-
-저장 대상은 `IBlockPlacer::GetPlacedBlocks()`를 통해 수집한 `PlacedBlockRecord` 목록입니다.  
-따라서 저장 데이터는 렌더러 상태, D3D11 리소스, 인스턴싱 버퍼와 완전히 독립적입니다.
-
-```text
-Scene
-  -> IBlockPlacer::GetPlacedBlocks()
-  -> vector<PlacedBlockRecord>
-  -> JSON 저장
-
-JSON 로드
-  -> PlacedBlockRecord 복원
-  -> IBlockPlacer::PlaceBlock()
-  -> Scene Entity 재생성
-```
-
----
-
-## 셰이더 구조
-
-### 상수 버퍼 레지스터 배치
-
-| 레지스터 | 구조체 | 업데이트 주기 | 내용 |
-|---------|--------|--------------|------|
-| b0 | ShadowBuffer | Per-Frame | LightVP[2], ShadowBias, ShadowTexelSize, CascadeSplit |
-| b1 | GlobalBuffer | Per-Level | V, P, VP, VInv |
-| b2 | TransformBuffer | Per-Object | W |
-| — | MaterialDesc | Per-Object | ambient, diffuse, specular, emissive |
-| — | LightDesc | Per-Frame | ambient, diffuse, specular, emissive, direction |
-
-### 텍스처 레지스터
-
-| 레지스터 | 리소스 | 설명 |
-|---------|--------|------|
-| t0 | `Texture2D g_BlockAtlas` | 블록 텍스처 아틀라스 |
-| t1 | `StructuredBuffer<float4> g_AtlasRects` | UV 좌표 |
-| t2 | `Texture2DArray ShadowMap` | 2-Cascade Shadow Map |
-
-### 인스턴스 버퍼 입력 레이아웃
-
-```hlsl
-// Slot 0: Per-Vertex
-float4 position : POSITION;
-float2 uv       : TEXCOORD;
-float3 normal   : NORMAL;
-float3 tangent  : TANGENT;
-
-// Slot 1: Per-Instance
-matrix world         : INST;
-uint   materialIndex : INST_MATERIAL;
-```
-
-### BlockShader 라이팅 모델
-
-BlockShader는 Blinn-Phong, Rim Light, PCF Shadow를 조합합니다.
-
-```hlsl
-float4 rect    = g_AtlasRects[materialIndex];
-float2 atlasUV = uv * rect.zw + rect.xy;
-
-float4 ambient  = baseColor * GlobalLight.ambient  * Material.ambient;
-float4 diffuse  = baseColor * NdotL * GlobalLight.diffuse * Material.diffuse;
-
-float  spec     = pow(saturate(dot(R, E)), 16.0f);
-float4 specular = GlobalLight.specular * Material.specular * spec;
-
-float  rim      = 1.0f - saturate(dot(E, N));
-float4 emissive = GlobalLight.emissive * Material.emissive * pow(rim, 2.0f);
-
-float  shadow   = ComputeShadowFactor(worldPos);
-float4 final    = ambient + (diffuse + specular) * shadow + emissive;
-```
-
-PCF Shadow는 3x3, 9 Sample 방식으로 처리합니다.
-
----
-
-## State Shadow Cache
-
-D3D11 상태 변경 API 호출을 줄이기 위해 현재 바인딩 상태를 캐싱합니다.
-
-```cpp
-struct ShadowStateCache {
-    ID3D11RasterizerState*   rsState;
-    bool                     rsValid;
-
-    ID3D11DepthStencilState* dssState;
-    bool                     dssValid;
-    UINT                     stencilRef;
-
-    ID3D11BlendState*        blendState;
-    bool                     blendValid;
-    FLOAT                    blendFactor[4];
-    UINT                     sampleMask;
-
-    ID3D11Buffer*            vb0;
-    bool                     vb0Valid;
-    UINT                     vb0Stride;
-    UINT                     vb0Offset;
-
-    ID3D11Buffer*            ib;
-    DXGI_FORMAT              ibFormat;
-};
-```
-
-`SetRasterizerState()` 등 각 함수에서 현재 바인딩 상태와 요청 상태를 비교합니다.  
-동일한 상태라면 D3D11 API 호출을 건너뜁니다.
-
-셰이더 전환 시에는 `InvalidateStateCache()`로 전체 캐시를 무효화합니다.
-
----
-
-## 최적화 목록
-
-| 항목 | 구현 위치 | 내용 |
-|------|---------|------|
-| Hardware Instancing | `InstancingManager`, `InstancingBuffer` | N개 블록을 1 DrawCall로 렌더링 |
-| Persistent Map | `DynamicInstancePool` | 프레임당 Map/Unmap 1회, CPU-GPU 동기화 비용 완화 |
-| Ring Buffer 3-Slot | `DynamicInstancePool` | GPU 읽기 중 CPU 쓰기 가능성 확보 |
-| PickBlocks 통합 | `BlockPlacer::Update` | 3채널 레이캐스트를 1회 순회로 통합 |
-| SmartRebuild | `InstancingManager` | dirty 그룹만 재빌드 |
-| swap + clear 패턴 | `SmartRebuildMeshGroups` | `unordered_map` 버킷 용량 보존 |
-| PruneEmptyGroups 조건부 | `InstancingManager` | `_hasPendingPrune` 플래그로 정적 프레임 생략 |
-| Block Entity Pool | `BlockPlacer` | 사전 할당으로 런타임 new/delete 감소 |
-| Frustum Culling | `ChunkManager::CollectVisible` | 청크 AABB 기준 가시성 판정 |
-| Face Occlusion Culling | `ChunkManager::CollectVisible` | 6방향 위치 해시 조회로 내부 블록 제외 |
-| Tiered Buffer | `InstancingBuffer::NextTier` | 64 / 512 / 4096 / 10000 최소 티어 선택 |
-| SetData 직접 포인터 | `InstancingBuffer::SetData` | 동적 버퍼 memcpy 2회 경로를 1회로 축소 |
-| Scene vector 전환 | `Scene::_objects` | 순회 캐시 적중률 개선 |
-| 2-Cascade CSM | `ShadowPass` | Texture2DArray 기반 근거리 그림자 밀도 향상 |
-| State Shadow Cache | `Graphics` | 중복 D3D11 상태 변경 호출 방지 |
-| UI Orthographic 패스 | `UIManager` | 3D 패스와 UI 패스 분리 |
-| 상수 버퍼 빈도 분할 | `ShaderDesc.h` | Per-Level / Frame / Object 분리 |
-
----
-
-## Controlled Benchmark Mode
-
-본 비교는 과거 커밋 기준의 before/after 비교가 아니라, 동일 씬에서 최적화 옵션을 끈 baseline과 현재 구현을 비교하는 controlled benchmark입니다.
-
-### StressPanel Options
-
-| Button | Option | Description |
-|--------|--------|-------------|
-| Frustum ON/OFF | Frustum Culling | Chunk AABB 및 비관리 렌더러 frustum test 토글 |
-| Face ON/OFF | Face Occlusion | 6방향 이웃으로 완전히 가려진 mesh block 제외 토글 |
-| SmartRebuild ON/OFF | SmartRebuild | Dirty mesh group rebuild와 full mesh group rebuild 비교 |
-
-### Benchmark Presets
-
-StressPanel에서 다음 preset을 생성해 동일 조건으로 측정합니다.
-
-| Preset | Purpose |
-|--------|---------|
-| Flat 1K | 인스턴싱 draw call / total instance 기준 측정 |
-| Dense 16^3 | 내부 블록 face occlusion 효과 측정 |
-| Seed Random 10K | 대규모 랜덤 배치 및 chunk culling 기준 측정 |
-
-### Measurement Table
-
-현재 표는 측정 입력용 템플릿입니다.  
-정량 결과는 동일 하드웨어, 동일 빌드 옵션, 동일 카메라 위치 기준으로 측정 후 갱신합니다.
-
-| Scene | Mode | Total Entities | Visible Entities | Total Chunks | Visible Chunks | Mesh DrawCalls | Model DrawCalls | Total Instances | Mesh Groups Rebuilt | Mesh Groups Skipped | CPU Frame |
-|-------|------|---------------:|-----------------:|-------------:|---------------:|----------------:|-----------------:|----------------:|--------------------:|--------------------:|----------:|
-| Flat 1K | Baseline OFF | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Flat 1K | Optimized ON | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Dense 16^3 | Culling OFF | 4096 | 4096 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Dense 16^3 | Face Occlusion ON | 4096 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Seed Random 10K | SmartRebuild OFF | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Seed Random 10K | SmartRebuild ON | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+`Armature:Hips`, `Hips_$AssimpFbx$_PreRotation`, `Hips`처럼 의미상 같은 Bone이 서로 다른 문자열로 들어오는 문제를 확인했습니다. Raw Name과 정규화 Name을 Bone Index Map에 함께 등록하고, 규칙 밖 이름은 Debug Output에 남겨 Source Asset을 추적할 수 있게 했습니다.
 
 ---
 
 ## 프로젝트 구조
 
 ```text
-JellytoStudio/
-|-- Client/
-|   `-- Source/
-|       |-- Core/
-|       |   `-- pch.h
-|       |-- Data/
-|       |   |-- BlockTable.h
-|       |   `-- BlockTable.cpp
-|       |-- Main/
-|       |   |-- EditorApp
-|       |   |-- MainApp
-|       |   `-- Actors
-|       |-- Resource/
-|       |   `-- BlockMaterialProvider
-|       |-- Scripts/
-|       |   |-- BlockPlacer
-|       |   |-- IsometricCameraController
-|       |   `-- PointClickController
-|       `-- UI/
-|           |-- PaletteWidget
-|           |-- InventoryWidget
-|           |-- InventoryData
-|           |-- DebugHUD
-|           `-- StressPanel
-|
-`-- Engine/
-    |-- Shaders/
-    |   |-- BlockShader.hlsl
-    |   |-- ShaderCommon.hlsli
-    |   |-- Lighting.hlsli
-    |   |-- StaticMeshShader.hlsl
-    |   |-- SkinnedMeshShader.hlsl
-    |   |-- UIShader.hlsl
-    |   |-- ColliderDebugShader.hlsl
-    |   `-- SkySphereShader.hlsl
-    |
-    `-- Source/
-        |-- App/
-        |   |-- Application.h/cpp
-        |   |-- DetailWindow
-        |   |-- ItemWindow
-        |   |-- ChunkDebugWindow
-        |   `-- Managers/
-        |       `-- WindowManager
-        |-- Audio/
-        |   |-- AudioManager
-        |   `-- AudioDataTable
-        |-- Core/
-        |   |-- Framework.h
-        |   |-- InputManager
-        |   `-- TimeManager
-        |-- Entity/
-        |   |-- Entity.h/cpp
-        |   |-- Actor.h/cpp
-        |   `-- Components/
-        |       |-- Transform
-        |       |-- Camera
-        |       |-- MeshRenderer
-        |       |-- ModelRenderer
-        |       |-- ModelAnimator
-        |       |-- AnimStateMachine
-        |       |-- Light
-        |       `-- Collider/
-        |           |-- AABBCollider
-        |           |-- BaseCollider
-        |           `-- CollisionChannel
-        |-- Graphics/
-        |   |-- Graphics.h/cpp
-        |   |-- ShadowPass.h/cpp
-        |   |-- RenderPacket.h
-        |   `-- Managers/
-        |       `-- InstancingManager
-        |-- Pipeline/
-        |   |-- DynamicInstancePool
-        |   |-- InstancingBuffer
-        |   |-- Shader.h/cpp
-        |   |-- ConstantBuffer.h
-        |   `-- VertexBuffer.h
-        |-- Scene/
-        |   |-- Scene.h/cpp
-        |   |-- ChunkManager.h/cpp
-        |   |-- SceneSerializer
-        |   |-- BlockPlacerInterface.h
-        |   `-- PickUtils.h
-        |-- Types/
-        |   `-- ShaderDesc.h
-        `-- UI/
-            `-- UIManager.h/cpp
+Project_JellytoStudio/
+├─ Client/        # Editor App, Block 배치, Inventory, Viewport HUD
+├─ Engine/        # Scene, Entity, Collision, Rendering, Resource, Tool Window
+├─ Libraries/     # 프로젝트 의존 Library와 Header
+├─ Resources/     # Model, Texture, Shader, Block 정의 데이터
+├─ Saved/         # Scene 저장 데이터
+├─ outputs/       # 측정·검증 출력
+└─ JellytoStudio.sln
 ```
 
----
+## 빌드 및 실행
 
-## 주요 소스 진입점
+### 요구 환경
 
-| 파일 / 모듈 | 역할 |
-|------------|------|
-| `Application` | Win32 윈도우, 메인 루프, 메뉴 처리 |
-| `Graphics` | D3D11 Device, SwapChain, Render State 관리 |
-| `Scene` | 엔티티 생명주기, Add/Remove, Mutation Buffer |
-| `ChunkManager` | 공간 분할, Frustum Culling, Face Occlusion Culling |
-| `InstancingManager` | 인스턴싱 그룹 생성, SmartRebuild, 렌더링 통계 |
-| `DynamicInstancePool` | Persistent Map, 3-Slot Ring Buffer |
-| `InstancingBuffer` | Tiered Buffer, 정적/동적 인스턴스 버퍼 관리 |
-| `ShadowPass` | 2-Cascade Shadow Map 렌더링 |
-| `UIManager` | Orthographic UI 렌더 패스 |
-| `BlockPlacer` | 블록 배치, 삭제, 피킹, Entity Pool |
-| `BlockTable` | JSON 기반 블록 데이터 로드 |
-| `SceneSerializer` | 씬 저장/불러오기 |
-| `ShaderDesc.h` | 상수 버퍼 구조체 및 셰이더 데이터 정의 |
+- Windows 10/11 x64
+- Visual Studio 2022
+- MSVC v143
+- Windows SDK 10
+- Direct3D 11 지원 GPU
 
----
+### 빌드
+
+```text
+1. JellytoStudio.sln 열기
+2. Debug | x64 또는 Release | x64 선택
+3. Solution Build
+4. Binaries/x64/<Configuration>/Client.exe 실행
+```
+
+Client Project는 x64 구성에서 C++20을 사용합니다. Assimp와 FMOD Runtime DLL은 Post-build 단계에서 실행 폴더로 복사되며, 저장소의 `Libraries`와 `Resources` 경로를 유지해야 합니다.
+
+## 적용 범위
+
+- Win32·Direct3D 11 기반 단일 Editor 프로젝트에 맞춘 구조입니다.
+- 범용 ECS, API 독립 RHI, 범용 Asset Format을 목표로 하지 않습니다.
+- 4 Draw는 `InstancingManager`가 집계한 대표 Scene의 Resource Group 제출 수입니다.
+- Culling 수치는 Render 후보 감소율이며 FPS·Frame Time 향상률이 아닙니다.
+- GPU Stall, 전체 Frame Draw, 다중 Hardware 환경 성능은 별도로 측정하지 않았습니다.
 
 ## 라이선스
 
-이 프로젝트는 학습 및 포트폴리오 목적으로 공개되어 있습니다.  
-포함된 서드파티 라이브러리는 각각의 라이선스를 따릅니다.
-
-| 라이브러리 | 라이선스 |
-|-----------|---------|
-| Effect11 / FX11 | MIT |
-| DirectXTK | MIT |
-| nlohmann/json | MIT |
-
----
-
-*C++17 · DirectX 11 · HLSL · WRL::ComPtr · Hardware Instancing · Ring Buffer · 2-Cascade CSM · Face Occlusion Culling · nlohmann/json*
+Copyright (c) 2026 Jellyto Studio. All rights reserved.
